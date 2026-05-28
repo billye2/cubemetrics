@@ -82,6 +82,7 @@ import { oneononepDoor } from './oneononep';
 import { projecttrackerDoor } from './projecttracker';
 import { clienttrackerDoor } from './clienttracker';
 import { invoicesDoor } from './invoices';
+import { feedbackDoor } from './feedback';
 
 // Lifestyle
 import { recipesDoor } from './recipes';
@@ -135,7 +136,7 @@ const allDoors: Door[] = [
   // Organization
   bookmarksDoor, contactsDoor, groceryDoor, inventoryDoor, calendarDoor, fileindexDoor, wishlistDoor,
   // Work & Collaboration
-  retroDoor, oneononepDoor, feedbacklogDoor, projecttrackerDoor, clienttrackerDoor, invoicesDoor,
+  retroDoor, oneononepDoor, feedbacklogDoor, projecttrackerDoor, clienttrackerDoor, invoicesDoor, feedbackDoor,
   // Lifestyle
   recipesDoor, travelplannerDoor, packingDoor, cleaningDoor, plantcareDoor,
   petcareDoor, homemaintDoor, warrantyDoor,
