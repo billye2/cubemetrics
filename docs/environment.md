@@ -8,6 +8,18 @@
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + Server | Supabase anonymous key (safe for browser) |
 | `NEXT_PUBLIC_SITE_URL` | Client + Server | Production URL for OAuth redirects |
 
+## Optional Variables (feedback → GitHub workflow)
+
+| Variable | Where | Description |
+|----------|-------|-------------|
+| `SUPABASE_SERVICE_ROLE_KEY` | Server | Service-role key. Used only by the admin feedback-review queue to read/update feedback across users (bypasses RLS). |
+| `GITHUB_TOKEN` | Server | Token with `issues:write` (push) access. Used when an admin approves feedback to open an issue. |
+| `GITHUB_REPO` | Server | `owner/repo` approved feedback opens issues in (defaults to `billye2/xpbbs`). |
+| `ADMIN_EMAIL` | Server | The account allowed to review/approve feedback (defaults to the project owner). |
+
+When feedback is approved, an issue is opened in `GITHUB_REPO` containing an
+`@claude` mention so the Claude Code GitHub app picks it up.
+
 ## Setup
 1. Pull env vars from Vercel: `vercel env pull .env.local`
 2. Or manually create `.env.local` with the variables above

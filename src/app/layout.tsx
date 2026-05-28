@@ -4,7 +4,7 @@ import "./globals.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Cubemetrics",
+  title: "XP Boost",
   description: "Your personal productivity hub",
 };
 

@@ -48,9 +48,6 @@ export function AppSearch({ apps }: { apps: AppEntry[] }) {
                 <div className="text-sm font-semibold text-zinc-100">{a.name}</div>
                 <div className="truncate text-xs text-zinc-500">{a.description}</div>
               </div>
-              {a.ui === "classic" && (
-                <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">classic</span>
-              )}
             </Link>
           ))}
         </div>
