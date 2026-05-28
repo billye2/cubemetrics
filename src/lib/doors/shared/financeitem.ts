@@ -7,6 +7,7 @@ import { theme, RESET, BOLD, DIM, FG } from '../../ansi/colors';
 import { menu } from '../../ansi/menu';
 import { sectionHeader } from '../../ansi/header';
 import { padRight, truncate } from '../../ansi/text';
+import { box } from '../../ansi/box';
 
 interface FinanceConfig {
   id: string;
@@ -100,7 +101,7 @@ export function createFinanceDoor(config: FinanceConfig): Door {
   }
 
   async function showItemList(userId: string, supabase: SupabaseClient, page: number): Promise<BBSResponse> {
-    const pageSize = 12;
+    const pageSize = 10;
     const { data, count } = await supabase
       .from('finance_items')
       .select('*', { count: 'exact' })
@@ -110,20 +111,47 @@ export function createFinanceDoor(config: FinanceConfig): Door {
       .range((page - 1) * pageSize, page * pageSize - 1);
 
     const totalPages = Math.max(1, Math.ceil((count || 0) / pageSize));
-    let screen = clear() + `\r\n${sectionHeader(config.name)}\r\n\r\n`;
 
+    const rows: string[] = [''];
     if (!data || data.length === 0) {
-      screen += `  ${DIM}No ${config.itemLabel.toLowerCase()}s yet.${RESET}\r\n`;
+      rows.push(`  ${DIM}No ${config.itemLabel.toLowerCase()}s yet.${RESET}`);
     } else {
+      // Header row
+      let header = `  ${BOLD}`;
+      if (config.hasDueDate) header += padRight('Status', 8);
+      header += padRight('Amount', 12) + padRight('Name', 26) + padRight('Category', 14) + 'ID';
+      header += RESET;
+      rows.push(header);
+      rows.push(`  ${theme.border}${'─'.repeat(62)}${RESET}`);
+
       for (const item of data) {
-        const paid = config.hasDueDate ? (item.paid ? `${BOLD}${FG.green}PAID${RESET}  ` : `${FG.red}DUE ${RESET}  `) : '';
+        let line = '  ';
+        if (config.hasDueDate) {
+          line += item.paid
+            ? `${BOLD}${FG.green}PAID  ${RESET}  `
+            : `${FG.red}DUE   ${RESET}  `;
+        }
         const amt = `$${Number(item.amount).toFixed(2)}`;
-        const cat = item.category ? `${FG.yellow}${item.category}${RESET}  ` : '';
-        screen += `  ${paid}${BOLD}${padRight(amt, 10)}${RESET}  ${padRight(truncate(item.name, 25), 25)}  ${cat}${DIM}#${item.id}${RESET}\r\n`;
+        line += `${BOLD}${padRight(amt, 12)}${RESET}`;
+        line += `${padRight(truncate(item.name, 24), 26)}`;
+        if (item.category) line += `${FG.yellow}${padRight(item.category, 14)}${RESET}`;
+        else line += padRight('', 14);
+        line += `${DIM}#${item.id}${RESET}`;
+        rows.push(line);
       }
     }
+    rows.push('');
 
-    screen += `\r\n  ${DIM}Page ${page}/${totalPages}${RESET}`;
+    let screen = clear() + '\r\n';
+    screen += box(rows, {
+      style: 'single',
+      width: 70,
+      borderColor: theme.border,
+      title: config.name.toUpperCase(),
+      titleColor: theme.title,
+    });
+
+    screen += `\r\n  ${DIM}Page ${page}/${totalPages}  |  ${count || 0} items${RESET}`;
     if (totalPages > 1) screen += `  ${DIM}[N]ext [P]rev${RESET}`;
     screen += `  ${DIM}[Q] Back${RESET}`;
     return { screen, inputMode: 'key' };

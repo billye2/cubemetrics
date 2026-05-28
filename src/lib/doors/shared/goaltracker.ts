@@ -8,6 +8,7 @@ import { menu } from '../../ansi/menu';
 import { sectionHeader } from '../../ansi/header';
 import { padRight, truncate } from '../../ansi/text';
 import { progressBar } from '../../ansi/progress';
+import { box } from '../../ansi/box';
 
 interface GoalConfig {
   id: string;
@@ -100,23 +101,35 @@ export function createGoalDoor(config: GoalConfig): Door {
       .range((page - 1) * pageSize, page * pageSize - 1);
 
     const totalPages = Math.max(1, Math.ceil((count || 0) / pageSize));
-    let screen = clear() + `\r\n${sectionHeader(config.name)}\r\n\r\n`;
 
+    const rows: string[] = [''];
     if (!data || data.length === 0) {
-      screen += `  ${DIM}No ${config.itemLabel.toLowerCase()}s yet.${RESET}\r\n`;
+      rows.push(`  ${DIM}No ${config.itemLabel.toLowerCase()}s yet.${RESET}`);
     } else {
       for (const g of data) {
-        const status = g.status === 'completed' ? `${BOLD}${FG.green}DONE${RESET}` : `${FG.cyan}active${RESET}`;
-        let line = `  ${status}  ${BOLD}${truncate(g.title, 35)}${RESET}`;
+        const status = g.status === 'completed'
+          ? `${BOLD}${FG.green} DONE  ${RESET}`
+          : `${FG.cyan} ACTIVE${RESET}`;
+        let line = `  ${status}  ${BOLD}${padRight(truncate(g.title, 30), 30)}${RESET}`;
         if (config.hasTarget !== false && g.target_value) {
-          line += `  ${progressBar(Number(g.current_value), Number(g.target_value), 15)}`;
+          line += `  ${progressBar(Number(g.current_value), Number(g.target_value), 12)}`;
         }
         line += `  ${DIM}#${g.id}${RESET}`;
-        screen += line + '\r\n';
+        rows.push(line);
       }
     }
+    rows.push('');
 
-    screen += `\r\n  ${DIM}Page ${page}/${totalPages}${RESET}`;
+    let screen = clear() + '\r\n';
+    screen += box(rows, {
+      style: 'single',
+      width: 70,
+      borderColor: theme.border,
+      title: config.name.toUpperCase(),
+      titleColor: theme.title,
+    });
+
+    screen += `\r\n  ${DIM}Page ${page}/${totalPages}  |  ${count || 0} items${RESET}`;
     if (totalPages > 1) screen += `  ${DIM}[N]ext [P]rev${RESET}`;
     screen += `  ${DIM}[Q] Back${RESET}`;
     return { screen, inputMode: 'key' };

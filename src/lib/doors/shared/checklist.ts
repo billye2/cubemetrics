@@ -5,8 +5,8 @@ import { updateSession } from '../../bbs/session';
 import { clear } from '../../ansi/screen';
 import { theme, RESET, BOLD, DIM, FG } from '../../ansi/colors';
 import { menu } from '../../ansi/menu';
-import { sectionHeader } from '../../ansi/header';
 import { padRight, truncate } from '../../ansi/text';
+import { box } from '../../ansi/box';
 
 interface ChecklistConfig {
   id: string;
@@ -41,30 +41,60 @@ export function createChecklistDoor(config: ChecklistConfig): Door {
         default: {
           if (loc.startsWith(`${doorPrefix}:list`))
             return handleList(input, userId, session, supabase);
-          return showMenu();
+          return showMenu(userId, supabase);
         }
       }
     },
   };
 
-  function showMenu(): BBSResponse {
-    return {
-      screen: clear() + '\r\n' + menu({
-        title: config.name.toUpperCase(),
-        items: [
-          { key: '1', label: `View ${config.name}` },
-          { key: '2', label: `Add ${config.itemLabel}` },
-          { key: '3', label: `Check Off ${config.itemLabel}` },
-          { key: '4', label: `Remove ${config.itemLabel}` },
-          { key: 'Q', label: 'Back' },
-        ],
-      }),
-      inputMode: 'key',
-    };
+  async function showMenu(userId: string, supabase: SupabaseClient): Promise<BBSResponse> {
+    const { count: total } = await supabase
+      .from('checklists')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('list_type', config.listType);
+    const { count: done } = await supabase
+      .from('checklists')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('list_type', config.listType)
+      .eq('completed', true);
+
+    let screen = clear() + '\r\n';
+
+    if (total && total > 0) {
+      const summaryLines = [
+        '',
+        `  ${theme.info}Total:${RESET}     ${BOLD}${total}${RESET} items`,
+        `  ${theme.info}Done:${RESET}      ${BOLD}${FG.green}${done || 0}${RESET}`,
+        `  ${theme.info}Remaining:${RESET} ${BOLD}${(total || 0) - (done || 0)}${RESET}`,
+        '',
+      ];
+      screen += box(summaryLines, {
+        style: 'single',
+        width: 36,
+        borderColor: theme.border,
+        title: 'SUMMARY',
+        titleColor: theme.title,
+      });
+      screen += '\r\n';
+    }
+
+    screen += menu({
+      title: config.name.toUpperCase(),
+      items: [
+        { key: '1', label: `View ${config.name}` },
+        { key: '2', label: `Add ${config.itemLabel}` },
+        { key: '3', label: `Check Off ${config.itemLabel}` },
+        { key: '4', label: `Remove ${config.itemLabel}` },
+        { key: 'Q', label: 'Back' },
+      ],
+    });
+    return { screen, inputMode: 'key' };
   }
 
   async function handleMenu(input: string, inputType: InputType, userId: string, session: BBSSession, supabase: SupabaseClient): Promise<BBSResponse> {
-    if (inputType === 'refresh') return showMenu();
+    if (inputType === 'refresh') return showMenu(userId, supabase);
     switch (input.toUpperCase()) {
       case '1': {
         await updateSession(supabase, userId, { current_location: `${doorPrefix}:list:1` });
@@ -82,7 +112,7 @@ export function createChecklistDoor(config: ChecklistConfig): Door {
         await updateSession(supabase, userId, { current_location: `${doorPrefix}:delete` });
         return { screen: '', inputMode: 'line', prompt: `\r\n  ${theme.prompt}# to remove: ${RESET}` };
       }
-      default: return showMenu();
+      default: return showMenu(userId, supabase);
     }
   }
 
@@ -99,17 +129,31 @@ export function createChecklistDoor(config: ChecklistConfig): Door {
       .range((page - 1) * pageSize, page * pageSize - 1);
 
     const totalPages = Math.max(1, Math.ceil((count || 0) / pageSize));
-    let screen = clear() + `\r\n${sectionHeader(config.name)}\r\n\r\n`;
 
+    const rows: string[] = [''];
     if (!data || data.length === 0) {
-      screen += `  ${DIM}Empty list.${RESET}\r\n`;
+      rows.push(`  ${DIM}Empty list. Add something!${RESET}`);
     } else {
       for (const item of data) {
-        const check = item.completed ? `${BOLD}${FG.green}[x]${RESET}` : `${DIM}[ ]${RESET}`;
-        const title = item.completed ? `${DIM}${item.title}${RESET}` : `${FG.white}${item.title}${RESET}`;
-        screen += `  ${check} ${padRight(truncate(title, 55), 55)} ${DIM}#${item.id}${RESET}\r\n`;
+        const check = item.completed
+          ? `${BOLD}${FG.green}[x]${RESET}`
+          : `${FG.white}[ ]${RESET}`;
+        const title = item.completed
+          ? `${DIM}${item.title}${RESET}`
+          : `${FG.white}${item.title}${RESET}`;
+        rows.push(`  ${check}  ${padRight(truncate(title, 48), 48)}  ${DIM}#${item.id}${RESET}`);
       }
     }
+    rows.push('');
+
+    let screen = clear() + '\r\n';
+    screen += box(rows, {
+      style: 'single',
+      width: 66,
+      borderColor: theme.border,
+      title: config.name.toUpperCase(),
+      titleColor: theme.title,
+    });
 
     screen += `\r\n  ${DIM}Page ${page}/${totalPages}  |  ${count || 0} items${RESET}`;
     if (totalPages > 1) screen += `  ${DIM}[N]ext [P]rev${RESET}`;
@@ -123,7 +167,7 @@ export function createChecklistDoor(config: ChecklistConfig): Door {
     const key = input.toUpperCase();
     if (key === 'Q' || key === 'X') {
       await updateSession(supabase, userId, { current_location: doorPrefix });
-      return showMenu();
+      return showMenu(userId, supabase);
     }
     if (key === 'N') page++;
     if (key === 'P' && page > 1) page--;
@@ -134,7 +178,7 @@ export function createChecklistDoor(config: ChecklistConfig): Door {
   async function handleAdd(input: string, userId: string, session: BBSSession, supabase: SupabaseClient): Promise<BBSResponse> {
     const title = input.trim();
     await updateSession(supabase, userId, { current_location: doorPrefix });
-    if (!title) return showMenu();
+    if (!title) return showMenu(userId, supabase);
     await supabase.from('checklists').insert({ user_id: userId, list_type: config.listType, title });
     return {
       screen: `\r\n  ${theme.success}Added: ${BOLD}${title}${RESET}\r\n  ${DIM}Press any key...${RESET}`,

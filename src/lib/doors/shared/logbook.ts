@@ -5,9 +5,8 @@ import { updateSession } from '../../bbs/session';
 import { clear } from '../../ansi/screen';
 import { theme, RESET, BOLD, DIM, FG } from '../../ansi/colors';
 import { menu } from '../../ansi/menu';
-import { sectionHeader } from '../../ansi/header';
-import { truncate } from '../../ansi/text';
-import { horizontalLine } from '../../ansi/box';
+import { truncate, padRight, wordWrap } from '../../ansi/text';
+import { box } from '../../ansi/box';
 
 interface LogbookConfig {
   id: string;
@@ -88,7 +87,7 @@ export function createLogbookDoor(config: LogbookConfig): Door {
   }
 
   async function showList(userId: string, supabase: SupabaseClient, page: number): Promise<BBSResponse> {
-    const pageSize = 12;
+    const pageSize = 10;
     const { data, count } = await supabase
       .from('logs')
       .select('*', { count: 'exact' })
@@ -99,21 +98,33 @@ export function createLogbookDoor(config: LogbookConfig): Door {
       .range((page - 1) * pageSize, page * pageSize - 1);
 
     const totalPages = Math.max(1, Math.ceil((count || 0) / pageSize));
-    let screen = clear() + `\r\n${sectionHeader(config.name)}\r\n\r\n`;
 
+    const rows: string[] = [''];
     if (!data || data.length === 0) {
-      screen += `  ${DIM}No entries yet.${RESET}\r\n`;
+      rows.push(`  ${DIM}No entries yet. Start writing!${RESET}`);
     } else {
+      rows.push(`  ${BOLD}${padRight('Date', 14)}${padRight('Title / Preview', 42)}ID${RESET}`);
+      rows.push(`  ${theme.border}${'─'.repeat(62)}${RESET}`);
       for (const entry of data) {
         const date = new Date(entry.entry_date).toLocaleDateString();
-        const title = entry.title || truncate(entry.body, 45);
-        screen += `  ${FG.cyan}${date}${RESET}  ${BOLD}${truncate(title, 50)}${RESET}  ${DIM}#${entry.id}${RESET}\r\n`;
+        const title = entry.title || truncate(entry.body, 40);
+        rows.push(`  ${FG.cyan}${padRight(date, 14)}${RESET}${padRight(truncate(title, 40), 42)}${DIM}#${entry.id}${RESET}`);
       }
     }
+    rows.push('');
 
-    screen += `\r\n  ${DIM}Page ${page}/${totalPages}  |  Enter # to read  |  ${RESET}`;
-    if (totalPages > 1) screen += `${DIM}[N]ext [P]rev  |  ${RESET}`;
-    screen += `${DIM}[Q] Back${RESET}`;
+    let screen = clear() + '\r\n';
+    screen += box(rows, {
+      style: 'single',
+      width: 70,
+      borderColor: theme.border,
+      title: config.name.toUpperCase(),
+      titleColor: theme.title,
+    });
+
+    screen += `\r\n  ${DIM}Enter # to read  |  Page ${page}/${totalPages}${RESET}`;
+    if (totalPages > 1) screen += `  ${DIM}[N]ext [P]rev${RESET}`;
+    screen += `  ${DIM}[Q] Back${RESET}`;
     return { screen, inputMode: 'key' };
   }
 
@@ -133,20 +144,46 @@ export function createLogbookDoor(config: LogbookConfig): Door {
       const { data } = await supabase.from('logs').select('*').eq('id', num).eq('user_id', userId).single();
       if (data) {
         await updateSession(supabase, userId, { current_location: `${doorPrefix}:view:${num}` });
-        let screen = clear() + '\r\n';
-        if (data.title) screen += `  ${BOLD}${FG.yellow}${data.title}${RESET}\r\n`;
-        screen += `  ${DIM}${new Date(data.entry_date).toLocaleDateString()}${RESET}\r\n`;
-        screen += `  ${theme.border}${horizontalLine({ width: 60 })}${RESET}\r\n\r\n`;
-        for (const line of data.body.split('\n')) {
-          screen += `  ${FG.white}${line}${RESET}\r\n`;
-        }
-        screen += `\r\n  ${DIM}Press any key to go back${RESET}`;
-        return { screen, inputMode: 'key' };
+        return showEntry(data);
       }
     }
 
     await updateSession(supabase, userId, { current_location: `${doorPrefix}:list:${page}` });
     return showList(userId, supabase, page);
+  }
+
+  function showEntry(data: Record<string, unknown>): BBSResponse {
+    const date = new Date(data.entry_date as string).toLocaleDateString('en-US', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    });
+
+    const contentLines: string[] = [''];
+    if (data.title) {
+      contentLines.push(`  ${BOLD}${FG.yellow}${data.title}${RESET}`);
+    }
+    contentLines.push(`  ${DIM}${date}${RESET}`);
+    contentLines.push(`  ${theme.border}${'─'.repeat(56)}${RESET}`);
+    contentLines.push('');
+
+    const body = data.body as string;
+    for (const paragraph of body.split('\n')) {
+      const wrapped = wordWrap(paragraph, 56);
+      for (const line of wrapped) {
+        contentLines.push(`  ${FG.white}${line}${RESET}`);
+      }
+    }
+    contentLines.push('');
+
+    let screen = clear() + '\r\n';
+    screen += box(contentLines, {
+      style: 'double',
+      width: 64,
+      borderColor: theme.border,
+      title: config.entryLabel.toUpperCase(),
+      titleColor: theme.title,
+    });
+    screen += `\r\n  ${DIM}Press any key to go back${RESET}`;
+    return { screen, inputMode: 'key' };
   }
 
   async function handleView(input: string, userId: string, session: BBSSession, supabase: SupabaseClient): Promise<BBSResponse> {

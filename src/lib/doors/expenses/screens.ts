@@ -3,6 +3,7 @@ import { theme, RESET, BOLD, DIM, FG } from '../../ansi/colors';
 import { menu } from '../../ansi/menu';
 import { sectionHeader } from '../../ansi/header';
 import { padRight, truncate } from '../../ansi/text';
+import { box } from '../../ansi/box';
 import { CATEGORIES } from './queries';
 import type { Expense } from './queries';
 
@@ -21,41 +22,66 @@ export function expensesMenu(): string {
 
 export function expenseList(expenses: Expense[], total: number, page: number, pageSize: number): string {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  let screen = clear() + `\r\n${sectionHeader('EXPENSES')}\r\n\r\n`;
 
+  const rows: string[] = [''];
   if (expenses.length === 0) {
-    screen += `  ${DIM}No expenses recorded.${RESET}\r\n`;
+    rows.push(`  ${DIM}No expenses recorded.${RESET}`);
   } else {
+    rows.push(`  ${BOLD}${padRight('Date', 14)}${padRight('Amount', 12)}${padRight('Category', 14)}Description${RESET}`);
+    rows.push(`  ${theme.border}${'─'.repeat(62)}${RESET}`);
     for (const e of expenses) {
       const date = new Date(e.expense_date).toLocaleDateString();
       const amt = `$${Number(e.amount).toFixed(2)}`;
-      const desc = e.description ? truncate(e.description, 25) : '';
-      screen += `  ${FG.cyan}${date}${RESET}  ${BOLD}${padRight(amt, 10)}${RESET}  ${FG.yellow}${padRight(e.category, 14)}${RESET}  ${DIM}${desc}${RESET}  ${DIM}#${e.id}${RESET}\r\n`;
+      const desc = e.description ? truncate(e.description, 20) : '';
+      rows.push(`  ${FG.cyan}${padRight(date, 14)}${RESET}${BOLD}${padRight(amt, 12)}${RESET}${FG.yellow}${padRight(e.category, 14)}${RESET}${DIM}${desc}${RESET}  ${DIM}#${e.id}${RESET}`);
     }
   }
+  rows.push('');
+
+  let screen = clear() + '\r\n';
+  screen += box(rows, {
+    style: 'single',
+    width: 72,
+    borderColor: theme.border,
+    title: 'EXPENSES',
+    titleColor: theme.title,
+  });
 
   screen += `\r\n  ${DIM}Page ${page}/${totalPages}  |  ${total} expenses${RESET}`;
   if (totalPages > 1) screen += `  ${DIM}[N]ext [P]rev${RESET}`;
-  screen += `\r\n  ${DIM}Q to go back${RESET}`;
+  screen += `  ${DIM}[Q] Back${RESET}`;
   return screen;
 }
 
 export function monthlySummary(items: { category: string; total: number }[]): string {
   const now = new Date();
   const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  let screen = clear() + `\r\n${sectionHeader(`${monthName} SUMMARY`)}\r\n\r\n`;
 
+  const rows: string[] = [''];
   if (items.length === 0) {
-    screen += `  ${DIM}No expenses this month.${RESET}\r\n`;
+    rows.push(`  ${DIM}No expenses this month.${RESET}`);
   } else {
     let grandTotal = 0;
+    const maxAmt = Math.max(...items.map(i => i.total));
     for (const item of items) {
       grandTotal += item.total;
-      screen += `  ${padRight(`${FG.yellow}${item.category}${RESET}`, 20)}  ${BOLD}$${item.total.toFixed(2)}${RESET}\r\n`;
+      const barLen = Math.round((item.total / maxAmt) * 20);
+      const bar = `${FG.cyan}${'█'.repeat(barLen)}${RESET}`;
+      rows.push(`  ${FG.yellow}${padRight(item.category, 16)}${RESET} ${BOLD}${padRight('$' + item.total.toFixed(2), 10)}${RESET} ${bar}`);
     }
-    screen += `  ${theme.border}${'─'.repeat(32)}${RESET}\r\n`;
-    screen += `  ${padRight(`${BOLD}TOTAL${RESET}`, 20)}  ${BOLD}${FG.green}$${grandTotal.toFixed(2)}${RESET}\r\n`;
+    rows.push(`  ${theme.border}${'─'.repeat(48)}${RESET}`);
+    rows.push(`  ${BOLD}${padRight('TOTAL', 16)} ${FG.green}$${grandTotal.toFixed(2)}${RESET}`);
   }
+  rows.push('');
+
+  let screen = clear() + '\r\n';
+  screen += box(rows, {
+    style: 'double',
+    width: 54,
+    borderColor: theme.border,
+    title: monthName.toUpperCase(),
+    titleColor: theme.title,
+  });
 
   screen += `\r\n  ${DIM}Press any key to go back${RESET}`;
   return screen;
