@@ -1,26 +1,34 @@
 import { RESET, BOLD, FG, DIM, REVERSE, BG } from './colors';
-import { COLS } from './screen';
+import { currentCols } from './context';
 import { padRight, visibleLength } from './text';
 
 export function statusBar(location: string, handle: string): string {
-  const breadcrumb = formatBreadcrumb(location);
+  const cols = currentCols();
+  const narrow = cols <= 40;
+  const breadcrumb = formatBreadcrumb(location, narrow);
   const inDoor = location.startsWith('door:') && !location.startsWith('door:feedback');
-  const hint = inDoor ? '!=Feedback  Q=Back' : 'Q=Back';
-  const user = handle;
+  const hint = narrow
+    ? (inDoor ? '!=FB Q=Bk' : 'Q=Bk')
+    : (inDoor ? '!=Feedback  Q=Back' : 'Q=Back');
+  const user = narrow ? '' : handle;
 
-  const middle = COLS - visibleLength(breadcrumb) - visibleLength(user) - visibleLength(hint) - 6;
+  const middle = cols - visibleLength(breadcrumb) - visibleLength(user) - visibleLength(hint) - (narrow ? 4 : 6);
   const spacer = ' '.repeat(Math.max(1, middle));
+  const userBlock = narrow ? '' : `${FG.white}${user}  `;
 
-  return `\r\n${BG.blue}${FG.white}${BOLD} ${breadcrumb} ${RESET}${BG.blue}${spacer}${FG.white}${user}  ${DIM}${hint} ${RESET}`;
+  return `\r\n${BG.blue}${FG.white}${BOLD} ${breadcrumb} ${RESET}${BG.blue}${spacer}${userBlock}${DIM}${hint} ${RESET}`;
 }
 
-function formatBreadcrumb(location: string): string {
-  if (location === 'main_menu') return 'Main Menu';
-  if (location === 'profile') return 'Main > Profile';
-  if (location.startsWith('profile:')) return `Main > Profile > ${location.split(':')[1]}`;
+function formatBreadcrumb(location: string, narrow = false): string {
+  if (location === 'main_menu') return narrow ? 'Main' : 'Main Menu';
+  if (location === 'profile') return narrow ? 'Profile' : 'Main > Profile';
+  if (location.startsWith('profile:')) {
+    const sub = location.split(':')[1];
+    return narrow ? `Profile > ${sub}` : `Main > Profile > ${sub}`;
+  }
   if (location.startsWith('category:')) {
     const cat = location.replace('category:', '');
-    return `Main > ${formatCategoryName(cat)}`;
+    return narrow ? formatCategoryName(cat) : `Main > ${formatCategoryName(cat)}`;
   }
   if (location.startsWith('door:')) {
     const parts = location.split(':');
