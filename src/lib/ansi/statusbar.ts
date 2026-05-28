@@ -4,7 +4,8 @@ import { padRight, visibleLength } from './text';
 
 export function statusBar(location: string, handle: string): string {
   const breadcrumb = formatBreadcrumb(location);
-  const hint = 'Q=Back';
+  const inDoor = location.startsWith('door:') && !location.startsWith('door:feedback');
+  const hint = inDoor ? '!=Feedback  Q=Back' : 'Q=Back';
   const user = handle;
 
   const middle = COLS - visibleLength(breadcrumb) - visibleLength(user) - visibleLength(hint) - 6;
