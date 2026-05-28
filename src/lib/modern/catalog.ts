@@ -1,104 +1,140 @@
+export type UiType =
+  | "modern"
+  | "tracker"
+  | "checklist"
+  | "logbook"
+  | "goal"
+  | "finance"
+  | "classic";
+
 export interface AppEntry {
   id: string;
   name: string;
   category: string;
   description: string;
   icon: string;
-  modern: boolean;
+  ui: UiType;
+  config?: FactoryConfig;
+}
+
+export interface FactoryConfig {
+  // tracker
+  trackerType?: string;
+  unit?: string;
+  labels?: string[];
+  min?: number;
+  max?: number;
+  // checklist
+  listType?: string;
+  itemLabel?: string;
+  // logbook
+  logType?: string;
+  entryLabel?: string;
+  hasTitle?: boolean;
+  // goal
+  goalType?: string;
+  hasTarget?: boolean;
+  // finance
+  itemType?: string;
+  hasDueDate?: boolean;
+  hasAmount?: boolean;
 }
 
 export const CATEGORIES: { id: string; label: string }[] = [
-  { id: 'time', label: 'Time & Focus' },
-  { id: 'tasks', label: 'Tasks & Planning' },
-  { id: 'goals', label: 'Goals & Progress' },
-  { id: 'habits', label: 'Habits & Wellness' },
-  { id: 'notes', label: 'Notes & Thinking' },
-  { id: 'finance', label: 'Finance' },
-  { id: 'learning', label: 'Learning & Reading' },
-  { id: 'org', label: 'Organization' },
-  { id: 'work', label: 'Work & Collaboration' },
-  { id: 'lifestyle', label: 'Lifestyle' },
+  { id: "time", label: "Time & Focus" },
+  { id: "tasks", label: "Tasks & Planning" },
+  { id: "goals", label: "Goals & Progress" },
+  { id: "habits", label: "Habits & Wellness" },
+  { id: "notes", label: "Notes & Thinking" },
+  { id: "finance", label: "Finance" },
+  { id: "learning", label: "Learning & Reading" },
+  { id: "org", label: "Organization" },
+  { id: "work", label: "Work & Collaboration" },
+  { id: "lifestyle", label: "Lifestyle" },
 ];
 
 export const APPS: AppEntry[] = [
-  { id: 'todo', name: 'Todo', category: 'tasks', icon: '✓', description: 'Tasks and priorities', modern: true },
-  { id: 'journal', name: 'Journal', category: 'notes', icon: '✎', description: 'Daily entries', modern: true },
-  { id: 'feedback', name: 'Feedback', category: 'work', icon: '✦', description: 'Suggestions for the product', modern: true },
+  // Fully modern (custom pages)
+  { id: "todo", name: "Todo", category: "tasks", icon: "✓", description: "Tasks and priorities", ui: "modern" },
+  { id: "journal", name: "Journal", category: "notes", icon: "✎", description: "Daily entries", ui: "modern" },
+  { id: "feedback", name: "Feedback", category: "work", icon: "✦", description: "Suggestions for the product", ui: "modern" },
+  { id: "notes", name: "Notes", category: "notes", icon: "✐", description: "Quick notes", ui: "modern" },
 
-  { id: 'pomodoro', name: 'Pomodoro', category: 'time', icon: '⏱', description: 'Focus timer', modern: false },
-  { id: 'focus', name: 'Focus', category: 'time', icon: '◉', description: 'Deep work sessions', modern: false },
-  { id: 'timetracker', name: 'Time Tracker', category: 'time', icon: '⌚', description: 'Track where time goes', modern: false },
-  { id: 'countdown', name: 'Countdown', category: 'time', icon: '⏳', description: 'Important dates', modern: false },
-  { id: 'meditation', name: 'Meditation', category: 'time', icon: '☯', description: 'Mindfulness sessions', modern: false },
-  { id: 'stopwatch', name: 'Stopwatch', category: 'time', icon: '⏲', description: 'Time anything', modern: false },
+  // Trackers
+  { id: "mood", name: "Mood", category: "habits", icon: "☺", description: "How you feel", ui: "tracker", config: { trackerType: "mood", labels: ["Awful", "Bad", "Meh", "Okay", "Good", "Great"], min: 0, max: 5 } },
+  { id: "water", name: "Water", category: "habits", icon: "◐", description: "Glasses of water", ui: "tracker", config: { trackerType: "water", unit: "glasses", min: 0, max: 16 } },
+  { id: "sleep", name: "Sleep", category: "habits", icon: "☾", description: "Hours of sleep", ui: "tracker", config: { trackerType: "sleep", unit: "hours", min: 0, max: 14 } },
+  { id: "energy", name: "Energy", category: "habits", icon: "✸", description: "Energy level", ui: "tracker", config: { trackerType: "energy", labels: ["Drained", "Low", "Okay", "Good", "High"], min: 0, max: 4 } },
+  { id: "weight", name: "Weight", category: "habits", icon: "⚖", description: "Weight log", ui: "tracker", config: { trackerType: "weight", unit: "lbs", min: 0, max: 500 } },
+  { id: "screentime", name: "Screen Time", category: "habits", icon: "▢", description: "Hours on screens", ui: "tracker", config: { trackerType: "screentime", unit: "hours", min: 0, max: 24 } },
+  { id: "writingtracker", name: "Writing", category: "notes", icon: "✑", description: "Words written today", ui: "tracker", config: { trackerType: "writing", unit: "words", min: 0, max: 100000 } },
 
-  { id: 'dailyplanner', name: 'Daily Planner', category: 'tasks', icon: '☰', description: 'Plan your day', modern: false },
-  { id: 'weeklyreview', name: 'Weekly Review', category: 'tasks', icon: '⌗', description: 'Reflect each week', modern: false },
-  { id: 'routines', name: 'Routines', category: 'tasks', icon: '⟳', description: 'Recurring sequences', modern: false },
-  { id: 'backlog', name: 'Backlog', category: 'tasks', icon: '☷', description: 'Someday/maybe', modern: false },
+  // Checklists
+  { id: "grocery", name: "Grocery", category: "org", icon: "◍", description: "Shopping list", ui: "checklist", config: { listType: "grocery", itemLabel: "Item" } },
+  { id: "wishlist", name: "Wishlist", category: "org", icon: "★", description: "Things to buy", ui: "checklist", config: { listType: "wishlist", itemLabel: "Item" } },
+  { id: "packing", name: "Packing", category: "lifestyle", icon: "☐", description: "Packing lists", ui: "checklist", config: { listType: "packing", itemLabel: "Item" } },
+  { id: "bucketlist", name: "Bucket List", category: "goals", icon: "☑", description: "Life list", ui: "checklist", config: { listType: "bucket", itemLabel: "Goal" } },
+  { id: "bookmarks", name: "Bookmarks", category: "org", icon: "☖", description: "Saved links", ui: "checklist", config: { listType: "bookmark", itemLabel: "Bookmark" } },
+  { id: "backlog", name: "Backlog", category: "tasks", icon: "☷", description: "Someday/maybe", ui: "checklist", config: { listType: "backlog", itemLabel: "Item" } },
+  { id: "contacts", name: "Contacts", category: "org", icon: "☻", description: "People", ui: "checklist", config: { listType: "contacts", itemLabel: "Contact" } },
+  { id: "inventory", name: "Inventory", category: "org", icon: "▦", description: "Things you own", ui: "checklist", config: { listType: "inventory", itemLabel: "Item" } },
+  { id: "fileindex", name: "File Index", category: "org", icon: "☰", description: "File catalog", ui: "checklist", config: { listType: "fileindex", itemLabel: "File" } },
+  { id: "homemaint", name: "Home", category: "lifestyle", icon: "⌂", description: "Home maintenance", ui: "checklist", config: { listType: "homemaint", itemLabel: "Task" } },
+  { id: "cleaning", name: "Cleaning", category: "lifestyle", icon: "✦", description: "Cleaning schedule", ui: "checklist", config: { listType: "cleaning", itemLabel: "Task" } },
+  { id: "plantcare", name: "Plants", category: "lifestyle", icon: "✿", description: "Plant care", ui: "checklist", config: { listType: "plantcare", itemLabel: "Plant" } },
+  { id: "petcare", name: "Pets", category: "lifestyle", icon: "♥", description: "Pet care", ui: "checklist", config: { listType: "petcare", itemLabel: "Task" } },
+  { id: "warranty", name: "Warranties", category: "lifestyle", icon: "☖", description: "Warranty tracking", ui: "checklist", config: { listType: "warranty", itemLabel: "Warranty" } },
+  { id: "travelplanner", name: "Travel", category: "lifestyle", icon: "✈", description: "Trip planning", ui: "checklist", config: { listType: "travel", itemLabel: "Item" } },
+  { id: "vocabulary", name: "Vocabulary", category: "learning", icon: "✦", description: "Words to learn", ui: "checklist", config: { listType: "vocab", itemLabel: "Word" } },
+  { id: "routines", name: "Routines", category: "tasks", icon: "⟳", description: "Recurring sequences", ui: "checklist", config: { listType: "routine", itemLabel: "Routine" } },
+  { id: "dailyplanner", name: "Daily Planner", category: "tasks", icon: "☰", description: "Today's plan", ui: "checklist", config: { listType: "dailyplan", itemLabel: "Item" } },
+  { id: "visionboard", name: "Vision Board", category: "goals", icon: "✧", description: "Where you're heading", ui: "checklist", config: { listType: "vision", itemLabel: "Vision" } },
+  { id: "flashcards", name: "Flashcards", category: "notes", icon: "◫", description: "Cards to review", ui: "checklist", config: { listType: "flashcard", itemLabel: "Card" } },
+  { id: "mealplanner", name: "Meals", category: "habits", icon: "◍", description: "Meal planning", ui: "checklist", config: { listType: "meal", itemLabel: "Meal" } },
+  { id: "clienttracker", name: "Clients", category: "work", icon: "◉", description: "Client work", ui: "checklist", config: { listType: "client", itemLabel: "Client" } },
 
-  { id: 'goals', name: 'Goals', category: 'goals', icon: '◎', description: 'Long-term goals', modern: false },
-  { id: 'okr', name: 'OKRs', category: 'goals', icon: '◈', description: 'Objectives & key results', modern: false },
-  { id: 'streaks', name: 'Streaks', category: 'goals', icon: '⚡', description: 'Consecutive days', modern: false },
-  { id: 'milestones', name: 'Milestones', category: 'goals', icon: '◆', description: 'Big wins', modern: false },
-  { id: 'visionboard', name: 'Vision Board', category: 'goals', icon: '✧', description: 'Where you’re heading', modern: false },
-  { id: 'bucketlist', name: 'Bucket List', category: 'goals', icon: '☑', description: 'Life list', modern: false },
+  // Logbooks
+  { id: "gratitude", name: "Gratitude", category: "habits", icon: "♥", description: "Daily gratitude", ui: "logbook", config: { logType: "gratitude", entryLabel: "Entry", hasTitle: false } },
+  { id: "meeting", name: "Meetings", category: "notes", icon: "☻", description: "Meeting notes", ui: "logbook", config: { logType: "meeting", entryLabel: "Meeting", hasTitle: true } },
+  { id: "standup", name: "Standups", category: "notes", icon: "⌂", description: "Daily standups", ui: "logbook", config: { logType: "standup", entryLabel: "Standup", hasTitle: false } },
+  { id: "brainstorm", name: "Brainstorm", category: "notes", icon: "✺", description: "Idea sessions", ui: "logbook", config: { logType: "brainstorm", entryLabel: "Session", hasTitle: true } },
+  { id: "decisionmatrix", name: "Decisions", category: "notes", icon: "◰", description: "Decisions log", ui: "logbook", config: { logType: "decision", entryLabel: "Decision", hasTitle: true } },
+  { id: "workout", name: "Workout", category: "habits", icon: "✚", description: "Training log", ui: "logbook", config: { logType: "workout", entryLabel: "Workout", hasTitle: true } },
+  { id: "learninglog", name: "Learning Log", category: "learning", icon: "✦", description: "What you learned", ui: "logbook", config: { logType: "learning", entryLabel: "Lesson", hasTitle: true } },
+  { id: "weeklyreview", name: "Weekly Review", category: "tasks", icon: "⌗", description: "Reflect each week", ui: "logbook", config: { logType: "weekly", entryLabel: "Review", hasTitle: true } },
+  { id: "feedbacklog", name: "Feedback Log", category: "work", icon: "✎", description: "Feedback given/received", ui: "logbook", config: { logType: "feedbacklog", entryLabel: "Entry", hasTitle: true } },
+  { id: "oneononep", name: "1-on-1s", category: "work", icon: "☷", description: "1:1 notes", ui: "logbook", config: { logType: "oneonone", entryLabel: "Meeting", hasTitle: true } },
+  { id: "retro", name: "Retro", category: "work", icon: "⟲", description: "Team retros", ui: "logbook", config: { logType: "retro", entryLabel: "Retro", hasTitle: true } },
+  { id: "recipes", name: "Recipes", category: "lifestyle", icon: "◍", description: "Recipe collection", ui: "logbook", config: { logType: "recipe", entryLabel: "Recipe", hasTitle: true } },
 
-  { id: 'habits', name: 'Habits', category: 'habits', icon: '⊙', description: 'Daily habits', modern: false },
-  { id: 'mood', name: 'Mood', category: 'habits', icon: '☺', description: 'How you feel', modern: false },
-  { id: 'water', name: 'Water', category: 'habits', icon: '◐', description: 'Hydration log', modern: false },
-  { id: 'sleep', name: 'Sleep', category: 'habits', icon: '☾', description: 'Sleep tracking', modern: false },
-  { id: 'energy', name: 'Energy', category: 'habits', icon: '✸', description: 'Energy levels', modern: false },
-  { id: 'weight', name: 'Weight', category: 'habits', icon: '⚖', description: 'Weight log', modern: false },
-  { id: 'workout', name: 'Workout', category: 'habits', icon: '✚', description: 'Training log', modern: false },
-  { id: 'mealplanner', name: 'Meals', category: 'habits', icon: '◍', description: 'Meal planning', modern: false },
-  { id: 'screentime', name: 'Screen Time', category: 'habits', icon: '▢', description: 'Digital usage', modern: false },
-  { id: 'gratitude', name: 'Gratitude', category: 'habits', icon: '♥', description: 'Daily gratitude', modern: false },
+  // Goals
+  { id: "goals", name: "Goals", category: "goals", icon: "◎", description: "Long-term goals", ui: "goal", config: { goalType: "smart", hasTarget: true } },
+  { id: "okr", name: "OKRs", category: "goals", icon: "◈", description: "Objectives & key results", ui: "goal", config: { goalType: "okr", hasTarget: true } },
+  { id: "milestones", name: "Milestones", category: "goals", icon: "◆", description: "Big wins", ui: "goal", config: { goalType: "milestone", hasTarget: false } },
+  { id: "streaks", name: "Streaks", category: "goals", icon: "⚡", description: "Consecutive days", ui: "goal", config: { goalType: "streak", hasTarget: false } },
+  { id: "courses", name: "Courses", category: "learning", icon: "◧", description: "Course tracking", ui: "goal", config: { goalType: "course", hasTarget: true } },
+  { id: "skilltree", name: "Skill Tree", category: "learning", icon: "⌬", description: "Skills to build", ui: "goal", config: { goalType: "skill", hasTarget: false } },
+  { id: "projecttracker", name: "Projects", category: "work", icon: "◧", description: "Project status", ui: "goal", config: { goalType: "project", hasTarget: false } },
+  { id: "savings", name: "Savings", category: "finance", icon: "◯", description: "Savings goals", ui: "goal", config: { goalType: "savings", hasTarget: true } },
+  { id: "debtpayoff", name: "Debt", category: "finance", icon: "⊠", description: "Payoff plan", ui: "goal", config: { goalType: "debt", hasTarget: true } },
 
-  { id: 'notes', name: 'Notes', category: 'notes', icon: '✐', description: 'Quick notes', modern: false },
-  { id: 'meeting', name: 'Meetings', category: 'notes', icon: '☻', description: 'Meeting notes', modern: false },
-  { id: 'standup', name: 'Standups', category: 'notes', icon: '⌂', description: 'Daily standups', modern: false },
-  { id: 'brainstorm', name: 'Brainstorm', category: 'notes', icon: '✺', description: 'Idea sessions', modern: false },
-  { id: 'flashcards', name: 'Flashcards', category: 'notes', icon: '◫', description: 'Spaced repetition', modern: false },
-  { id: 'writingtracker', name: 'Writing', category: 'notes', icon: '✑', description: 'Writing progress', modern: false },
-  { id: 'decisionmatrix', name: 'Decisions', category: 'notes', icon: '◰', description: 'Weighted decisions', modern: false },
+  // Finance items
+  { id: "budget", name: "Budget", category: "finance", icon: "⊟", description: "Monthly budget", ui: "finance", config: { itemType: "budget", hasAmount: true } },
+  { id: "bills", name: "Bills", category: "finance", icon: "⌗", description: "Bills due", ui: "finance", config: { itemType: "bill", hasAmount: true, hasDueDate: true } },
+  { id: "subscriptions", name: "Subscriptions", category: "finance", icon: "⟳", description: "Recurring charges", ui: "finance", config: { itemType: "subscription", hasAmount: true } },
+  { id: "invoices", name: "Invoices", category: "work", icon: "⌗", description: "Billing", ui: "finance", config: { itemType: "invoice", hasAmount: true, hasDueDate: true } },
 
-  { id: 'expenses', name: 'Expenses', category: 'finance', icon: '⟢', description: 'Track spending', modern: false },
-  { id: 'budget', name: 'Budget', category: 'finance', icon: '⊟', description: 'Monthly budget', modern: false },
-  { id: 'bills', name: 'Bills', category: 'finance', icon: '⌗', description: 'Bills due', modern: false },
-  { id: 'subscriptions', name: 'Subscriptions', category: 'finance', icon: '⟳', description: 'Recurring charges', modern: false },
-  { id: 'savings', name: 'Savings', category: 'finance', icon: '◯', description: 'Savings goals', modern: false },
-  { id: 'debtpayoff', name: 'Debt', category: 'finance', icon: '⊠', description: 'Payoff plan', modern: false },
-
-  { id: 'reading', name: 'Reading', category: 'learning', icon: '☐', description: 'Books and articles', modern: false },
-  { id: 'courses', name: 'Courses', category: 'learning', icon: '◧', description: 'Course tracking', modern: false },
-  { id: 'vocabulary', name: 'Vocabulary', category: 'learning', icon: '✦', description: 'Words to learn', modern: false },
-  { id: 'learninglog', name: 'Learning Log', category: 'learning', icon: '✦', description: 'What you learned', modern: false },
-  { id: 'skilltree', name: 'Skill Tree', category: 'learning', icon: '⌬', description: 'Skills to build', modern: false },
-
-  { id: 'bookmarks', name: 'Bookmarks', category: 'org', icon: '☖', description: 'Saved links', modern: false },
-  { id: 'contacts', name: 'Contacts', category: 'org', icon: '☻', description: 'People', modern: false },
-  { id: 'grocery', name: 'Grocery', category: 'org', icon: '◍', description: 'Shopping list', modern: false },
-  { id: 'inventory', name: 'Inventory', category: 'org', icon: '▦', description: 'Things you own', modern: false },
-  { id: 'calendar', name: 'Calendar', category: 'org', icon: '◰', description: 'Events', modern: false },
-  { id: 'fileindex', name: 'File Index', category: 'org', icon: '☰', description: 'File catalog', modern: false },
-  { id: 'wishlist', name: 'Wishlist', category: 'org', icon: '★', description: 'Things to buy', modern: false },
-
-  { id: 'retro', name: 'Retro', category: 'work', icon: '⟲', description: 'Team retros', modern: false },
-  { id: 'oneononep', name: '1-on-1s', category: 'work', icon: '☷', description: '1:1 notes', modern: false },
-  { id: 'feedbacklog', name: 'Feedback Log', category: 'work', icon: '✎', description: 'Feedback given/received', modern: false },
-  { id: 'projecttracker', name: 'Projects', category: 'work', icon: '◧', description: 'Project status', modern: false },
-  { id: 'clienttracker', name: 'Clients', category: 'work', icon: '◉', description: 'Client work', modern: false },
-  { id: 'invoices', name: 'Invoices', category: 'work', icon: '⌗', description: 'Billing', modern: false },
-
-  { id: 'recipes', name: 'Recipes', category: 'lifestyle', icon: '◍', description: 'Recipe collection', modern: false },
-  { id: 'travelplanner', name: 'Travel', category: 'lifestyle', icon: '✈', description: 'Trip planning', modern: false },
-  { id: 'packing', name: 'Packing', category: 'lifestyle', icon: '☐', description: 'Packing lists', modern: false },
-  { id: 'cleaning', name: 'Cleaning', category: 'lifestyle', icon: '✦', description: 'Cleaning schedule', modern: false },
-  { id: 'plantcare', name: 'Plants', category: 'lifestyle', icon: '✿', description: 'Plant care', modern: false },
-  { id: 'petcare', name: 'Pets', category: 'lifestyle', icon: '♥', description: 'Pet care', modern: false },
-  { id: 'homemaint', name: 'Home', category: 'lifestyle', icon: '⌂', description: 'Home maintenance', modern: false },
-  { id: 'warranty', name: 'Warranties', category: 'lifestyle', icon: '☖', description: 'Warranty tracking', modern: false },
+  // Classic-only (timer-based or specialized; still served from /classic)
+  { id: "pomodoro", name: "Pomodoro", category: "time", icon: "⏱", description: "Focus timer", ui: "classic" },
+  { id: "focus", name: "Focus", category: "time", icon: "◉", description: "Deep work sessions", ui: "classic" },
+  { id: "timetracker", name: "Time Tracker", category: "time", icon: "⌚", description: "Track where time goes", ui: "classic" },
+  { id: "countdown", name: "Countdown", category: "time", icon: "⏳", description: "Important dates", ui: "classic" },
+  { id: "meditation", name: "Meditation", category: "time", icon: "☯", description: "Mindfulness sessions", ui: "classic" },
+  { id: "stopwatch", name: "Stopwatch", category: "time", icon: "⏲", description: "Time anything", ui: "classic" },
+  { id: "calendar", name: "Calendar", category: "org", icon: "◰", description: "Events", ui: "classic" },
+  { id: "expenses", name: "Expenses", category: "finance", icon: "⟢", description: "Track spending", ui: "classic" },
+  { id: "reading", name: "Reading", category: "learning", icon: "☐", description: "Books and articles", ui: "classic" },
+  { id: "habits", name: "Habits", category: "habits", icon: "⊙", description: "Daily habits", ui: "classic" },
 ];
 
 export function getApp(id: string): AppEntry | undefined {

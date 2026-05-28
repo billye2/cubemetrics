@@ -79,6 +79,7 @@ export default async function Home() {
 }
 
 function AppTile({ app }: { app: (typeof APPS)[number] }) {
+  const isClassicOnly = app.ui === "classic";
   return (
     <Link
       href={`/app/${app.id}`}
@@ -89,7 +90,7 @@ function AppTile({ app }: { app: (typeof APPS)[number] }) {
       </div>
       <div className="text-sm font-semibold text-zinc-100">{app.name}</div>
       <div className="text-xs text-zinc-500 line-clamp-1">{app.description}</div>
-      {!app.modern && (
+      {isClassicOnly && (
         <span className="absolute right-2 top-2 rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">classic</span>
       )}
     </Link>
