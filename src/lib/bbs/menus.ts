@@ -45,7 +45,7 @@ export async function handleMainMenu(
 
       if (key === 'P') {
         await updateSession(supabase, userId, { current_location: 'profile' });
-        return showProfile(userId, supabase);
+        return showProfileMenu(userId, supabase);
       }
 
       if (key === 'W') {
@@ -153,7 +153,20 @@ async function handleCategoryMenu(
   return showCategory(categoryId, cat?.label || categoryId, userId, session, supabase);
 }
 
-async function showProfile(userId: string, supabase: SupabaseClient): Promise<BBSResponse> {
+function renderProfileCard(profile: Record<string, unknown>): string {
+  return clear() +
+    `\r\n${sectionHeader('YOUR PROFILE')}\r\n\r\n` +
+    `  ${theme.info}Alias:${RESET}        ${BOLD}${FG.cyan}${profile.handle}${RESET}\r\n` +
+    `  ${theme.info}Role:${RESET}         ${profile.role === 'sysop' ? `${theme.sysop}SysOp${RESET}` : 'User'}\r\n` +
+    `  ${theme.info}Level:${RESET}        ${profile.level}\r\n` +
+    `  ${theme.info}Total Calls:${RESET}  ${profile.total_calls}\r\n` +
+    `  ${theme.info}Member Since:${RESET} ${new Date(profile.first_login as string).toLocaleDateString()}\r\n` +
+    `  ${theme.info}Last Login:${RESET}   ${profile.last_login ? new Date(profile.last_login as string).toLocaleString() : 'Now'}\r\n` +
+    `  ${theme.info}Bio:${RESET}          ${(profile.bio as string) || `${DIM}(not set)${RESET}`}\r\n` +
+    `  ${theme.info}Location:${RESET}     ${(profile.location as string) || `${DIM}(not set)${RESET}`}\r\n`;
+}
+
+async function showProfileMenu(userId: string, supabase: SupabaseClient): Promise<BBSResponse> {
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -164,19 +177,124 @@ async function showProfile(userId: string, supabase: SupabaseClient): Promise<BB
     return { screen: `\r\n  ${theme.error}Profile not found${RESET}`, inputMode: 'key' };
   }
 
-  const screen = clear() +
-    `\r\n${sectionHeader('YOUR PROFILE')}\r\n\r\n` +
-    `  ${theme.info}Handle:${RESET}       ${BOLD}${profile.handle}${RESET}\r\n` +
-    `  ${theme.info}Role:${RESET}         ${profile.role === 'sysop' ? `${theme.sysop}SysOp${RESET}` : 'User'}\r\n` +
-    `  ${theme.info}Level:${RESET}        ${profile.level}\r\n` +
-    `  ${theme.info}Total Calls:${RESET}  ${profile.total_calls}\r\n` +
-    `  ${theme.info}Member Since:${RESET} ${new Date(profile.first_login).toLocaleDateString()}\r\n` +
-    `  ${theme.info}Last Login:${RESET}   ${profile.last_login ? new Date(profile.last_login).toLocaleString() : 'Now'}\r\n` +
-    (profile.bio ? `  ${theme.info}Bio:${RESET}          ${profile.bio}\r\n` : '') +
-    (profile.location ? `  ${theme.info}Location:${RESET}     ${profile.location}\r\n` : '') +
-    `\r\n  ${theme.dim}Press any key to return...${RESET}`;
+  const screen = renderProfileCard(profile) +
+    '\r\n' +
+    menu({
+      title: 'PROFILE',
+      items: [
+        { key: '1', label: 'Change Alias' },
+        { key: '2', label: 'Edit Bio' },
+        { key: '3', label: 'Edit Location' },
+        { key: 'Q', label: 'Back to Main Menu' },
+      ],
+    });
 
   return { screen, inputMode: 'key' };
+}
+
+export async function handleProfile(
+  input: string,
+  inputType: InputType,
+  userId: string,
+  session: BBSSession,
+  supabase: SupabaseClient,
+  handle: string
+): Promise<BBSResponse> {
+  const loc = session.current_location;
+
+  switch (loc) {
+    case 'profile': {
+      if (inputType === 'refresh') return showProfileMenu(userId, supabase);
+      const key = input.toUpperCase();
+      switch (key) {
+        case '1': {
+          await updateSession(supabase, userId, { current_location: 'profile:alias' });
+          return {
+            screen: `\r\n  ${theme.info}Current alias: ${BOLD}${handle}${RESET}\r\n`,
+            inputMode: 'line',
+            prompt: `  ${theme.prompt}New alias: ${RESET}`,
+          };
+        }
+        case '2': {
+          await updateSession(supabase, userId, { current_location: 'profile:bio' });
+          return {
+            screen: '',
+            inputMode: 'line',
+            prompt: `\r\n  ${theme.prompt}Bio: ${RESET}`,
+          };
+        }
+        case '3': {
+          await updateSession(supabase, userId, { current_location: 'profile:location' });
+          return {
+            screen: '',
+            inputMode: 'line',
+            prompt: `\r\n  ${theme.prompt}Location: ${RESET}`,
+          };
+        }
+        case 'Q':
+        case 'X': {
+          await updateSession(supabase, userId, { current_location: 'main_menu' });
+          const { data: p } = await supabase.from('profiles').select('handle').eq('id', userId).single();
+          return showMainMenu(p?.handle || handle);
+        }
+        default:
+          return showProfileMenu(userId, supabase);
+      }
+    }
+
+    case 'profile:alias': {
+      const alias = input.trim();
+      if (!alias || alias.length < 2 || alias.length > 20) {
+        await updateSession(supabase, userId, { current_location: 'profile' });
+        return {
+          screen: `\r\n  ${theme.error}Alias must be 2-20 characters.${RESET}\r\n  ${DIM}Press any key...${RESET}`,
+          inputMode: 'key',
+        };
+      }
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('handle', alias)
+        .neq('id', userId)
+        .single();
+      if (existing) {
+        await updateSession(supabase, userId, { current_location: 'profile' });
+        return {
+          screen: `\r\n  ${theme.error}Alias already taken!${RESET}\r\n  ${DIM}Press any key...${RESET}`,
+          inputMode: 'key',
+        };
+      }
+      await supabase.from('profiles').update({ handle: alias }).eq('id', userId);
+      await updateSession(supabase, userId, { current_location: 'profile' });
+      return {
+        screen: `\r\n  ${theme.success}Alias changed to: ${BOLD}${alias}${RESET}\r\n  ${DIM}Press any key...${RESET}`,
+        inputMode: 'key',
+      };
+    }
+
+    case 'profile:bio': {
+      await supabase.from('profiles').update({ bio: input.trim() }).eq('id', userId);
+      await updateSession(supabase, userId, { current_location: 'profile' });
+      return {
+        screen: `\r\n  ${theme.success}Bio updated!${RESET}\r\n  ${DIM}Press any key...${RESET}`,
+        inputMode: 'key',
+      };
+    }
+
+    case 'profile:location': {
+      await supabase.from('profiles').update({ location: input.trim() }).eq('id', userId);
+      await updateSession(supabase, userId, { current_location: 'profile' });
+      return {
+        screen: `\r\n  ${theme.success}Location updated!${RESET}\r\n  ${DIM}Press any key...${RESET}`,
+        inputMode: 'key',
+      };
+    }
+
+    default: {
+      await updateSession(supabase, userId, { current_location: 'profile' });
+      return showProfileMenu(userId, supabase);
+    }
+  }
 }
 
 async function showWhosOnline(supabase: SupabaseClient): Promise<BBSResponse> {
