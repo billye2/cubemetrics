@@ -87,10 +87,32 @@ Google OAuth via popup window:
 4. Callback exchanges code for session, creates/updates profile, sends `postMessage` to parent
 5. Terminal receives `auth_complete` message, refreshes screen → main menu
 
-## Mobile Support
+## Click/Tap Handling
 
-On mobile (detected via user agent + viewport width < 768):
-- **Terminal:** 80x20 grid, 10px font
-- **Button bar:** dynamically extracts `[X]` patterns from ANSI screen output, renders as large tappable buttons at bottom
-- **Input bar:** native text input with SEND button for line-mode entry
-- **Viewport:** no-zoom, `100dvh` for proper mobile height
+Menu items `[X] Label` are clickable on all devices via a DOM click/touchend handler on `.xterm-screen`:
+1. Map click coordinates to terminal row/col using cell dimensions
+2. Read the buffer line at that row
+3. Scan for `[X]` patterns — the entire label text is the click target
+4. If found, send the key as input
+
+No xterm.js link provider (unreliable on touch). No overlay buttons. No underline or hover decoration.
+
+## Responsive Font Scaling
+
+Font auto-scales to fit 80 columns in any viewport:
+```
+fittedFontSize = floor(containerWidth / (80 * 0.6))
+fontSize = min(maxFontSize, max(6, fittedFontSize))
+```
+Columns are always 80 — no FitAddon resizing. No line wrapping on narrow screens.
+
+## Profile & Alias
+
+Users get a profile with an editable alias (defaults to Google name):
+- **Profile menu:** view profile, change alias, edit bio, edit location
+- **Alias:** 2-20 chars, unique across all users, displayed in main menu header
+- **States:** `profile`, `profile:alias`, `profile:bio`, `profile:location`
+
+## Caching
+
+Force-dynamic rendering (`export const dynamic = "force-dynamic"` in layout) plus `Cache-Control: no-store` headers. Ensures deploys are immediately visible without hard refresh.
