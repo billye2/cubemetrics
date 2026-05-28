@@ -17,16 +17,24 @@ npx supabase gen types typescript    # Generate TypeScript types from DB schema
 
 ## Vercel
 ```bash
-npm i -g vercel      # Install Vercel CLI
-vercel env pull      # Pull environment variables to .env.local
-vercel dev           # Run with Vercel dev server
-vercel deploy        # Preview deployment
-vercel --prod        # Production deployment
+vercel env pull .env.local                              # Pull env vars to local
+vercel dev                                               # Run with Vercel dev server
+vercel --prod --yes --scope billys-projects-7712fade     # Production deploy
+vercel env ls --scope billys-projects-7712fade           # List env vars
+vercel logs <url> --scope billys-projects-7712fade       # View deploy logs
 ```
 
 ## Environment Variables
+Set on Vercel (not committed to repo):
 ```
 NEXT_PUBLIC_SUPABASE_URL=           # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=      # Supabase anonymous/public key
-SUPABASE_SERVICE_ROLE_KEY=          # Supabase service role key (server-only)
+NEXT_PUBLIC_SITE_URL=               # Production URL (https://cubemetrics.com)
+```
+
+## Security
+Run before every commit:
+```bash
+# Check for leaked secrets in staged files
+git diff --cached | grep -iE "sk_|eyJ|password|secret|api_key|private_key"
 ```

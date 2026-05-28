@@ -76,4 +76,21 @@ No live ticking. Timestamps only:
 - **Start**: save `started_at` + `duration_minutes` to DB
 - **Check**: calculate `remaining = (started_at + duration) - now()`
 - **Complete**: mark `completed = true` when remaining <= 0
-- User presses any key to refresh the display
+- User presses any key (or taps refresh button on mobile) to refresh the display
+
+## Authentication
+
+Google OAuth via popup window:
+1. User taps `[L] Login with Google` → client opens popup to `/api/auth/login`
+2. Server redirects to Google OAuth via Supabase Auth
+3. Google redirects back to `/api/auth/callback` with auth code
+4. Callback exchanges code for session, creates/updates profile, sends `postMessage` to parent
+5. Terminal receives `auth_complete` message, refreshes screen → main menu
+
+## Mobile Support
+
+On mobile (detected via user agent + viewport width < 768):
+- **Terminal:** 80x20 grid, 10px font
+- **Button bar:** dynamically extracts `[X]` patterns from ANSI screen output, renders as large tappable buttons at bottom
+- **Input bar:** native text input with SEND button for line-mode entry
+- **Viewport:** no-zoom, `100dvh` for proper mobile height

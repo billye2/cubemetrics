@@ -6,20 +6,21 @@
 |----------|-------|-------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Client + Server | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Client + Server | Supabase anonymous key (safe for browser) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server only | Supabase service role key (bypasses RLS) |
+| `NEXT_PUBLIC_SITE_URL` | Client + Server | Production URL for OAuth redirects |
 
 ## Setup
-1. Provision Supabase via Vercel Marketplace (auto-sets env vars on Vercel)
-2. Pull to local: `vercel env pull .env.local`
-3. Or manually create `.env.local` with the three variables above
+1. Pull env vars from Vercel: `vercel env pull .env.local`
+2. Or manually create `.env.local` with the variables above
 
 ## Supabase Auth Config
-- Disable email confirmation (BBS users don't have real emails)
-- Synthetic email format: `{handle}@bbs.local`
-- Password minimum length: 4 characters (BBS era vibes)
+- **Provider:** Google OAuth only (no email/password)
+- **Email confirmation:** Disabled
+- **Site URL:** https://cubemetrics.com
+- **Redirect URLs:** https://cubemetrics.com/api/auth/callback
 
 ## Vercel Config
-- Framework: Next.js (auto-detected)
-- Node.js: 24 LTS
-- Build command: `npm run build`
-- Output directory: `.next`
+- **Project:** bbs (scope: billys-projects-7712fade)
+- **Domain:** cubemetrics.com (DNS on NameSilo)
+- **Framework:** Next.js (auto-detected)
+- **Build command:** `npm run build`
+- **Deploy:** `vercel --prod --yes --scope billys-projects-7712fade`
