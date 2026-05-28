@@ -27,7 +27,11 @@ export default function Terminal() {
     if (!termRef.current) return;
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
-    const fontSize = isMobile ? 10 : 16;
+    const containerWidth = termRef.current?.clientWidth || window.innerWidth;
+    const charWidthRatio = 0.6;
+    const maxFontSize = isMobile ? 14 : 16;
+    const fittedFontSize = Math.floor(containerWidth / (80 * charWidthRatio));
+    const fontSize = Math.min(maxFontSize, Math.max(6, fittedFontSize));
 
     const term = new XTerm({
       cursorBlink: true,
@@ -63,7 +67,6 @@ export default function Terminal() {
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(termRef.current);
-    fitAddon.fit();
 
     xtermRef.current = term;
 
@@ -210,11 +213,7 @@ export default function Terminal() {
 
     send("", "refresh");
 
-    const handleResize = () => fitAddon.fit();
-    window.addEventListener("resize", handleResize);
-
     return () => {
-      window.removeEventListener("resize", handleResize);
       window.removeEventListener("message", onMessage);
       if (screenEl) {
         screenEl.removeEventListener("click", handleTermClick);
