@@ -92,9 +92,9 @@ SysOp-viewable system log.
 ### user_feedback
 | Column | Type |
 |--------|------|
-| id, user_id, category, body, status, created_at |
+| id, user_id, category, body, status, app_id, github_issue_number, github_issue_url, created_at |
 
-Public SELECT policy allows all users to browse the feedback board. Insert/update/delete restricted to own rows.
+Public SELECT policy allows all users to browse the feedback board. Insert/update/delete restricted to own rows. `app_id` tags which catalog app the feedback is about (null = general). `status` flows `new` → `approved` (a GitHub issue was opened; `github_issue_*` populated) → or `rejected`. The admin review queue reads/updates across users via the service-role client (bypasses RLS); see [environment.md](environment.md).
 
 ## RLS Policy Pattern
 ```sql
