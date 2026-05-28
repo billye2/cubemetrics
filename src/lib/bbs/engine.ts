@@ -6,8 +6,17 @@ import { handleMainMenu, handleProfile, handleGlobalSearch } from './menus';
 import { doorRegistry } from '../doors/registry';
 import { startQuickFeedback } from '../doors/feedback';
 import { statusBar } from '../ansi/statusbar';
+import { withRenderContext } from '../ansi/context';
 
 export async function handleInput(
+  request: BBSRequest,
+  supabase: SupabaseClient
+): Promise<BBSResponse> {
+  const cols = request.cols === 40 ? 40 : 80;
+  return withRenderContext({ cols }, () => handleInputInner(request, supabase));
+}
+
+async function handleInputInner(
   request: BBSRequest,
   supabase: SupabaseClient
 ): Promise<BBSResponse> {

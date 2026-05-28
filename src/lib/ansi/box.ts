@@ -1,5 +1,5 @@
 import { RESET } from './colors';
-import { COLS } from './screen';
+import { currentCols } from './context';
 import { padRight, visibleLength } from './text';
 
 const STYLES = {
@@ -22,7 +22,7 @@ interface BoxOptions {
 export function box(content: string[], options: BoxOptions = {}): string {
   const {
     style = 'double',
-    width = COLS,
+    width = currentCols(),
     borderColor = '',
     title,
     titleColor = '',
@@ -66,14 +66,14 @@ export function box(content: string[], options: BoxOptions = {}): string {
 }
 
 export function divider(options: { style?: BoxStyle; width?: number; borderColor?: string } = {}): string {
-  const { style = 'double', width = COLS, borderColor = '' } = options;
+  const { style = 'double', width = currentCols(), borderColor = '' } = options;
   const chars = STYLES[style];
   const r = borderColor ? RESET : '';
   return `${borderColor}${chars.lt}${chars.h.repeat(width - 2)}${chars.rt}${r}`;
 }
 
 export function horizontalLine(options: { style?: BoxStyle; width?: number; color?: string } = {}): string {
-  const { style = 'single', width = COLS, color = '' } = options;
+  const { style = 'single', width = currentCols(), color = '' } = options;
   const chars = STYLES[style];
   const r = color ? RESET : '';
   return `${color}${chars.h.repeat(width)}${r}`;

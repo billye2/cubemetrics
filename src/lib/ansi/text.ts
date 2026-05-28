@@ -1,4 +1,5 @@
 import { RESET } from './colors';
+import { currentCols } from './context';
 
 const ANSI_REGEX = /\x1b\[[0-9;]*m/g;
 
@@ -10,7 +11,7 @@ export function visibleLength(str: string): number {
   return stripAnsi(str).length;
 }
 
-export function center(text: string, width: number = 80): string {
+export function center(text: string, width: number = currentCols()): string {
   const vLen = visibleLength(text);
   if (vLen >= width) return text;
   const left = Math.floor((width - vLen) / 2);
