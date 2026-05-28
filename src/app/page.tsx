@@ -3,6 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { Shell, Card } from "@/components/modern/Shell";
 import { APPS, CATEGORIES } from "@/lib/modern/catalog";
 import { SignOutButton } from "@/components/modern/SignOutButton";
+import { AppSearch } from "@/components/modern/AppSearch";
 
 export const dynamic = "force-dynamic";
 
@@ -44,10 +45,12 @@ export default async function Home() {
         </>
       }
     >
-      <div className="mb-6">
+      <div className="mb-5">
         <p className="text-sm text-zinc-400">Welcome back</p>
         <h2 className="mt-0.5 text-2xl font-bold tracking-tight">{profile?.handle ?? "Friend"}</h2>
       </div>
+
+      <AppSearch apps={APPS} />
 
       {recentApps.length > 0 && (
         <section className="mb-8">
