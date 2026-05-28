@@ -1,13 +1,16 @@
-# XPBBS
+# Cubemetrics
 
-A classic 1993-era BBS experience in the browser, powered by modern tech.
+A personal productivity hub with two coexisting UIs:
+- **`/`** — modern React UI (Tailwind + Server Components, phone-first)
+- **`/classic`** — the original 1993-era BBS terminal (xterm.js + ANSI)
+
 Live at **https://cubemetrics.com**
 
 ## Documentation
-- [Tech Stack](docs/tech-stack.md) — Next.js, Supabase, xterm.js, Vercel
-- [Architecture](docs/architecture.md) — Single-endpoint model, BBS engine, door plugin system
+- [Tech Stack](docs/tech-stack.md) — Next.js, Supabase, xterm.js, Tailwind, Vercel
+- [Architecture](docs/architecture.md) — Modern UI (RSC + Server Actions) and classic BBS engine
 - [Database](docs/database.md) — Schema, RLS policies, table conventions
-- [Doors](docs/doors.md) — App plugin interface, categories, adding new doors
+- [Doors](docs/doors.md) — Classic door plugin interface and the modern-UI migration status
 - [Commands](docs/commands.md) — Dev, build, deploy, Supabase CLI commands
 - [Environment](docs/environment.md) — Required env vars, Supabase Auth config
 
@@ -19,36 +22,63 @@ npm run dev                   # http://localhost:3000
 ```
 
 ## Deploy
+Pushing to `master` auto-deploys production via the Vercel GitHub App.
+Manual fallback:
 ```bash
 vercel --prod --yes --scope billys-projects-7712fade
 ```
 
 ## Test
 ```bash
-npm test          # Run all 64 tests (unit + E2E)
-npm run test:watch # Watch mode
+npm test          # All unit + E2E tests
+npm run test:watch
 ```
 
 ## Project Structure
 ```
-src/app/                  — Next.js pages + API routes (bbs, auth)
-src/components/           — Terminal.tsx (xterm.js client, click handler)
-src/lib/ansi/             — ANSI rendering utilities (8 colors only, no blink)
-src/lib/bbs/              — BBS engine, auth (Google OAuth), menus, profile, session
-src/lib/doors/            — 50+ door (app) modules across 10 categories
-src/lib/doors/shared/     — Reusable door factories (tracker, checklist, logbook, goal, finance)
-src/lib/supabase/         — Supabase server client
-src/supabase/migrations/  — SQL migration files
-tests/                    — Unit tests (ansi, doors, bbs) + E2E API tests
+src/app/
+  page.tsx                  — Modern home (RSC, auth-gated, app grid)
+  layout.tsx                — Root layout, dark theme defaults
+  globals.css               — Tailwind + base styles
+  classic/                  — Mount point for the BBS terminal UI
+  app/<id>/                 — Modern door pages (todo, journal, feedback, …)
+  app/[id]/page.tsx         — Fallback "open in classic" page for unmigrated doors
+  api/bbs/                  — Classic BBS endpoint (POST)
+  api/auth/                 — Google OAuth login, logout, callback
+src/components/
+  Terminal.tsx              — xterm.js client (used by /classic)
+  modern/                   — Shared modern UI primitives (Shell, Card, EmptyState, SignOutButton)
+src/lib/
+  ansi/                     — ANSI rendering, AsyncLocalStorage render context (cols)
+  bbs/                      — Classic engine, auth, menus, profile, session
+  doors/                    — 50+ classic-door modules (registry + per-door folders)
+  doors/shared/             — Reusable door factories (tracker, checklist, logbook, …)
+  doors/feedback/           — Per-door quick-feedback (! shortcut) lives here
+  modern/                   — Catalog of apps for the modern UI grid
+  supabase/                 — Supabase server client
+src/supabase/migrations/    — SQL migrations
+tests/                      — Unit tests (ansi, doors, bbs) + E2E API tests
 ```
 
 ## Key Conventions
+
+### Modern UI
+- Server Components fetch data via `createServerSupabase()`; mutations via Server Actions in per-route `actions.ts`
+- All routes use `export const dynamic = "force-dynamic"` — auth-aware, no CDN caching
+- Tailwind utility classes inline. Dark mode is the only mode. Cyan accent (`cyan-500`).
+- Phone-first layout. Safe-area insets respected. 44px+ tap targets.
+- Apps catalog lives in `src/lib/modern/catalog.ts`. Add new apps there with `modern: true` once converted.
+
+### Classic BBS
 - Single API endpoint: `POST /api/bbs`
-- 80 columns always — font auto-scales to fit viewport width
+- Width is dynamic via `currentCols()` (AsyncLocalStorage) — defaults to 80, drops to 40 on narrow viewports
 - 8 ANSI colors only: black, red, green, yellow, blue, magenta, cyan, white
 - Doors implement the `Door` interface in `src/lib/doors/base.ts`
-- Auth: Google OAuth only — alias set from Google name, editable in profile
-- Click/tap: DOM handler on `.xterm-screen` maps clicks to `[X]` menu items
-- Force-dynamic rendering — no CDN caching, always serves latest build
+- `[X] Label` menu items are clickable/tappable — the entire label row is the target
+- Press `!` from inside any door to leave feedback tagged with that door
+- Click handler on `.xterm-screen` maps clicks to menu keys
+
+### Both
+- Auth: Google OAuth only via Supabase. The classic UI uses a popup; modern UI uses full-page nav. Both land at `/api/auth/callback`.
 - Never commit `.env*` files — secrets stay local
-- Run security audit before every commit (`npm test` includes E2E checks)
+- All tables enforce RLS — users only see their own rows (exceptions noted in [database.md](docs/database.md))
