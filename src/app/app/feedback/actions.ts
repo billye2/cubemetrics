@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createAdminSupabase } from "@/lib/supabase/admin";
 import { isAdmin } from "@/lib/modern/admin";
-import { getApp } from "@/lib/modern/catalog";
 import { createIssue } from "@/lib/github/issues";
+import { buildFeedbackIssue } from "@/lib/github/feedback-issue";
 
 async function requireUser() {
   const supabase = await createServerSupabase();
@@ -74,28 +74,13 @@ export async function approveFeedbackAction(formData: FormData): Promise<ReviewR
       .single();
     const handle: string | null = profile?.handle ?? null;
 
-    const app = fb.app_id ? getApp(fb.app_id) : undefined;
-    const appLabel = app?.name ?? fb.app_id ?? "general";
-    const firstLine = (fb.body.split("\n")[0] || "").trim().slice(0, 60) || "feedback";
-    const title = `[${fb.category}] ${appLabel}: ${firstLine}`;
-
-    const quoted = fb.body.replace(/\n/g, "\n> ");
-    const issueBody = [
-      `**App:** ${app ? `${app.name} (\`${fb.app_id}\`)` : fb.app_id ?? "general"}`,
-      `**Type:** ${fb.category}`,
-      handle ? `**Submitted by:** ${handle}` : null,
-      "",
-      `> ${quoted}`,
-      "",
-      "---",
-      "",
-      "@claude please implement this approved feedback.",
-    ]
-      .filter((l): l is string => l !== null)
-      .join("\n");
-
-    const labels = Array.from(new Set(["feedback", fb.category])).filter(Boolean);
-    const issue = await createIssue({ title, body: issueBody, labels });
+    const { title, body, labels } = buildFeedbackIssue({
+      category: fb.category,
+      body: fb.body,
+      appId: fb.app_id,
+      handle,
+    });
+    const issue = await createIssue({ title, body, labels });
 
     await admin
       .from("user_feedback")
