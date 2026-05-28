@@ -32,19 +32,7 @@ export default async function Home() {
     .slice(0, 4);
 
   return (
-    <Shell
-      right={
-        <>
-          <Link
-            href="/classic"
-            className="rounded-lg px-2 py-1 text-xs font-medium text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
-          >
-            Classic
-          </Link>
-          <SignOutButton />
-        </>
-      }
-    >
+    <Shell right={<SignOutButton />}>
       <div className="mb-5">
         <p className="text-sm text-zinc-400">Welcome back</p>
         <h2 className="mt-0.5 text-2xl font-bold tracking-tight">{profile?.handle ?? "Friend"}</h2>
@@ -117,9 +105,6 @@ function Landing() {
         >
           Sign in with Google
         </a>
-        <Link href="/classic" className="mt-3 text-xs text-zinc-500 hover:text-zinc-300">
-          Or use the classic terminal →
-        </Link>
       </div>
 
       <Card className="p-5">
