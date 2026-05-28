@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { submitFeedbackAction } from "@/app/app/feedback/actions";
 import { getApp } from "@/lib/modern/catalog";
 
@@ -58,7 +59,7 @@ export function HeaderFeedback() {
         <span className="hidden sm:inline">Feedback</span>
       </button>
 
-      {open && (
+      {open && createPortal(
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4 sm:items-center"
           onClick={() => !pending && setOpen(false)}
@@ -115,7 +116,8 @@ export function HeaderFeedback() {
               </button>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
