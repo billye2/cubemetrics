@@ -174,38 +174,40 @@ export default function Terminal() {
     }
     window.addEventListener("message", onMessage);
 
-    // Desktop: make [X] items clickable
-    if (!mobile) {
-      term.registerLinkProvider({
-        provideLinks(bufferLineNumber, callback) {
-          const line = term.buffer.active.getLine(bufferLineNumber);
-          if (!line) { callback(undefined); return; }
-          let text = "";
-          for (let i = 0; i < line.length; i++) {
-            text += line.getCell(i)?.getChars() || " ";
-          }
-          const links: { startIndex: number; length: number; key: string }[] = [];
-          const regex = /\[([A-Za-z0-9<>.!?])\]/g;
-          let match;
-          while ((match = regex.exec(text)) !== null) {
-            links.push({ startIndex: match.index, length: match[0].length, key: match[1] });
-          }
-          if (links.length === 0) { callback(undefined); return; }
-          callback(
-            links.map((link) => ({
-              range: {
-                start: { x: link.startIndex + 1, y: bufferLineNumber + 1 },
-                end: { x: link.startIndex + link.length + 1, y: bufferLineNumber + 1 },
-              },
-              text: `[${link.key}]`,
-              activate() {
-                if (inputModeRef.current === "key") send(link.key, "key");
-              },
-            }))
-          );
-        },
-      });
-    }
+    // Make [X] menu items clickable on all devices
+    term.registerLinkProvider({
+      provideLinks(bufferLineNumber, callback) {
+        const line = term.buffer.active.getLine(bufferLineNumber);
+        if (!line) { callback(undefined); return; }
+        let text = "";
+        for (let i = 0; i < line.length; i++) {
+          text += line.getCell(i)?.getChars() || " ";
+        }
+        const links: { startIndex: number; length: number; key: string }[] = [];
+        const regex = /\[([A-Za-z0-9<>.!?])\]/g;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          links.push({ startIndex: match.index, length: match[0].length, key: match[1] });
+        }
+        if (links.length === 0) { callback(undefined); return; }
+        callback(
+          links.map((link) => ({
+            range: {
+              start: { x: link.startIndex + 1, y: bufferLineNumber + 1 },
+              end: { x: link.startIndex + link.length + 1, y: bufferLineNumber + 1 },
+            },
+            text: `[${link.key}]`,
+            decorations: {
+              underline: false,
+              pointerCursor: true,
+            },
+            activate() {
+              if (inputModeRef.current === "key") send(link.key, "key");
+            },
+          }))
+        );
+      },
+    });
 
     // Keyboard input
     term.onData((data) => {

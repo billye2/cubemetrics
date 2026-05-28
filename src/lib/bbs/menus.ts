@@ -12,11 +12,14 @@ import { goodbyeScreen } from '../ansi/art/goodbye';
 const CATEGORIES = [
   { key: '1', id: 'time', label: 'Time & Focus' },
   { key: '2', id: 'tasks', label: 'Tasks & Planning' },
-  { key: '3', id: 'habits', label: 'Habits & Wellness' },
-  { key: '4', id: 'notes', label: 'Notes & Thinking' },
-  { key: '5', id: 'finance', label: 'Finance' },
-  { key: '6', id: 'learning', label: 'Learning & Reading' },
-  { key: '7', id: 'org', label: 'Organization' },
+  { key: '3', id: 'goals', label: 'Goals & Progress' },
+  { key: '4', id: 'habits', label: 'Habits & Wellness' },
+  { key: '5', id: 'notes', label: 'Notes & Thinking' },
+  { key: '6', id: 'finance', label: 'Finance' },
+  { key: '7', id: 'learning', label: 'Learning & Reading' },
+  { key: '8', id: 'org', label: 'Organization' },
+  { key: '9', id: 'work', label: 'Work & Collaboration' },
+  { key: '0', id: 'lifestyle', label: 'Lifestyle' },
 ] as const;
 
 export async function handleMainMenu(
