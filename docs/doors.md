@@ -23,7 +23,7 @@ src/lib/doors/<name>/
   screens.ts    — ANSI screen builders
   queries.ts    — Supabase queries
 ```
-Used by: todo, journal, calendar, pomodoro, habits, expenses, notes, reading
+Used by: todo, journal, calendar, pomodoro, habits, expenses, notes, reading, feedback
 
 ### Shared factory doors (config-only)
 ```
@@ -49,7 +49,7 @@ Factories in `src/lib/doors/shared/`:
 | Finance | Expenses, Budget, Bills, Subscriptions, Savings, Debt Payoff |
 | Learning | Reading List, Courses, Vocabulary, Learning Log, Skill Tree |
 | Organization | Bookmarks, Contacts, Grocery, Inventory, Calendar, File Index, Wishlist |
-| Work | Retro, 1-on-1 Prep, Feedback Log, Projects, Clients, Invoices |
+| Work | Retro, 1-on-1 Prep, Feedback Log, Projects, Clients, Invoices, Feedback |
 | Lifestyle | Recipes, Travel, Packing, Cleaning, Plants, Pets, Home Maintenance, Warranty |
 
 ## Sub-State Convention

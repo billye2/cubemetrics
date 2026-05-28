@@ -89,6 +89,13 @@ SysOp-viewable system log.
 |--------|------|
 | id, user_id, title, author, status, rating, notes, started_at, finished_at, created_at |
 
+### user_feedback
+| Column | Type |
+|--------|------|
+| id, user_id, category, body, status, created_at |
+
+Public SELECT policy allows all users to browse the feedback board. Insert/update/delete restricted to own rows.
+
 ## RLS Policy Pattern
 ```sql
 ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;
