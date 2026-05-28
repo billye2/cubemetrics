@@ -132,11 +132,11 @@ export const APPS: AppEntry[] = [
   { id: "stopwatch", name: "Stopwatch", category: "time", icon: "⏲", description: "Time anything", ui: "tracker", config: { trackerType: "stopwatch", unit: "minutes", min: 0, max: 1440 } },
   { id: "calendar", name: "Calendar", category: "org", icon: "◰", description: "Events", ui: "modern" },
 
-  // Classic-only (stateful timers + custom flows still TBD)
+  // Modern custom pages for stateful / specialized apps
   { id: "pomodoro", name: "Pomodoro", category: "time", icon: "⏱", description: "Focus timer", ui: "modern" },
-  { id: "expenses", name: "Expenses", category: "finance", icon: "⟢", description: "Track spending", ui: "classic" },
-  { id: "reading", name: "Reading", category: "learning", icon: "☐", description: "Books and articles", ui: "classic" },
-  { id: "habits", name: "Habits", category: "habits", icon: "⊙", description: "Daily habits", ui: "classic" },
+  { id: "expenses", name: "Expenses", category: "finance", icon: "⟢", description: "Track spending", ui: "modern" },
+  { id: "reading", name: "Reading", category: "learning", icon: "☐", description: "Books and articles", ui: "modern" },
+  { id: "habits", name: "Habits", category: "habits", icon: "⊙", description: "Daily habits", ui: "modern" },
 ];
 
 export function getApp(id: string): AppEntry | undefined {
