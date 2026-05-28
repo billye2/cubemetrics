@@ -2,10 +2,25 @@ import type { Door } from '../base';
 import type { BBSResponse, BBSSession, InputType } from '../../bbs/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { updateSession } from '../../bbs/session';
+import { doorRegistry } from '../registry';
+import { theme, RESET, BOLD } from '../../ansi/colors';
 import * as screens from './screens';
 import * as queries from './queries';
 
 const PAGE_SIZE = 10;
+
+export async function startQuickFeedback(
+  supabase: SupabaseClient,
+  userId: string,
+  returnTo: string,
+  doorContext: string,
+): Promise<BBSResponse> {
+  await updateSession(supabase, userId, {
+    current_location: 'door:feedback:body',
+    door_state: { category: doorContext, return_to: returnTo },
+  });
+  return { screen: '', inputMode: 'line', prompt: screens.bodyPrompt() };
+}
 
 export const feedbackDoor: Door = {
   id: 'feedback',
@@ -65,12 +80,29 @@ async function handleCategory(input: string, userId: string, session: BBSSession
 
 async function handleBody(input: string, userId: string, session: BBSSession, supabase: SupabaseClient): Promise<BBSResponse> {
   const body = input.trim();
+  const returnTo = (session.door_state.return_to as string) || '';
+
   if (!body) {
+    if (returnTo) {
+      await updateSession(supabase, userId, { current_location: returnTo, door_state: {} });
+      return { screen: screens.errorMsg('Feedback cancelled — press any key to return'), inputMode: 'key' };
+    }
     await updateSession(supabase, userId, { current_location: 'door:feedback' });
     return { screen: screens.errorMsg('Feedback cannot be empty'), inputMode: 'key' };
   }
+
   const category = (session.door_state.category as string) || 'other';
   await queries.addFeedback(supabase, userId, category, body);
+
+  if (returnTo) {
+    await updateSession(supabase, userId, { current_location: returnTo, door_state: {} });
+    const doorId = returnTo.split(':')[1];
+    const door = doorRegistry.get(doorId);
+    const doorName = door?.name || 'app';
+    const toast = `\r\n  ${BOLD}${theme.success}Feedback submitted to ${doorName}!${RESET}  ${theme.dim}Press any key to continue${RESET}\r\n`;
+    return { screen: toast, inputMode: 'key' };
+  }
+
   await updateSession(supabase, userId, { current_location: 'door:feedback', door_state: {} });
   return { screen: screens.submitted(), inputMode: 'key' };
 }

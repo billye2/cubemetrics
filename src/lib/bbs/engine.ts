@@ -4,6 +4,7 @@ import { getSession, createSession, updateSession } from './session';
 import { handleAuth } from './auth';
 import { handleMainMenu, handleProfile, handleGlobalSearch } from './menus';
 import { doorRegistry } from '../doors/registry';
+import { startQuickFeedback } from '../doors/feedback';
 import { statusBar } from '../ansi/statusbar';
 
 export async function handleInput(
@@ -54,7 +55,9 @@ export async function handleInput(
     const doorId = location.split(':')[1];
     const door = doorRegistry.get(doorId);
 
-    if (door) {
+    if (door && doorId !== 'feedback' && inputType === 'key' && input === '!') {
+      response = await startQuickFeedback(supabase, user.id, location, doorId);
+    } else if (door) {
       if (input.toUpperCase() === 'Q' || input.toUpperCase() === 'X') {
         const parts = location.split(':');
         if (parts.length > 2) {
