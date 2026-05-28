@@ -4,6 +4,7 @@ export type InputMode = 'key' | 'line';
 export interface BBSRequest {
   input: string;
   inputType: InputType;
+  cols?: number;
 }
 
 export interface BBSResponse {
