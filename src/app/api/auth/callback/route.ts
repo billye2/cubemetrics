@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error && user) {
-      // Create or update BBS profile from Google account
+      // Create or update the profile from the Google account
       const handle = user.user_metadata?.name
         || user.email?.split('@')[0]
         || 'Anonymous';
@@ -30,13 +30,6 @@ export async function GET(request: NextRequest) {
           total_calls: 1,
           last_login: new Date().toISOString(),
         });
-
-        await supabase.from('bbs_sessions').upsert({
-          user_id: user.id,
-          current_location: 'main_menu',
-          door_state: {},
-          last_activity: new Date().toISOString(),
-        });
       } else {
         const { data: profile } = await supabase
           .from('profiles')
@@ -48,13 +41,6 @@ export async function GET(request: NextRequest) {
           last_login: new Date().toISOString(),
           total_calls: (profile?.total_calls || 0) + 1,
         }).eq('id', user.id);
-
-        await supabase.from('bbs_sessions').upsert({
-          user_id: user.id,
-          current_location: 'main_menu',
-          door_state: {},
-          last_activity: new Date().toISOString(),
-        });
       }
     }
   }

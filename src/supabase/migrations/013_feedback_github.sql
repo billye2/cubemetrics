@@ -10,7 +10,7 @@ ALTER TABLE public.user_feedback
   ADD COLUMN IF NOT EXISTS github_issue_number INTEGER,
   ADD COLUMN IF NOT EXISTS github_issue_url TEXT;
 
-COMMENT ON COLUMN public.user_feedback.app_id IS 'Catalog app/door id this feedback is about (null = general)';
+COMMENT ON COLUMN public.user_feedback.app_id IS 'Catalog app id this feedback is about (null = general)';
 COMMENT ON COLUMN public.user_feedback.status IS 'new | approved | rejected';
 
 -- Admin review reads/writes go through the service-role client (which

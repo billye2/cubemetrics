@@ -6,13 +6,11 @@ npm run dev          # Start Next.js dev server (http://localhost:3000)
 npm run build        # Production build (Turbopack)
 npm run start        # Start production server locally
 npm run lint         # ESLint check
-npm test             # Run unit + E2E tests
+npm test             # Run unit tests (Vitest)
 npm run test:watch
 ```
 
-The dev server serves both surfaces:
-- `http://localhost:3000/` — modern UI
-- `http://localhost:3000/classic` — BBS terminal
+The dev server serves the app at `http://localhost:3000/`.
 
 ## Supabase
 ```bash

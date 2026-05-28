@@ -24,8 +24,6 @@ export default async function AppDispatch({
     redirect(`/app/${id}`);
   }
 
-  if (app.ui === "classic") return <ClassicFallback app={app} />;
-
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/");
@@ -112,10 +110,10 @@ export default async function AppDispatch({
     );
   }
 
-  return <ClassicFallback app={app} />;
+  return <ComingSoon app={app} />;
 }
 
-function ClassicFallback({ app }: { app: NonNullable<ReturnType<typeof getApp>> }) {
+function ComingSoon({ app }: { app: NonNullable<ReturnType<typeof getApp>> }) {
   return (
     <Shell back={{ href: "/", label: "Apps" }} title={app.name}>
       <Card className="p-6">
