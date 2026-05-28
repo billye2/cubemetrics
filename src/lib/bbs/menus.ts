@@ -4,7 +4,7 @@ import { clear } from '../ansi/screen';
 import { menu } from '../ansi/menu';
 import { sectionHeader, bbsBanner } from '../ansi/header';
 import { theme, RESET, BOLD, FG, DIM } from '../ansi/colors';
-import { center } from '../ansi/text';
+import { center, truncate } from '../ansi/text';
 import { updateSession } from './session';
 import { doorRegistry } from '../doors/registry';
 import { goodbyeScreen } from '../ansi/art/goodbye';
@@ -43,6 +43,32 @@ export async function handleMainMenu(
         return showCategory(cat.id, cat.label, userId, session, supabase);
       }
 
+      // Recent door quick-access (F1-F5 mapped to a-e)
+      const recentIdx = 'ABCDE'.indexOf(key);
+      if (recentIdx >= 0) {
+        const recent = (session.recent_doors) || [];
+        if (recentIdx < recent.length) {
+          const doorId = recent[recentIdx];
+          const door = doorRegistry.get(doorId);
+          if (door) {
+            await updateSession(supabase, userId, { current_location: `door:${doorId}`, door_state: {} });
+            return door.handle('', 'refresh', userId, session, supabase);
+          }
+        }
+      }
+
+      if (key === '/') {
+        await updateSession(supabase, userId, { current_location: 'search' });
+        return {
+          screen: clear() +
+            `\r\n${sectionHeader('GLOBAL SEARCH')}\r\n\r\n` +
+            `  ${DIM}Search across all your data: todos, notes, journal,${RESET}\r\n` +
+            `  ${DIM}expenses, reading list, goals, and more.${RESET}\r\n`,
+          inputMode: 'line',
+          prompt: `\r\n  ${theme.prompt}Search: ${RESET}`,
+        };
+      }
+
       if (key === 'P') {
         await updateSession(supabase, userId, { current_location: 'profile' });
         return showProfileMenu(userId, supabase);
@@ -65,7 +91,8 @@ export async function handleMainMenu(
       }
     }
 
-    return showMainMenu(handle);
+    const recent = (session.recent_doors) || [];
+    return showMainMenu(handle, recent);
   }
 
   // Category sub-menus
@@ -73,24 +100,42 @@ export async function handleMainMenu(
     return handleCategoryMenu(input, inputType, userId, session, supabase);
   }
 
-  return showMainMenu(handle);
+  const recent = (session.recent_doors) || [];
+  return showMainMenu(handle, recent);
 }
 
-function showMainMenu(handle: string): BBSResponse {
+function showMainMenu(handle: string, recentDoors: string[] = []): BBSResponse {
+  let screen = clear() +
+    `\r\n  ${theme.dim}Logged in as: ${BOLD}${FG.cyan}${handle}${RESET}\r\n`;
+
+  // Recent doors quick-access
+  if (recentDoors.length > 0) {
+    screen += `\r\n  ${theme.title}RECENT:${RESET} `;
+    const keys = 'ABCDE';
+    for (let i = 0; i < recentDoors.length; i++) {
+      const door = doorRegistry.get(recentDoors[i]);
+      if (door) {
+        screen += ` ${theme.menuKey}[${keys[i]}]${RESET} ${DIM}${door.name}${RESET}`;
+      }
+    }
+    screen += '\r\n';
+  }
+
+  screen += '\r\n';
+
   const items = [
     ...CATEGORIES.map(c => ({ key: c.key, label: c.label })),
+    { key: '/', label: 'Search All' },
     { key: 'P', label: 'My Profile' },
     { key: 'W', label: "Who's Online" },
     { key: 'Q', label: 'Log Off' },
   ];
 
-  const screen = clear() +
-    `\r\n  ${theme.dim}Logged in as: ${BOLD}${FG.cyan}${handle}${RESET}\r\n\r\n` +
-    menu({
-      title: 'MAIN MENU',
-      items,
-      columns: 1,
-    });
+  screen += menu({
+    title: 'MAIN MENU',
+    items,
+    columns: 1,
+  });
 
   return { screen, inputMode: 'key' };
 }
@@ -328,4 +373,91 @@ async function showWhosOnline(supabase: SupabaseClient): Promise<BBSResponse> {
 
   screen += `\r\n  ${theme.dim}Press any key to return...${RESET}`;
   return { screen, inputMode: 'key' };
+}
+
+export async function handleGlobalSearch(
+  input: string,
+  inputType: InputType,
+  userId: string,
+  session: BBSSession,
+  supabase: SupabaseClient,
+  handle: string
+): Promise<BBSResponse> {
+  if (session.current_location === 'search' && inputType === 'line') {
+    const query = input.trim();
+    if (!query) {
+      await updateSession(supabase, userId, { current_location: 'main_menu' });
+      const recent = (session.recent_doors) || [];
+      return showMainMenu(handle, recent);
+    }
+
+    const q = `%${query}%`;
+
+    const [todos, notes, journal, expenses, reading, goals, checklists, logs] = await Promise.all([
+      supabase.from('todos').select('id, title').eq('user_id', userId).ilike('title', q).limit(5),
+      supabase.from('notes').select('id, title, body').eq('user_id', userId).or(`title.ilike.${q},body.ilike.${q}`).limit(5),
+      supabase.from('journal_entries').select('id, title, body').eq('user_id', userId).or(`title.ilike.${q},body.ilike.${q}`).limit(5),
+      supabase.from('expenses').select('id, description, category, amount').eq('user_id', userId).or(`description.ilike.${q},category.ilike.${q}`).limit(5),
+      supabase.from('reading_list').select('id, title, author').eq('user_id', userId).or(`title.ilike.${q},author.ilike.${q}`).limit(5),
+      supabase.from('goals').select('id, title').eq('user_id', userId).ilike('title', q).limit(5),
+      supabase.from('checklists').select('id, title, list_type').eq('user_id', userId).ilike('title', q).limit(5),
+      supabase.from('logs').select('id, title, body, log_type').eq('user_id', userId).or(`title.ilike.${q},body.ilike.${q}`).limit(5),
+    ]);
+
+    let screen = clear() +
+      `\r\n${sectionHeader(`SEARCH: "${query}"`)}\r\n`;
+
+    let totalResults = 0;
+
+    const sections: { label: string; items: { text: string }[] }[] = [];
+
+    if (todos.data?.length) {
+      sections.push({ label: 'To-Do', items: todos.data.map(t => ({ text: `${truncate(t.title, 50)}  ${DIM}#${t.id}${RESET}` })) });
+    }
+    if (notes.data?.length) {
+      sections.push({ label: 'Notes', items: notes.data.map(n => ({ text: `${truncate(n.title || n.body, 50)}  ${DIM}#${n.id}${RESET}` })) });
+    }
+    if (journal.data?.length) {
+      sections.push({ label: 'Journal', items: journal.data.map(j => ({ text: `${truncate(j.title || j.body, 50)}  ${DIM}#${j.id}${RESET}` })) });
+    }
+    if (reading.data?.length) {
+      sections.push({ label: 'Reading', items: reading.data.map(r => ({ text: `${truncate(r.title, 35)} ${DIM}by ${r.author}${RESET}` })) });
+    }
+    if (goals.data?.length) {
+      sections.push({ label: 'Goals', items: goals.data.map(g => ({ text: `${truncate(g.title, 50)}  ${DIM}#${g.id}${RESET}` })) });
+    }
+    if (expenses.data?.length) {
+      sections.push({ label: 'Expenses', items: expenses.data.map(e => ({ text: `$${Number(e.amount).toFixed(2)} ${e.category} ${DIM}${e.description || ''}${RESET}` })) });
+    }
+    if (checklists.data?.length) {
+      sections.push({ label: 'Lists', items: checklists.data.map(c => ({ text: `${truncate(c.title, 40)} ${DIM}(${c.list_type})${RESET}` })) });
+    }
+    if (logs.data?.length) {
+      sections.push({ label: 'Logs', items: logs.data.map(l => ({ text: `${truncate(l.title || l.body, 40)} ${DIM}(${l.log_type})${RESET}` })) });
+    }
+
+    for (const section of sections) {
+      screen += `\r\n  ${BOLD}${FG.yellow}${section.label}${RESET}\r\n`;
+      for (const item of section.items) {
+        screen += `    ${FG.white}${item.text}${RESET}\r\n`;
+        totalResults++;
+      }
+    }
+
+    if (totalResults === 0) {
+      screen += `\r\n  ${DIM}No results found for "${query}"${RESET}\r\n`;
+    } else {
+      screen += `\r\n  ${DIM}${totalResults} result${totalResults === 1 ? '' : 's'} found${RESET}`;
+    }
+
+    screen += `\r\n  ${DIM}Press any key to return to menu...${RESET}`;
+
+    await updateSession(supabase, userId, { current_location: 'search:results' });
+    return { screen, inputMode: 'key' };
+  }
+
+  // Any key from results goes back to main menu
+  await updateSession(supabase, userId, { current_location: 'main_menu' });
+  const recent = (session.recent_doors) || [];
+  return showMainMenu(handle, recent);
 }

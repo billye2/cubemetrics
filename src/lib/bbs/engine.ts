@@ -2,8 +2,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { BBSRequest, BBSResponse } from './types';
 import { getSession, createSession, updateSession } from './session';
 import { handleAuth } from './auth';
-import { handleMainMenu, handleProfile } from './menus';
+import { handleMainMenu, handleProfile, handleGlobalSearch } from './menus';
 import { doorRegistry } from '../doors/registry';
+import { statusBar } from '../ansi/statusbar';
 
 export async function handleInput(
   request: BBSRequest,
@@ -31,19 +32,25 @@ export async function handleInput(
 
   const location = session.current_location;
 
+  // Track recent doors
+  if (location.startsWith('door:') && inputType === 'refresh') {
+    const doorId = location.split(':')[1];
+    const recent = (session.recent_doors) || [];
+    const updated = [doorId, ...recent.filter(d => d !== doorId)].slice(0, 5);
+    await supabase.from('bbs_sessions').update({ recent_doors: updated }).eq('user_id', user.id);
+  }
+
+  let response: BBSResponse;
+
   if (location === 'main_menu') {
-    return handleMainMenu(input, inputType, user.id, session, supabase, handle);
-  }
-
-  if (location.startsWith('profile')) {
-    return handleProfile(input, inputType, user.id, session, supabase, handle);
-  }
-
-  if (location.startsWith('category:')) {
-    return handleMainMenu(input, inputType, user.id, session, supabase, handle);
-  }
-
-  if (location.startsWith('door:')) {
+    response = await handleMainMenu(input, inputType, user.id, session, supabase, handle);
+  } else if (location.startsWith('search')) {
+    response = await handleGlobalSearch(input, inputType, user.id, session, supabase, handle);
+  } else if (location.startsWith('profile')) {
+    response = await handleProfile(input, inputType, user.id, session, supabase, handle);
+  } else if (location.startsWith('category:')) {
+    response = await handleMainMenu(input, inputType, user.id, session, supabase, handle);
+  } else if (location.startsWith('door:')) {
     const doorId = location.split(':')[1];
     const door = doorRegistry.get(doorId);
 
@@ -51,16 +58,29 @@ export async function handleInput(
       if (input.toUpperCase() === 'Q' || input.toUpperCase() === 'X') {
         const parts = location.split(':');
         if (parts.length > 2) {
-          return door.handle(input, inputType, user.id, session, supabase);
+          response = await door.handle(input, inputType, user.id, session, supabase);
+        } else {
+          await updateSession(supabase, user.id, { current_location: 'main_menu' });
+          response = await handleMainMenu('', 'refresh', user.id, session, supabase, handle);
         }
-        await updateSession(supabase, user.id, { current_location: 'main_menu' });
-        return handleMainMenu('', 'refresh', user.id, session, supabase, handle);
+      } else {
+        response = await door.handle(input, inputType, user.id, session, supabase);
       }
-
-      return door.handle(input, inputType, user.id, session, supabase);
+    } else {
+      await updateSession(supabase, user.id, { current_location: 'main_menu' });
+      response = await handleMainMenu('', 'refresh', user.id, session, supabase, handle);
     }
+  } else {
+    await updateSession(supabase, user.id, { current_location: 'main_menu' });
+    response = await handleMainMenu('', 'refresh', user.id, session, supabase, handle);
   }
 
-  await updateSession(supabase, user.id, { current_location: 'main_menu' });
-  return handleMainMenu('', 'refresh', user.id, session, supabase, handle);
+  // Append status bar to screens (not to prompts or OAuth signals)
+  if (response.screen && response.prompt !== '__OAUTH_GOOGLE__' && response.inputMode === 'key') {
+    const updatedSession = await getSession(supabase, user.id);
+    const currentLoc = updatedSession?.current_location || location;
+    response.screen += statusBar(currentLoc, handle);
+  }
+
+  return response;
 }

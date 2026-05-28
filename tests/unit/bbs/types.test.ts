@@ -38,6 +38,7 @@ describe('BBS Types', () => {
       current_location: 'door:todo:add',
       door_state: { page: 1 },
       last_activity: '2026-01-01',
+      recent_doors: ['todo', 'notes'],
     };
     expect(session.current_location).toBe('door:todo:add');
     expect(session.door_state.page).toBe(1);

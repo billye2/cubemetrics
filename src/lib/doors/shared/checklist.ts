@@ -132,7 +132,9 @@ export function createChecklistDoor(config: ChecklistConfig): Door {
 
     const rows: string[] = [''];
     if (!data || data.length === 0) {
-      rows.push(`  ${DIM}Empty list. Add something!${RESET}`);
+      rows.push(`  ${DIM}Your list is empty.${RESET}`);
+      rows.push('');
+      rows.push(`  ${theme.prompt}Press [A] to add your first ${config.itemLabel.toLowerCase()}!${RESET}`);
     } else {
       for (const item of data) {
         const check = item.completed
@@ -157,7 +159,7 @@ export function createChecklistDoor(config: ChecklistConfig): Door {
 
     screen += `\r\n  ${DIM}Page ${page}/${totalPages}  |  ${count || 0} items${RESET}`;
     if (totalPages > 1) screen += `  ${DIM}[N]ext [P]rev${RESET}`;
-    screen += `  ${DIM}[Q] Back${RESET}`;
+    screen += `  ${DIM}[A]dd  [C]heck  [D]elete  [Q] Back${RESET}`;
     return { screen, inputMode: 'key' };
   }
 
@@ -165,6 +167,18 @@ export function createChecklistDoor(config: ChecklistConfig): Door {
     const parts = session.current_location.split(':');
     let page = parseInt(parts[3] || '1');
     const key = input.toUpperCase();
+    if (key === 'A') {
+      await updateSession(supabase, userId, { current_location: `${doorPrefix}:add` });
+      return { screen: '', inputMode: 'line', prompt: `\r\n  ${theme.prompt}${config.itemLabel} name: ${RESET}` };
+    }
+    if (key === 'C') {
+      await updateSession(supabase, userId, { current_location: `${doorPrefix}:check` });
+      return { screen: '', inputMode: 'line', prompt: `\r\n  ${theme.prompt}# to check off: ${RESET}` };
+    }
+    if (key === 'D') {
+      await updateSession(supabase, userId, { current_location: `${doorPrefix}:delete` });
+      return { screen: '', inputMode: 'line', prompt: `\r\n  ${theme.prompt}# to remove: ${RESET}` };
+    }
     if (key === 'Q' || key === 'X') {
       await updateSession(supabase, userId, { current_location: doorPrefix });
       return showMenu(userId, supabase);

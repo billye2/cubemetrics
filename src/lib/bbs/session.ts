@@ -15,6 +15,7 @@ export async function createSession(supabase: SupabaseClient, userId: string): P
     user_id: userId,
     current_location: 'main_menu',
     door_state: {},
+    recent_doors: [],
   };
 
   const { data, error } = await supabase

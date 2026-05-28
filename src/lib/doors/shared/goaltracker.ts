@@ -105,6 +105,8 @@ export function createGoalDoor(config: GoalConfig): Door {
     const rows: string[] = [''];
     if (!data || data.length === 0) {
       rows.push(`  ${DIM}No ${config.itemLabel.toLowerCase()}s yet.${RESET}`);
+      rows.push('');
+      rows.push(`  ${theme.prompt}Press [A] to add your first ${config.itemLabel.toLowerCase()}!${RESET}`);
     } else {
       for (const g of data) {
         const status = g.status === 'completed'
@@ -131,7 +133,7 @@ export function createGoalDoor(config: GoalConfig): Door {
 
     screen += `\r\n  ${DIM}Page ${page}/${totalPages}  |  ${count || 0} items${RESET}`;
     if (totalPages > 1) screen += `  ${DIM}[N]ext [P]rev${RESET}`;
-    screen += `  ${DIM}[Q] Back${RESET}`;
+    screen += `  ${DIM}[A]dd  [Q] Back${RESET}`;
     return { screen, inputMode: 'key' };
   }
 
@@ -139,6 +141,10 @@ export function createGoalDoor(config: GoalConfig): Door {
     const parts = session.current_location.split(':');
     let page = parseInt(parts[3] || '1');
     const key = input.toUpperCase();
+    if (key === 'A') {
+      await updateSession(supabase, userId, { current_location: `${doorPrefix}:add:title`, door_state: {} });
+      return { screen: '', inputMode: 'line', prompt: `\r\n  ${theme.prompt}${config.itemLabel} title: ${RESET}` };
+    }
     if (key === 'Q' || key === 'X') { await updateSession(supabase, userId, { current_location: doorPrefix }); return showMenu(); }
     if (key === 'N') page++;
     if (key === 'P' && page > 1) page--;

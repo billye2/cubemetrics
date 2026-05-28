@@ -195,6 +195,8 @@ export function createTrackerDoor(config: TrackerConfig): Door {
     const rows: string[] = [''];
     if (!data || data.length === 0) {
       rows.push(`  ${DIM}No entries yet.${RESET}`);
+      rows.push('');
+      rows.push(`  ${theme.prompt}Go back and press [1] to log your first entry!${RESET}`);
     } else {
       rows.push(`  ${BOLD}${padRight('Date', 14)}${padRight('Value', 16)}Note${RESET}`);
       rows.push(`  ${theme.border}${'─'.repeat(50)}${RESET}`);

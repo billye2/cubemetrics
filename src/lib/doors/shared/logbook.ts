@@ -101,7 +101,9 @@ export function createLogbookDoor(config: LogbookConfig): Door {
 
     const rows: string[] = [''];
     if (!data || data.length === 0) {
-      rows.push(`  ${DIM}No entries yet. Start writing!${RESET}`);
+      rows.push(`  ${DIM}No entries yet.${RESET}`);
+      rows.push('');
+      rows.push(`  ${theme.prompt}Press [A] to write your first ${config.entryLabel.toLowerCase()}!${RESET}`);
     } else {
       rows.push(`  ${BOLD}${padRight('Date', 14)}${padRight('Title / Preview', 42)}ID${RESET}`);
       rows.push(`  ${theme.border}${'─'.repeat(62)}${RESET}`);
@@ -124,7 +126,7 @@ export function createLogbookDoor(config: LogbookConfig): Door {
 
     screen += `\r\n  ${DIM}Enter # to read  |  Page ${page}/${totalPages}${RESET}`;
     if (totalPages > 1) screen += `  ${DIM}[N]ext [P]rev${RESET}`;
-    screen += `  ${DIM}[Q] Back${RESET}`;
+    screen += `  ${DIM}[A]dd  [Q] Back${RESET}`;
     return { screen, inputMode: 'key' };
   }
 
@@ -132,6 +134,14 @@ export function createLogbookDoor(config: LogbookConfig): Door {
     const parts = session.current_location.split(':');
     let page = parseInt(parts[3] || '1');
     const key = input.toUpperCase();
+    if (key === 'A') {
+      if (config.hasTitle !== false) {
+        await updateSession(supabase, userId, { current_location: `${doorPrefix}:write:title`, door_state: {} });
+        return { screen: '', inputMode: 'line', prompt: `\r\n  ${theme.prompt}Title (Enter to skip): ${RESET}` };
+      }
+      await updateSession(supabase, userId, { current_location: `${doorPrefix}:write:body`, door_state: {} });
+      return { screen: '', inputMode: 'line', prompt: `\r\n  ${theme.prompt}${config.entryLabel}: ${RESET}` };
+    }
     if (key === 'Q' || key === 'X') {
       await updateSession(supabase, userId, { current_location: doorPrefix });
       return showMenu();

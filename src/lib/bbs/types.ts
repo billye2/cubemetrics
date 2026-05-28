@@ -18,6 +18,7 @@ export interface BBSSession {
   current_location: string;
   door_state: Record<string, unknown>;
   last_activity: string;
+  recent_doors: string[];
 }
 
 export interface BBSProfile {
