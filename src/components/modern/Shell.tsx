@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HeaderFeedback } from "./HeaderFeedback";
 
 interface ShellProps {
   title?: string;
@@ -27,14 +28,17 @@ export function Shell({ title, back, right, children }: ShellProps) {
                 className="flex items-center gap-2 text-zinc-100 font-semibold tracking-tight"
               >
                 <span className="inline-block h-6 w-6 rounded bg-cyan-500/20 ring-1 ring-cyan-500/40 text-center text-cyan-400 leading-6 text-xs">◧</span>
-                <span>Cubemetrics</span>
+                <span>XP Boost</span>
               </Link>
             )}
             {title && (
               <h1 className="ml-1 truncate text-base font-semibold text-zinc-100">{title}</h1>
             )}
           </div>
-          <div className="flex items-center gap-2">{right}</div>
+          <div className="flex items-center gap-2">
+            <HeaderFeedback />
+            {right}
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-4 sm:py-6">{children}</main>
