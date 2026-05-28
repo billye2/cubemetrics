@@ -1,0 +1,10 @@
+Time & Focus — Pomodoro Timer, Focus Session Timer, Time Tracker / Timesheet, Countdown Timer, Meditation Timer, Stopwatch
+Tasks & Planning — To-Do List, Kanban Board, Eisenhower Matrix (urgent/important), Daily Planner, Weekly Review, Morning/Evening Routine Checklist, Sprint Board, Backlog Manager
+Goals & Progress — Goal Tracker (SMART goals), OKR Tracker, Streak Counter, Milestone Tracker, Vision Board, Bucket List
+Habits & Wellness — Habit Tracker, Mood Tracker, Water Intake Tracker, Sleep Log, Energy Level Tracker, Weight Tracker, Workout / Exercise Log, Meal Planner, Screen Time Tracker, Gratitude Journal
+Notes & Thinking — Journal / Daily Log, Quick Notes, Meeting Notes, Standup Notes, Mind Map, Brainstorm / Idea Capture, Flashcards (spaced repetition), Writing Tracker (word count goals), Decision Matrix
+Finance — Expense Tracker, Budget Planner, Bill Tracker, Subscription Manager, Savings Goal Tracker, Debt Payoff Planner
+Learning & Reading — Reading List / Book Tracker, Course Progress Tracker, Vocabulary Builder, Learning Log, Skill Tree
+Organization — Bookmark Manager, Contact Manager / CRM Lite, Grocery / Shopping List, Inventory Tracker, Calendar, File / Document Index, Wishlist
+Work & Collaboration — Retrospective Board, 1-on-1 Meeting Prep, Feedback Log, Project Tracker, Client Tracker, Invoice Tracker
+Lifestyle — Recipe Box, Travel Planner, Packing List, Cleaning Schedule, Plant Care Tracker, Pet Care Log, Home Maintenance Log, Warranty Tracker
