@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Shell, Card } from "@/components/modern/Shell";
@@ -134,15 +133,9 @@ function ClassicFallback({ app }: { app: NonNullable<ReturnType<typeof getApp>> 
             <span className="font-semibold">Coming soon to the modern UI.</span>
           </p>
           <p className="mt-1 text-sm text-zinc-400">
-            For now, use this app in the classic terminal interface.
+            This app isn&apos;t available yet — check back soon.
           </p>
         </div>
-        <Link
-          href={`/classic?door=${app.id}`}
-          className="mt-5 inline-flex h-11 items-center justify-center rounded-xl bg-cyan-500 px-5 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 active:scale-[0.98]"
-        >
-          Open in Classic →
-        </Link>
       </Card>
     </Shell>
   );
