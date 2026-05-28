@@ -12,7 +12,7 @@ export function welcomeScreen(stats?: { totalUsers: number; totalCalls: number; 
 
   const infoLines = [
     '',
-    center(`${theme.info}Welcome to PurrfectBBS${RESET}`),
+    center(`${theme.info}Welcome to XPBBS${RESET}`),
     center(`${DIM}A throwback to simpler times${RESET}`),
     '',
   ];

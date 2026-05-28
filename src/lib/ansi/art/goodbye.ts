@@ -11,7 +11,7 @@ export function goodbyeScreen(handle: string): string {
     center(`${DIM}Call again soon...${RESET}`),
     '',
     center(`${theme.border}═══════════════════════════════${RESET}`),
-    center(`${DIM}PurrfectBBS v1.0${RESET}`),
+    center(`${DIM}XPBBS v1.0${RESET}`),
     center(`${theme.border}═══════════════════════════════${RESET}`),
     '',
     '',

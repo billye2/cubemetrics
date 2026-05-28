@@ -4,15 +4,15 @@ import { theme } from './colors';
 
 export function bbsBanner(): string {
   const art = [
-    `${BOLD}${FG.cyan}  ██████╗ ██████╗ ██████╗ ${RESET}`,
-    `${BOLD}${FG.cyan}  ██╔══██╗██╔══██╗██╔═══╝ ${RESET}`,
-    `${BOLD}${FG.cyan}  ██████╔╝██████╔╝███████╗${RESET}`,
-    `${BOLD}${FG.cyan}  ██╔══██╗██╔══██╗╚════██║${RESET}`,
-    `${BOLD}${FG.blue}  ██████╔╝██████╔╝███████║${RESET}`,
-    `${BOLD}${FG.blue}  ╚═════╝ ╚═════╝ ╚══════╝${RESET}`,
+    `${BOLD}${FG.cyan}██╗  ██╗██████╗ ██████╗ ██████╗ ██████╗${RESET}`,
+    `${BOLD}${FG.cyan}╚██╗██╔╝██╔══██╗██╔══██╗██╔══██╗██╔═══╝${RESET}`,
+    `${BOLD}${FG.cyan} ╚███╔╝ ██████╔╝██████╔╝██████╔╝███████╗${RESET}`,
+    `${BOLD}${FG.blue} ██╔██╗ ██╔═══╝ ██╔══██╗██╔══██╗╚════██║${RESET}`,
+    `${BOLD}${FG.blue}██╔╝ ██╗██║     ██████╔╝██████╔╝███████║${RESET}`,
+    `${BOLD}${FG.blue}╚═╝  ╚═╝╚═╝     ╚═════╝ ╚═════╝ ╚══════╝${RESET}`,
   ];
 
-  const subtitle = `${theme.title}PurrfectBBS v1.0${RESET}`;
+  const subtitle = `${theme.title}XPBBS v1.0${RESET}`;
 
   return [
     ...art.map(line => center(line)),

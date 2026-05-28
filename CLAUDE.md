@@ -1,4 +1,4 @@
-# PurrfectBBS
+# XPBBS
 
 A classic 1993-era BBS experience in the browser, powered by modern tech.
 
