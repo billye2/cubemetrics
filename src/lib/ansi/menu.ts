@@ -1,5 +1,6 @@
 import { theme, RESET } from './colors';
 import { box } from './box';
+import { currentCols } from './context';
 
 interface MenuItem {
   key: string;
@@ -16,7 +17,10 @@ interface MenuOptions {
 }
 
 export function menu(options: MenuOptions): string {
-  const { title, items, columns = 1, width = 80, footer } = options;
+  const cols = currentCols();
+  const { title, items, footer } = options;
+  const width = options.width ?? cols;
+  const columns = cols <= 40 ? 1 : (options.columns ?? 1);
   const innerWidth = width - 4;
 
   const content: string[] = [];
