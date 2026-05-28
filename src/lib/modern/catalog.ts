@@ -124,14 +124,16 @@ export const APPS: AppEntry[] = [
   { id: "subscriptions", name: "Subscriptions", category: "finance", icon: "⟳", description: "Recurring charges", ui: "finance", config: { itemType: "subscription", hasAmount: true } },
   { id: "invoices", name: "Invoices", category: "work", icon: "⌗", description: "Billing", ui: "finance", config: { itemType: "invoice", hasAmount: true, hasDueDate: true } },
 
-  // Classic-only (timer-based or specialized; still served from /classic)
-  { id: "pomodoro", name: "Pomodoro", category: "time", icon: "⏱", description: "Focus timer", ui: "classic" },
-  { id: "focus", name: "Focus", category: "time", icon: "◉", description: "Deep work sessions", ui: "classic" },
-  { id: "timetracker", name: "Time Tracker", category: "time", icon: "⌚", description: "Track where time goes", ui: "classic" },
-  { id: "countdown", name: "Countdown", category: "time", icon: "⏳", description: "Important dates", ui: "classic" },
-  { id: "meditation", name: "Meditation", category: "time", icon: "☯", description: "Mindfulness sessions", ui: "classic" },
-  { id: "stopwatch", name: "Stopwatch", category: "time", icon: "⏲", description: "Time anything", ui: "classic" },
-  { id: "calendar", name: "Calendar", category: "org", icon: "◰", description: "Events", ui: "classic" },
+  // Tracker-backed time apps (minutes logged per session)
+  { id: "focus", name: "Focus", category: "time", icon: "◉", description: "Minutes of deep work", ui: "tracker", config: { trackerType: "focus", unit: "minutes", min: 0, max: 720 } },
+  { id: "timetracker", name: "Time Tracker", category: "time", icon: "⌚", description: "Where time goes", ui: "tracker", config: { trackerType: "timetracker", unit: "minutes", min: 0, max: 1440 } },
+  { id: "countdown", name: "Countdown", category: "time", icon: "⏳", description: "Days to events", ui: "tracker", config: { trackerType: "countdown", unit: "days", min: 0, max: 9999 } },
+  { id: "meditation", name: "Meditation", category: "time", icon: "☯", description: "Minutes meditated", ui: "tracker", config: { trackerType: "meditation", unit: "minutes", min: 0, max: 240 } },
+  { id: "stopwatch", name: "Stopwatch", category: "time", icon: "⏲", description: "Time anything", ui: "tracker", config: { trackerType: "stopwatch", unit: "minutes", min: 0, max: 1440 } },
+  { id: "calendar", name: "Calendar", category: "org", icon: "◰", description: "Events", ui: "modern" },
+
+  // Classic-only (stateful timers + custom flows still TBD)
+  { id: "pomodoro", name: "Pomodoro", category: "time", icon: "⏱", description: "Focus timer", ui: "modern" },
   { id: "expenses", name: "Expenses", category: "finance", icon: "⟢", description: "Track spending", ui: "classic" },
   { id: "reading", name: "Reading", category: "learning", icon: "☐", description: "Books and articles", ui: "classic" },
   { id: "habits", name: "Habits", category: "habits", icon: "⊙", description: "Daily habits", ui: "classic" },
