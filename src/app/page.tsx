@@ -1,8 +1,8 @@
 "use client";
 
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 
-const Terminal = dynamic(() => import("@/components/Terminal"), { ssr: false });
+const Terminal = dynamicImport(() => import("@/components/Terminal"), { ssr: false });
 
 export default function Home() {
   return <Terminal />;
