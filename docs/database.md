@@ -15,11 +15,11 @@ Supabase PostgreSQL (via Vercel Marketplace)
 ## Core Tables
 
 ### profiles
-Extends `auth.users` with BBS-specific fields.
+Extends `auth.users`.
 | Column | Type | Notes |
 |--------|------|-------|
 | id | UUID PK | References auth.users |
-| handle | TEXT UNIQUE | BBS username |
+| handle | TEXT UNIQUE | Display name |
 | role | TEXT | 'user' or 'sysop' |
 | level | INTEGER | User access level (default 1) |
 | total_calls | INTEGER | Login count |
@@ -28,26 +28,9 @@ Extends `auth.users` with BBS-specific fields.
 | bio | TEXT | |
 | location | TEXT | |
 
-### bbs_sessions
-Tracks where each user is in the BBS.
-| Column | Type | Notes |
-|--------|------|-------|
-| user_id | UUID PK | References auth.users |
-| current_location | TEXT | e.g., 'main_menu', 'door:todo:add' |
-| door_state | JSONB | Ephemeral per-door data |
-| last_activity | TIMESTAMPTZ | |
+> The classic-only `bbs_sessions` and `activity_log` tables were dropped in migration `014_drop_classic.sql`.
 
-### activity_log
-SysOp-viewable system log.
-| Column | Type | Notes |
-|--------|------|-------|
-| id | BIGINT PK | Auto-increment |
-| user_id | UUID | References auth.users |
-| action | TEXT | e.g., 'login', 'door:todo:add' |
-| details | JSONB | |
-| created_at | TIMESTAMPTZ | |
-
-## Door Tables (Phase 1)
+## App Tables
 
 ### todos
 | Column | Type |

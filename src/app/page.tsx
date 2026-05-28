@@ -19,18 +19,6 @@ export default async function Home() {
     .eq("id", user.id)
     .single();
 
-  const { data: session } = await supabase
-    .from("bbs_sessions")
-    .select("recent_doors")
-    .eq("user_id", user.id)
-    .single();
-
-  const recentIds: string[] = (session?.recent_doors as string[] | undefined) ?? [];
-  const recentApps = recentIds
-    .map((id) => APPS.find((a) => a.id === id))
-    .filter((a): a is NonNullable<typeof a> => !!a)
-    .slice(0, 4);
-
   return (
     <Shell right={<SignOutButton />}>
       <div className="mb-5">
@@ -39,17 +27,6 @@ export default async function Home() {
       </div>
 
       <AppSearch apps={APPS} />
-
-      {recentApps.length > 0 && (
-        <section className="mb-8">
-          <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">Recent</h3>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {recentApps.map((app) => (
-              <AppTile key={app.id} app={app} />
-            ))}
-          </div>
-        </section>
-      )}
 
       {CATEGORIES.map((cat) => {
         const apps = APPS.filter((a) => a.category === cat.id);
@@ -91,7 +68,7 @@ function Landing() {
         <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-cyan-500/10 text-3xl text-cyan-400 ring-1 ring-cyan-500/30">
           ◧
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">Cubemetrics</h1>
+        <h1 className="text-3xl font-bold tracking-tight">XP Boost</h1>
         <p className="mt-2 max-w-md text-zinc-400">
           A personal productivity hub with 50+ tiny apps for tracking your time, tasks, habits, and life.
         </p>

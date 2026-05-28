@@ -4,8 +4,7 @@ export type UiType =
   | "checklist"
   | "logbook"
   | "goal"
-  | "finance"
-  | "classic";
+  | "finance";
 
 export interface AppEntry {
   id: string;
