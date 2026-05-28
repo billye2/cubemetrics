@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
@@ -12,36 +12,6 @@ interface BBSResponse {
   echo?: boolean;
 }
 
-function extractMenuKeys(ansiText: string): { key: string; label: string }[] {
-  const stripped = ansiText.replace(/\x1b\[[0-9;]*m/g, "");
-  const seen = new Set<string>();
-  const items: { key: string; label: string }[] = [];
-
-  const regex = /\[([A-Za-z0-9<>])\]\s*([A-Za-z /&'()\-]+)/g;
-  let match;
-  while ((match = regex.exec(stripped)) !== null) {
-    const key = match[1];
-    const label = match[2].trim();
-    if (!seen.has(key) && label.length > 1) {
-      seen.add(key);
-      items.push({ key, label });
-    }
-  }
-
-  // Also pick up standalone navigation hints like [N]ext [P]rev
-  const navRegex = /\[([A-Za-z])\](\w+)/g;
-  while ((match = navRegex.exec(stripped)) !== null) {
-    const key = match[1];
-    const label = key + match[2];
-    if (!seen.has(key)) {
-      seen.add(key);
-      items.push({ key, label });
-    }
-  }
-
-  return items;
-}
-
 export default function Terminal() {
   const termRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
@@ -51,16 +21,13 @@ export default function Terminal() {
   const sendRef = useRef<(input: string, type: "key" | "line" | "refresh") => void>(undefined);
   const [showLineInput, setShowLineInput] = useState(false);
   const [linePrompt, setLinePrompt] = useState("");
-  const [menuKeys, setMenuKeys] = useState<{ key: string; label: string }[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
   const lineInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!termRef.current) return;
 
-    const mobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
-    setIsMobile(mobile);
-    const fontSize = mobile ? 10 : 16;
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+    const fontSize = isMobile ? 10 : 16;
 
     const term = new XTerm({
       cursorBlink: true,
@@ -88,7 +55,7 @@ export default function Terminal() {
         brightWhite: "#AAAAAA",
       },
       cols: 80,
-      rows: mobile ? 20 : 25,
+      rows: isMobile ? 24 : 25,
       scrollback: 0,
       convertEol: true,
     });
@@ -123,11 +90,6 @@ export default function Terminal() {
 
       if (response.screen) {
         term.write(response.screen);
-        if (response.inputMode === "key") {
-          setMenuKeys(extractMenuKeys(response.screen));
-        } else {
-          setMenuKeys([]);
-        }
       }
 
       inputModeRef.current = response.inputMode;
@@ -174,55 +136,75 @@ export default function Terminal() {
     }
     window.addEventListener("message", onMessage);
 
-    // Make [X] menu items clickable on all devices
-    term.registerLinkProvider({
-      provideLinks(bufferLineNumber, callback) {
-        const line = term.buffer.active.getLine(bufferLineNumber);
-        if (!line) { callback(undefined); return; }
-        let text = "";
-        for (let i = 0; i < line.length; i++) {
-          text += line.getCell(i)?.getChars() || " ";
+    // Click/tap: detect [X] menu items at click position
+    function getRowText(rowIndex: number): string {
+      const line = term.buffer.active.getLine(rowIndex);
+      if (!line) return "";
+      let text = "";
+      for (let i = 0; i < line.length; i++) {
+        text += line.getCell(i)?.getChars() || " ";
+      }
+      return text;
+    }
+
+    function findMenuKeyOnRow(text: string, col: number): string | null {
+      const regex = /\[([A-Za-z0-9<>.!?])\]\s*([A-Za-z /&'()\-]*)/g;
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        const start = match.index;
+        const end = start + match[0].trimEnd().length;
+        if (col >= start && col < end) {
+          return match[1];
         }
-        const links: { startIndex: number; length: number; key: string }[] = [];
-        const regex = /\[([A-Za-z0-9<>.!?])\]/g;
-        let match;
-        while ((match = regex.exec(text)) !== null) {
-          links.push({ startIndex: match.index, length: match[0].length, key: match[1] });
-        }
-        if (links.length === 0) { callback(undefined); return; }
-        callback(
-          links.map((link) => ({
-            range: {
-              start: { x: link.startIndex + 1, y: bufferLineNumber + 1 },
-              end: { x: link.startIndex + link.length + 1, y: bufferLineNumber + 1 },
-            },
-            text: `[${link.key}]`,
-            decorations: {
-              underline: false,
-              pointerCursor: true,
-            },
-            activate() {
-              if (inputModeRef.current === "key") send(link.key, "key");
-            },
-          }))
-        );
-      },
-    });
+      }
+      return null;
+    }
+
+    const screenEl = termRef.current?.querySelector(".xterm-screen") as HTMLElement | null;
+
+    function handleTermClick(e: MouseEvent | TouchEvent) {
+      if (inputModeRef.current !== "key" || pendingRef.current) return;
+
+      const rect = screenEl?.getBoundingClientRect();
+      if (!rect) return;
+
+      let clientX: number, clientY: number;
+      if ("changedTouches" in e && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
+      } else if ("clientX" in e) {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      } else {
+        return;
+      }
+
+      const cellWidth = rect.width / term.cols;
+      const cellHeight = rect.height / term.rows;
+      const col = Math.floor((clientX - rect.left) / cellWidth);
+      const row = Math.floor((clientY - rect.top) / cellHeight);
+
+      if (row < 0 || row >= term.rows || col < 0 || col >= term.cols) return;
+
+      const text = getRowText(row);
+      const key = findMenuKeyOnRow(text, col);
+      if (key) {
+        e.preventDefault();
+        e.stopPropagation();
+        send(key, "key");
+      }
+    }
+
+    if (screenEl) {
+      screenEl.addEventListener("click", handleTermClick);
+      screenEl.addEventListener("touchend", handleTermClick);
+    }
 
     // Keyboard input
     term.onData((data) => {
       if (pendingRef.current) return;
       if (inputModeRef.current === "key") {
         send(data, "key");
-      } else {
-        if (data === "\r" || data === "\n") {
-          // On desktop, handle Enter in terminal directly
-          // On mobile, the input bar handles submission
-        } else if (data === "\x7f" || data === "\b") {
-          // handled by input bar on mobile
-        } else if (data >= " ") {
-          // handled by input bar on mobile
-        }
       }
     });
 
@@ -234,12 +216,12 @@ export default function Terminal() {
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("message", onMessage);
+      if (screenEl) {
+        screenEl.removeEventListener("click", handleTermClick);
+        screenEl.removeEventListener("touchend", handleTermClick);
+      }
       term.dispose();
     };
-  }, []);
-
-  const handleKeyTap = useCallback((key: string) => {
-    sendRef.current?.(key, "key");
   }, []);
 
   function handleLineSubmit(e: React.FormEvent) {
@@ -258,9 +240,6 @@ export default function Terminal() {
     sendRef.current?.(input, "line");
   }
 
-  const hasBottomBar = isMobile && (menuKeys.length > 0 || showLineInput);
-  const barHeight = showLineInput ? 50 : (menuKeys.length > 6 ? 100 : 56);
-
   return (
     <div style={{ width: "100vw", height: "100dvh", background: "#000", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <div
@@ -272,44 +251,6 @@ export default function Terminal() {
         }}
       />
 
-      {isMobile && !showLineInput && menuKeys.length > 0 && (
-        <div
-          style={{
-            background: "#111",
-            borderTop: "1px solid #333",
-            padding: "6px",
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "4px",
-            justifyContent: "center",
-          }}
-        >
-          {menuKeys.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => handleKeyTap(key)}
-              style={{
-                background: "#1a1a1a",
-                color: "#00AAAA",
-                border: "1px solid #333",
-                borderRadius: "6px",
-                padding: "10px 14px",
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: "13px",
-                fontWeight: "bold",
-                cursor: "pointer",
-                minWidth: "60px",
-                textAlign: "center",
-                WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              <span style={{ color: "#AA5500" }}>[{key}]</span>{" "}
-              <span style={{ color: "#AAAAAA", fontWeight: "normal", fontSize: "11px" }}>{label}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
       {showLineInput && (
         <form
           onSubmit={handleLineSubmit}
@@ -318,6 +259,7 @@ export default function Terminal() {
             borderTop: "1px solid #333",
             display: "flex",
             height: "50px",
+            flexShrink: 0,
           }}
         >
           <span
