@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
@@ -19,14 +19,21 @@ export default function Terminal() {
   const lineBufferRef = useRef<string>("");
   const echoRef = useRef<boolean>(true);
   const pendingRef = useRef<boolean>(false);
+  const sendRef = useRef<(input: string, type: "key" | "line" | "refresh") => void>(undefined);
+  const [showLineInput, setShowLineInput] = useState(false);
+  const [linePrompt, setLinePrompt] = useState("");
+  const lineInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!termRef.current) return;
 
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 768;
+    const fontSize = isMobile ? 11 : 16;
+
     const term = new XTerm({
       cursorBlink: true,
       fontFamily: "'IBM Plex Mono', 'Courier New', 'Consolas', monospace",
-      fontSize: 16,
+      fontSize,
       theme: {
         background: "#000000",
         foreground: "#AAAAAA",
@@ -75,7 +82,6 @@ export default function Terminal() {
     }
 
     function handleResponse(response: BBSResponse) {
-      // Check for OAuth signal
       if (response.prompt === "__OAUTH_GOOGLE__") {
         if (response.screen) term.write(response.screen);
         openOAuthPopup();
@@ -88,12 +94,29 @@ export default function Terminal() {
       }
       inputModeRef.current = response.inputMode;
       echoRef.current = response.echo !== false;
-      if (response.inputMode === "line" && response.prompt) {
-        term.write(response.prompt);
+
+      if (response.inputMode === "line") {
+        const prompt = response.prompt || "";
+        setLinePrompt(prompt.replace(/\x1b\[[0-9;]*m/g, "").trim());
+        setShowLineInput(true);
+        if (response.prompt) term.write(response.prompt);
+        setTimeout(() => lineInputRef.current?.focus(), 100);
+      } else {
+        setShowLineInput(false);
+        setLinePrompt("");
       }
+
       lineBufferRef.current = "";
       pendingRef.current = false;
     }
+
+    function send(input: string, type: "key" | "line" | "refresh") {
+      if (pendingRef.current && type !== "refresh") return;
+      pendingRef.current = true;
+      sendToServer(input, type).then(handleResponse);
+    }
+
+    sendRef.current = send;
 
     function openOAuthPopup() {
       const width = 500;
@@ -107,30 +130,67 @@ export default function Terminal() {
       );
     }
 
-    // Listen for auth completion from popup
     function onMessage(event: MessageEvent) {
       if (event.data === "auth_complete") {
-        sendToServer("", "refresh").then(handleResponse);
+        send("", "refresh");
       }
     }
     window.addEventListener("message", onMessage);
 
-    // Initial screen load
-    sendToServer("", "refresh").then(handleResponse);
+    // Make [X] menu items clickable
+    term.registerLinkProvider({
+      provideLinks(bufferLineNumber, callback) {
+        const line = term.buffer.active.getLine(bufferLineNumber);
+        if (!line) { callback(undefined); return; }
 
+        let text = "";
+        for (let i = 0; i < line.length; i++) {
+          text += line.getCell(i)?.getChars() || " ";
+        }
+
+        const links: { startIndex: number; length: number; key: string }[] = [];
+        const regex = /\[([A-Za-z0-9<>.!?])\]/g;
+        let match;
+        while ((match = regex.exec(text)) !== null) {
+          links.push({
+            startIndex: match.index,
+            length: match[0].length,
+            key: match[1],
+          });
+        }
+
+        if (links.length === 0) { callback(undefined); return; }
+
+        callback(
+          links.map((link) => ({
+            range: {
+              start: { x: link.startIndex + 1, y: bufferLineNumber + 1 },
+              end: { x: link.startIndex + link.length + 1, y: bufferLineNumber + 1 },
+            },
+            text: `[${link.key}]`,
+            activate() {
+              if (inputModeRef.current === "key") {
+                send(link.key, "key");
+              }
+            },
+          }))
+        );
+      },
+    });
+
+    // Keyboard input
     term.onData((data) => {
       if (pendingRef.current) return;
 
       if (inputModeRef.current === "key") {
-        pendingRef.current = true;
-        sendToServer(data, "key").then(handleResponse);
+        send(data, "key");
       } else {
         if (data === "\r" || data === "\n") {
           term.write("\r\n");
           const line = lineBufferRef.current;
           lineBufferRef.current = "";
-          pendingRef.current = true;
-          sendToServer(line, "line").then(handleResponse);
+          setShowLineInput(false);
+          send(line, "line");
         } else if (data === "\x7f" || data === "\b") {
           if (lineBufferRef.current.length > 0) {
             lineBufferRef.current = lineBufferRef.current.slice(0, -1);
@@ -149,6 +209,9 @@ export default function Terminal() {
       }
     });
 
+    // Initial screen load
+    send("", "refresh");
+
     const handleResize = () => fitAddon.fit();
     window.addEventListener("resize", handleResize);
 
@@ -159,11 +222,93 @@ export default function Terminal() {
     };
   }, []);
 
+  function handleLineSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const input = lineInputRef.current?.value || "";
+    const term = xtermRef.current;
+    if (term) {
+      if (echoRef.current) {
+        term.write(input + "\r\n");
+      } else {
+        term.write("*".repeat(input.length) + "\r\n");
+      }
+    }
+    if (lineInputRef.current) lineInputRef.current.value = "";
+    setShowLineInput(false);
+    sendRef.current?.(input, "line");
+  }
+
   return (
-    <div
-      ref={termRef}
-      className="terminal-container"
-      style={{ width: "100vw", height: "100vh", background: "#000" }}
-    />
+    <div style={{ width: "100vw", height: "100vh", background: "#000", position: "relative", overflow: "hidden" }}>
+      <div
+        ref={termRef}
+        style={{
+          width: "100%",
+          height: showLineInput ? "calc(100% - 50px)" : "100%",
+          background: "#000",
+        }}
+      />
+
+      {showLineInput && (
+        <form
+          onSubmit={handleLineSubmit}
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "50px",
+            display: "flex",
+            background: "#111",
+            borderTop: "1px solid #333",
+          }}
+        >
+          <span
+            style={{
+              color: "#AA5500",
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "14px",
+              padding: "12px 8px 12px 12px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {linePrompt || ">"}
+          </span>
+          <input
+            ref={lineInputRef}
+            type={echoRef.current ? "text" : "password"}
+            autoFocus
+            autoComplete="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            style={{
+              flex: 1,
+              background: "#000",
+              color: "#AAAAAA",
+              border: "none",
+              outline: "none",
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "14px",
+              padding: "12px 8px",
+            }}
+          />
+          <button
+            type="submit"
+            style={{
+              background: "#00AAAA",
+              color: "#000",
+              border: "none",
+              padding: "0 20px",
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: "14px",
+              fontWeight: "bold",
+              cursor: "pointer",
+            }}
+          >
+            SEND
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
