@@ -31,12 +31,13 @@ interface Settings {
   shortMin: number;
   longMin: number;
   perLong: number;
+  dailyGoal: number;
   autoStart: boolean;
   sound: boolean;
 }
 
 const PRESETS = [15, 25, 45, 60];
-const DEFAULT_SETTINGS: Settings = { shortMin: 5, longMin: 15, perLong: 4, autoStart: false, sound: true };
+const DEFAULT_SETTINGS: Settings = { shortMin: 5, longMin: 15, perLong: 4, dailyGoal: 8, autoStart: false, sound: true };
 const SETTINGS_KEY = "pomodoro_settings";
 const BREAK_KEY = "pomodoro_break";
 
@@ -176,10 +177,22 @@ export function PomodoroView({
   return (
     <div>
       <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat label="Today" value={String(todayCount)} />
+        <Stat
+          label="Today"
+          value={`${todayCount}/${settings.dailyGoal}`}
+          accent={todayCount >= settings.dailyGoal}
+        />
         <Stat label="This week" value={String(week.reduce((a, d) => a + d.count, 0))} />
         <Stat label="Best day" value={String(Math.max(0, ...week.map((d) => d.count)))} />
       </div>
+      {settings.dailyGoal > 0 && (
+        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+          <div
+            className={`h-full rounded-full transition-all ${todayCount >= settings.dailyGoal ? "bg-emerald-500" : "bg-cyan-500"}`}
+            style={{ width: `${Math.min(100, Math.round((todayCount / settings.dailyGoal) * 100))}%` }}
+          />
+        </div>
+      )}
 
       <CycleDots perLong={settings.perLong} progress={cycleProgress} />
 
@@ -227,10 +240,10 @@ export function PomodoroView({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
-      <div className="text-xl font-bold tracking-tight text-cyan-400">{value}</div>
+      <div className={`text-xl font-bold tracking-tight ${accent ? "text-emerald-400" : "text-cyan-400"}`}>{value}</div>
       <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
     </div>
   );
@@ -492,6 +505,13 @@ function SettingsPanel({ settings, onSave }: { settings: Settings; onSave: (s: S
         min={2}
         max={8}
         onChange={(v) => onSave({ ...settings, perLong: v })}
+      />
+      <NumberRow
+        label="Daily goal"
+        value={settings.dailyGoal}
+        min={1}
+        max={20}
+        onChange={(v) => onSave({ ...settings, dailyGoal: v })}
       />
       <ToggleRow
         label="Auto-start work after break"
