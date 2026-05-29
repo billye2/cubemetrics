@@ -10,7 +10,7 @@
 
 **P1 — core / completeness**
 - **Edit a note** — inline edit of title + body (tap to enter edit mode, save/cancel), `updateNoteAction` that also bumps `updated_at`. Without this the app barely works as a notepad. Highest-impact gap.
-- **Search** — a search box filtering across title + body (server `ilike`), so notes scale past a screenful.
+- **Search** — ✅ a search box filters across title + body (client-side over the loaded set).
 
 **P2 — enhancements**
 - **Surface & filter tags** — wire up the existing `tags TEXT[]` column: a tag input on the form, tag chips on each card, and a recent-first filter row at the top. Cheap win — the column already exists.

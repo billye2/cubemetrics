@@ -17,6 +17,8 @@ interface Entry {
 }
 
 export function JournalView({ entries }: { entries: Entry[] }) {
+  const [query, setQuery] = useState("");
+
   if (entries.length === 0) {
     return (
       <div>
@@ -30,14 +32,33 @@ export function JournalView({ entries }: { entries: Entry[] }) {
     );
   }
 
+  const q = query.trim().toLowerCase();
+  const filtered = q
+    ? entries.filter(
+        (e) => e.body.toLowerCase().includes(q) || (e.title ?? "").toLowerCase().includes(q),
+      )
+    : entries;
+
   return (
     <div>
       <NewEntryButton />
-      <ul className="mt-4 space-y-3">
-        {entries.map((e) => (
-          <EntryCard key={e.id} entry={e} />
-        ))}
-      </ul>
+      {entries.length > 3 && (
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search entries…"
+          className="mt-4 w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+        />
+      )}
+      {filtered.length === 0 ? (
+        <p className="mt-6 text-center text-sm text-zinc-500">No entries match “{query}”.</p>
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {filtered.map((e) => (
+            <EntryCard key={e.id} entry={e} />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

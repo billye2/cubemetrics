@@ -38,8 +38,8 @@ folder every session. Updated as work lands (builder role: tick the plan's own c
 | reading | 🟡 Partial | P1: progress bars (page/total), edit; P2: stats strip, yearly goal |
 | habits | 🟡 Partial | ✓ edit name (inline); P1: backfill missed day; P2: heatmap, archive UX |
 | todo | 🟡 Partial | ✓ edit title (inline); P1: due dates; P2: stats, today filter |
-| journal | 🟡 Partial | ✓ edit (title/body/mood); P1: search; P2: streak, mood chart, prompts |
-| notes | 🟡 Partial | ✓ edit title+body (inline, fixes updated_at); P1: search; P2: tags surface, sort |
+| journal | 🟡 Partial | ✓ edit (title/body/mood) + Markdown + search; P2: streak, mood chart, prompts |
+| notes | 🟡 Partial | ✓ edit (inline, fixes updated_at) + Markdown + search; P2: tags surface, sort |
 | expenses | 🟡 Partial | P1: category breakdown, edit; P2: trend, filter, budget link |
 | feedback | 🟡 Partial | P1: edit/withdraw while new; P2: changelog, upvote |
 
