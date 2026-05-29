@@ -4,7 +4,8 @@ export type UiType =
   | "checklist"
   | "logbook"
   | "goal"
-  | "finance";
+  | "finance"
+  | "schedule";
 
 export interface AppEntry {
   id: string;
@@ -38,6 +39,8 @@ export interface FactoryConfig {
   itemType?: string;
   hasDueDate?: boolean;
   hasAmount?: boolean;
+  // schedule
+  scheduleType?: string;
 }
 
 export const CATEGORIES: { id: string; label: string }[] = [
@@ -133,6 +136,10 @@ export const APPS: AppEntry[] = [
   { id: "income", name: "Income", category: "finance", icon: "↑", description: "Money in, by source", ui: "finance", config: { itemType: "income", hasAmount: true } },
   { id: "networth", name: "Net Worth", category: "finance", icon: "❖", description: "Assets − liabilities over time", ui: "modern" },
   { id: "keepintouch", name: "Keep in Touch", category: "org", icon: "❥", description: "Stay in touch on a cadence", ui: "modern" },
+
+  // Schedule / recurring (factory family #6)
+  { id: "carcare", name: "Car", category: "lifestyle", icon: "⛀", description: "Vehicle service on a schedule", ui: "schedule", config: { scheduleType: "carcare", itemLabel: "Service" } },
+  { id: "medication", name: "Meds", category: "habits", icon: "✛", description: "Medications & refills on a cadence", ui: "schedule", config: { scheduleType: "medication", itemLabel: "Med" } },
 
   // Tracker-backed time apps (minutes logged per session)
   { id: "focus", name: "Focus", category: "time", icon: "◉", description: "Timer for one deep-work session", ui: "modern" },

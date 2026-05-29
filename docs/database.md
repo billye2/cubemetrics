@@ -151,6 +151,17 @@ The P1 template upgrades use: checklist `note`; logbook editable `title/body` + 
 `frequency` (recurring monthly/annual totals for subscriptions) + due-date urgency. These columns
 already existed on the remote, so the upgrades shipped without a live schema change.
 
+A **sixth factory family — `schedule`** (recurring tasks) was added in migration `030_schedule.sql`:
+
+| Template  | Table             | Columns |
+|-----------|-------------------|---------|
+| schedule  | `schedule_items`  | `schedule_type, title, interval_days, last_done, note, created_at` |
+
+`next due = last_done + interval_days` (null `last_done` = due now); marking done stamps
+`last_done = today` and reschedules. Powers new apps **Car** (`carcare`) and **Meds** (`medication`)
+as catalog entries only. Standard RLS pair; indexed `(user_id, schedule_type)`. Design +
+re-pointing follow-ups in [app-plans/_schedule-template.md](app-plans/_schedule-template.md).
+
 ## XP Layer Tables
 
 Three tables back the XP layer (points / levels / streaks / daily quests / achievements). Defined

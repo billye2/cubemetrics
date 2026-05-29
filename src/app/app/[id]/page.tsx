@@ -7,6 +7,7 @@ import { ChecklistView } from "../_factories/ChecklistView";
 import { LogbookView } from "../_factories/LogbookView";
 import { GoalView } from "../_factories/GoalView";
 import { FinanceView } from "../_factories/FinanceView";
+import { ScheduleView } from "../_factories/ScheduleView";
 
 export const dynamic = "force-dynamic";
 
@@ -125,6 +126,21 @@ export default async function AppDispatch({
     return (
       <Shell back={back} title={app.name}>
         <FinanceView appId={app.id} config={config} items={data || []} />
+      </Shell>
+    );
+  }
+
+  if (app.ui === "schedule") {
+    const { data } = await supabase
+      .from("schedule_items")
+      .select("id, title, interval_days, last_done, note, created_at")
+      .eq("user_id", user.id)
+      .eq("schedule_type", config.scheduleType!)
+      .order("created_at", { ascending: true })
+      .limit(200);
+    return (
+      <Shell back={back} title={app.name}>
+        <ScheduleView appId={app.id} config={config} items={data || []} />
       </Shell>
     );
   }
