@@ -106,6 +106,8 @@ export const APPS: AppEntry[] = [
   { id: "oneononep", name: "1-on-1s", category: "work", icon: "☷", description: "1:1 notes", ui: "logbook", config: { logType: "oneonone", entryLabel: "Meeting", hasTitle: true } },
   { id: "retro", name: "Retro", category: "work", icon: "⟲", description: "Team retros", ui: "logbook", config: { logType: "retro", entryLabel: "Retro", hasTitle: true } },
   { id: "recipes", name: "Recipes", category: "lifestyle", icon: "◍", description: "Recipe collection", ui: "logbook", config: { logType: "recipe", entryLabel: "Recipe", hasTitle: true } },
+  { id: "brag", name: "Wins", category: "work", icon: "★", description: "Brag doc — log accomplishments", ui: "logbook", config: { logType: "brag", entryLabel: "Win", hasTitle: true } },
+  { id: "interviews", name: "Interviews", category: "work", icon: "☷", description: "Interview debriefs", ui: "logbook", config: { logType: "interview", entryLabel: "Interview", hasTitle: true } },
 
   // Goals
   { id: "goals", name: "Goals", category: "goals", icon: "◎", description: "Long-term goals", ui: "goal", config: { goalType: "smart", hasTarget: true } },
@@ -117,12 +119,14 @@ export const APPS: AppEntry[] = [
   { id: "projecttracker", name: "Projects", category: "work", icon: "◧", description: "Project status", ui: "goal", config: { goalType: "project", hasTarget: false } },
   { id: "savings", name: "Savings", category: "finance", icon: "◯", description: "Savings goals", ui: "goal", config: { goalType: "savings", hasTarget: true } },
   { id: "debtpayoff", name: "Debt", category: "finance", icon: "⊠", description: "Payoff plan", ui: "goal", config: { goalType: "debt", hasTarget: true } },
+  { id: "challenge", name: "Challenges", category: "goals", icon: "⚑", description: "Time-boxed challenges with a target", ui: "goal", config: { goalType: "challenge", hasTarget: true } },
 
   // Finance items
   { id: "budget", name: "Budget", category: "finance", icon: "⊟", description: "Monthly budget", ui: "finance", config: { itemType: "budget", hasAmount: true } },
   { id: "bills", name: "Bills", category: "finance", icon: "⌗", description: "Bills due", ui: "finance", config: { itemType: "bill", hasAmount: true, hasDueDate: true } },
   { id: "subscriptions", name: "Subscriptions", category: "finance", icon: "⟳", description: "Recurring charges", ui: "finance", config: { itemType: "subscription", hasAmount: true } },
   { id: "invoices", name: "Invoices", category: "work", icon: "⌗", description: "Billing", ui: "finance", config: { itemType: "invoice", hasAmount: true, hasDueDate: true } },
+  { id: "income", name: "Income", category: "finance", icon: "↑", description: "Money in, by source", ui: "finance", config: { itemType: "income", hasAmount: true } },
 
   // Tracker-backed time apps (minutes logged per session)
   { id: "focus", name: "Focus", category: "time", icon: "◉", description: "Timer for one deep-work session", ui: "modern" },

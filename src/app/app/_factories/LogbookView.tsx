@@ -26,6 +26,8 @@ const PROMPTS: Record<string, string> = {
   oneonone: "Topics, action items, follow-ups…",
   retro: "Went well · Didn't · Try next…",
   recipe: "Ingredients, steps, servings, cook time…",
+  brag: "What you shipped or achieved — impact, numbers, who noticed…",
+  interview: "Company, who you met, questions asked, how it went, follow-ups…",
 };
 
 function monthKey(d: Date): string {
