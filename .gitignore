@@ -43,5 +43,8 @@ next-env.d.ts
 
 .vercel
 
-# claude code worktrees and local state
-.claude/
+# claude code worktrees and local state (ignore contents…)
+.claude/*
+# …but version the shareable roles + slash commands (not local settings/worktrees)
+!.claude/roles/
+!.claude/commands/
