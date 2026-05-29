@@ -50,10 +50,10 @@ folder every session. Updated as work lands (builder role: tick the plan's own c
 | steps · caffeine · stress · productivity | ✅ Done | thin catalog entries — in `finished/` |
 | mood | 🟡 Partial | emoji entry + line/dot chart open (graduate candidate) |
 | weight | 🟡 Partial | line chart + moving-avg open (graduate candidate) |
-| water · meditation · writingtracker | 🟡 Partial | need `quickAdd` + `dailyGoal` (tracker-template P2) |
-| sleep | 🟡 Partial | ideal-range band + weekly avg |
+| water · meditation · writingtracker | 🟢 At bar | ✓ daily-goal ring + quick-add; P3: per-app chart polish |
+| sleep | 🟡 Partial | ✓ daily goal; P1: ideal-range band (7–9h); P2: weekly avg |
 | energy | 🟡 Partial | time-of-day tagging, energy curve |
-| screentime | 🟡 Partial | "under is good" inversion + daily ceiling |
+| screentime | 🟡 Partial | ✓ at-most cap ring + quick-add; P3: category split |
 | stopwatch | 🔴 Graduate | needs a real start/stop timer, not a number field |
 
 ## Checklists (factory `checklist`)
@@ -106,8 +106,9 @@ are consumed:
 - **Inline-edit sweep** — ✓ done. `<InlineEdit>` primitive (todo title, habit name) + tailored
   edit modes for notes, journal, and countdown (multi-field). Every custom CRUD app can now fix a
   typo without delete-and-recreate.
-- **Tracker-template P2** — `dailyGoal` ring + `quickAdd` steppers — lights up water, steps,
-  meditation, writingtracker, sleep, screentime in one change.
+- **Tracker-template P2** — ✓ done. `dailyGoal` ring (+ `at-most` caps) and `quickAdd` steppers
+  shipped across water/sleep/meditation/writing/steps/screentime/caffeine. Remaining tracker P2:
+  inline value edit, backdate, 30-day view toggle.
 - **`<DailyBarChart>` primitive** — Focus/TimeTracker/Countdown/Pomodoro/Workout all hand-roll the
   7-day bar; extract once to stop the drift.
 - **Graduate the 🔴 apps** — biggest single backlog; each is a custom-page build.
