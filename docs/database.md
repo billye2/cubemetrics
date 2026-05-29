@@ -96,6 +96,13 @@ Backs the Countdown app. `target_date` is a calendar date; `target_time` is opti
 
 Back the Counter / Tally app (migration `023_counters.sql`, **applied to the remote**). `counters.value` is the denormalized running total; `step` is the +/− increment. Every press appends a `counter_events` row (`delta = ±step`) so a counter has history — "today net" (Σ delta on the local day) and a 7-day taps-per-day chart. Resets zero `value` **without** logging an event, so the press metrics stay honest. `counter_events` indexed on `(counter_id, created_at)` and `(user_id, created_at)`.
 
+### job_applications
+| Column | Type |
+|--------|------|
+| id, user_id, company, role, stage, applied_on, created_at |
+
+Backs the Job Application tracker (migration `027_job_applications.sql`, **applied to the remote**). `stage TEXT` moves through the pipeline `saved` → `applied` → `interview` → `offer` (or `rejected`); `applied_on DATE` is stamped the first time the stage advances past `saved`. Next-action/URL/notes are P2. Indexed on `(user_id, stage)`.
+
 ### kanban_cards
 | Column | Type |
 |--------|------|
