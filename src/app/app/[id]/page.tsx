@@ -52,7 +52,7 @@ export default async function AppDispatch({
   if (app.ui === "checklist") {
     const { data } = await supabase
       .from("checklists")
-      .select("id, title, completed, created_at")
+      .select("id, title, note, completed, created_at")
       .eq("user_id", user.id)
       .eq("list_type", config.listType!)
       .order("completed", { ascending: true })
@@ -83,7 +83,7 @@ export default async function AppDispatch({
   if (app.ui === "goal") {
     const { data } = await supabase
       .from("goals")
-      .select("id, title, current_value, target_value, status, created_at")
+      .select("id, title, description, current_value, target_value, unit, status, due_date, created_at")
       .eq("user_id", user.id)
       .eq("goal_type", config.goalType!)
       .order("status", { ascending: true })
@@ -99,7 +99,7 @@ export default async function AppDispatch({
   if (app.ui === "finance") {
     const { data } = await supabase
       .from("finance_items")
-      .select("id, name, amount, category, paid, due_date, created_at")
+      .select("id, name, amount, category, frequency, paid, due_date, note, created_at")
       .eq("user_id", user.id)
       .eq("item_type", config.itemType!)
       .order("paid", { ascending: true })

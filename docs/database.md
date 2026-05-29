@@ -86,6 +86,26 @@ RLS scopes reads/writes to the owner only (`Users can manage own feedback`). The
 
 Backs the Countdown app. `target_date` is a calendar date; `target_time` is optional and combines with the date in local time. `recurring_yearly` marks events that repeat each year (birthdays, anniversaries, holidays) — the "next occurrence" is computed client-side from the original month/day. Indexed on `(user_id, target_date)`.
 
+## Factory Tables
+
+Five shared tables back the generic template apps. Each row is scoped by `user_id` + a `*_type`
+discriminator selecting which catalog app owns it (e.g. `tracker_type = "water"`). Documented in
+migration `017_factory_tables.sql` (created ad-hoc earlier; the migration is idempotent and records
+the current shape).
+
+| Template  | Table            | Columns |
+|-----------|------------------|---------|
+| tracker   | `daily_trackers` | `tracker_type, entry_date, value, label, note, created_at` |
+| checklist | `checklists`     | `list_type, title, note, completed, sort_order, created_at` |
+| logbook   | `logs`           | `log_type, entry_date, title, body, tags, created_at` |
+| goal      | `goals`          | `goal_type, title, description, target_value, current_value, unit, status, due_date, created_at` |
+| finance   | `finance_items`  | `item_type, name, amount, frequency, category, due_date, paid, note, created_at` |
+
+The P1 template upgrades use: checklist `note`; logbook editable `title/body` + backdated
+`created_at`; goal `due_date`/`description`/`unit` (deadlines, "why", increment buttons); finance
+`frequency` (recurring monthly/annual totals for subscriptions) + due-date urgency. These columns
+already existed on the remote, so the upgrades shipped without a live schema change.
+
 ## RLS Policy Pattern
 ```sql
 ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;

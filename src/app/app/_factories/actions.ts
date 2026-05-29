@@ -34,10 +34,20 @@ export async function trackerDeleteAction(appId: string, id: number) {
 }
 
 // === Checklist ===
-export async function checklistAddAction(appId: string, listType: string, title: string) {
+export async function checklistAddAction(
+  appId: string,
+  listType: string,
+  title: string,
+  note: string = "",
+) {
   if (!title.trim()) return;
   const { supabase, userId, path } = await ctx(appId);
-  await supabase.from("checklists").insert({ user_id: userId, list_type: listType, title: title.trim() });
+  await supabase.from("checklists").insert({
+    user_id: userId,
+    list_type: listType,
+    title: title.trim(),
+    note: note.trim() || null,
+  });
   revalidatePath(path);
 }
 
@@ -59,15 +69,37 @@ export async function logbookAddAction(
   logType: string,
   title: string,
   body: string,
+  createdAt: string | null = null,
 ) {
   if (!body.trim()) return;
   const { supabase, userId, path } = await ctx(appId);
-  await supabase.from("logs").insert({
+  const payload: Record<string, unknown> = {
     user_id: userId,
     log_type: logType,
     title: title.trim() || null,
     body: body.trim(),
-  });
+  };
+  if (createdAt) {
+    const d = new Date(createdAt);
+    if (!Number.isNaN(d.getTime())) payload.created_at = d.toISOString();
+  }
+  await supabase.from("logs").insert(payload);
+  revalidatePath(path);
+}
+
+export async function logbookUpdateAction(
+  appId: string,
+  id: number,
+  title: string,
+  body: string,
+) {
+  if (!body.trim()) return;
+  const { supabase, userId, path } = await ctx(appId);
+  await supabase
+    .from("logs")
+    .update({ title: title.trim() || null, body: body.trim() })
+    .eq("id", id)
+    .eq("user_id", userId);
   revalidatePath(path);
 }
 
@@ -83,6 +115,9 @@ export async function goalAddAction(
   goalType: string,
   title: string,
   target: number | null,
+  unit: string = "",
+  dueDate: string | null = null,
+  description: string = "",
 ) {
   if (!title.trim()) return;
   const { supabase, userId, path } = await ctx(appId);
@@ -92,6 +127,9 @@ export async function goalAddAction(
     title: title.trim(),
   };
   if (target !== null) payload.target_value = target;
+  if (unit.trim()) payload.unit = unit.trim();
+  if (dueDate) payload.due_date = dueDate;
+  if (description.trim()) payload.description = description.trim();
   await supabase.from("goals").insert(payload);
   revalidatePath(path);
 }
@@ -122,6 +160,7 @@ export async function financeAddAction(
   amount: number,
   category: string,
   dueDate: string | null,
+  frequency: string = "monthly",
 ) {
   if (!name.trim()) return;
   const { supabase, userId, path } = await ctx(appId);
@@ -131,6 +170,7 @@ export async function financeAddAction(
     name: name.trim(),
     amount,
     category: category.trim() || null,
+    frequency,
   };
   if (dueDate) payload.due_date = dueDate;
   await supabase.from("finance_items").insert(payload);
