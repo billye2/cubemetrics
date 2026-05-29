@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { startSessionAction, completeSessionAction, cancelSessionAction } from "./actions";
 
 interface Session {
@@ -14,24 +14,204 @@ interface RecentSession extends Session {
   completed_at: string | null;
 }
 
+interface DayBucket {
+  short: string;
+  label: string;
+  count: number;
+  isToday: boolean;
+}
+
+interface BreakState {
+  endsAt: number;
+  kind: "short" | "long";
+  durationMin: number;
+}
+
+interface Settings {
+  shortMin: number;
+  longMin: number;
+  perLong: number;
+  autoStart: boolean;
+  sound: boolean;
+}
+
 const PRESETS = [15, 25, 45, 60];
+const DEFAULT_SETTINGS: Settings = { shortMin: 5, longMin: 15, perLong: 4, autoStart: false, sound: true };
+const SETTINGS_KEY = "pomodoro_settings";
+const BREAK_KEY = "pomodoro_break";
+
+// --- client-only effects: chime + browser notification on phase change ---
+
+function playChime() {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    const notes = [660, 880];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      const t = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.18);
+    });
+    setTimeout(() => ctx.close(), 800);
+  } catch {
+    /* audio unavailable — ignore */
+  }
+}
+
+function notify(title: string, body: string) {
+  try {
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      new Notification(title, { body });
+    }
+  } catch {
+    /* notifications unavailable — ignore */
+  }
+}
+
+function requestNotify() {
+  try {
+    if (typeof Notification !== "undefined" && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  } catch {
+    /* ignore */
+  }
+}
 
 export function PomodoroView({
   active,
   todayCount,
   recent,
+  week,
 }: {
   active: Session | null;
   todayCount: number;
   recent: RecentSession[];
+  week: DayBucket[];
 }) {
+  const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
+  const [breakState, setBreakState] = useState<BreakState | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [pending, start] = useTransition();
+  const [lastLabel, setLastLabel] = useState("");
+
+  // Load persisted settings + any in-flight break once on mount.
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem(SETTINGS_KEY);
+      if (s) setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(s) });
+      const b = localStorage.getItem(BREAK_KEY);
+      if (b) {
+        const parsed = JSON.parse(b) as BreakState;
+        if (parsed.endsAt > Date.now()) setBreakState(parsed);
+        else localStorage.removeItem(BREAK_KEY);
+      }
+    } catch {
+      /* ignore corrupt storage */
+    }
+  }, []);
+
+  const saveSettings = useCallback((next: Settings) => {
+    setSettings(next);
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const beginBreak = useCallback(
+    (kind: "short" | "long") => {
+      const durationMin = kind === "long" ? settings.longMin : settings.shortMin;
+      const bs: BreakState = { endsAt: Date.now() + durationMin * 60_000, kind, durationMin };
+      setBreakState(bs);
+      try {
+        localStorage.setItem(BREAK_KEY, JSON.stringify(bs));
+      } catch {
+        /* ignore */
+      }
+      if (settings.sound) playChime();
+      notify(kind === "long" ? "Long break" : "Break time", `Take ${durationMin} minutes.`);
+    },
+    [settings],
+  );
+
+  const clearBreak = useCallback(() => {
+    setBreakState(null);
+    try {
+      localStorage.removeItem(BREAK_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Called when a work pomodoro completes (auto at zero, or "finish early").
+  const onWorkComplete = useCallback(() => {
+    const completedNow = todayCount + 1;
+    const kind = completedNow % settings.perLong === 0 ? "long" : "short";
+    beginBreak(kind);
+  }, [todayCount, settings.perLong, beginBreak]);
+
+  // Called when a break finishes.
+  const onBreakComplete = useCallback(() => {
+    clearBreak();
+    if (settings.sound) playChime();
+    notify("Break over", "Ready for the next pomodoro?");
+    if (settings.autoStart) {
+      start(() => startSessionAction(25, lastLabel));
+    }
+  }, [clearBreak, settings.sound, settings.autoStart, lastLabel, start]);
+
+  const cycleProgress = todayCount % settings.perLong;
+
   return (
     <div>
-      <div className="mb-4 flex items-center justify-center gap-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 px-4 py-3">
-        <Stat label="Today" value={String(todayCount)} suffix={todayCount === 1 ? "pomodoro" : "pomodoros"} />
+      <div className="mb-4 grid grid-cols-3 gap-3">
+        <Stat label="Today" value={String(todayCount)} />
+        <Stat label="This week" value={String(week.reduce((a, d) => a + d.count, 0))} />
+        <Stat label="Best day" value={String(Math.max(0, ...week.map((d) => d.count)))} />
       </div>
 
-      {active ? <ActiveTimer session={active} /> : <StartForm />}
+      <CycleDots perLong={settings.perLong} progress={cycleProgress} />
+
+      {breakState ? (
+        <BreakTimer breakState={breakState} onComplete={onBreakComplete} onSkip={clearBreak} />
+      ) : active ? (
+        <ActiveTimer
+          session={active}
+          sound={settings.sound}
+          onWorkComplete={onWorkComplete}
+        />
+      ) : (
+        <StartForm
+          pending={pending}
+          onStart={(min, label) => {
+            requestNotify();
+            setLastLabel(label);
+            start(() => startSessionAction(min, label));
+          }}
+        />
+      )}
+
+      <button
+        type="button"
+        onClick={() => setShowSettings((v) => !v)}
+        className="mt-3 w-full text-center text-xs font-medium text-zinc-500 hover:text-zinc-300"
+      >
+        {showSettings ? "Hide settings" : "Cycle settings"}
+      </button>
+      {showSettings && <SettingsPanel settings={settings} onSave={saveSettings} />}
+
+      <WeekChart week={week} />
 
       {recent.length > 0 && (
         <div className="mt-8">
@@ -47,23 +227,82 @@ export function PomodoroView({
   );
 }
 
-function Stat({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="text-center">
-      <div className="text-2xl font-bold tracking-tight text-cyan-400">{value}</div>
-      <div className="text-xs text-zinc-500">{suffix ?? label}</div>
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
+      <div className="text-xl font-bold tracking-tight text-cyan-400">{value}</div>
+      <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
     </div>
   );
 }
 
-function ActiveTimer({ session }: { session: Session }) {
+function CycleDots({ perLong, progress }: { perLong: number; progress: number }) {
+  return (
+    <div className="mb-4 flex items-center justify-center gap-2">
+      {Array.from({ length: perLong }).map((_, i) => (
+        <span
+          key={i}
+          className={`h-2.5 w-2.5 rounded-full transition ${i < progress ? "bg-cyan-400" : "bg-zinc-700"}`}
+          title={`${progress} of ${perLong} until a long break`}
+        />
+      ))}
+      <span className="ml-2 text-xs text-zinc-500">
+        {perLong - progress} to long break
+      </span>
+    </div>
+  );
+}
+
+function TimerShell({
+  label,
+  state,
+  mm,
+  ss,
+  pct,
+  tone,
+  children,
+}: {
+  label: string;
+  state: string;
+  mm: number;
+  ss: number;
+  pct: number;
+  tone: "work" | "break" | "done";
+  children: React.ReactNode;
+}) {
+  const numberColor = tone === "done" ? "text-emerald-400" : tone === "break" ? "text-amber-300" : "text-zinc-100";
+  const barColor = tone === "done" ? "bg-emerald-500" : tone === "break" ? "bg-amber-400" : "bg-cyan-500";
+  return (
+    <div className="flex flex-col items-center rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8">
+      {label && <div className="mb-1 text-sm font-semibold text-cyan-400">{label}</div>}
+      <div className="mb-3 text-xs uppercase tracking-wider text-zinc-500">{state}</div>
+      <div className={`text-7xl font-bold tabular-nums tracking-tight ${numberColor}`}>
+        {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
+      </div>
+      <div className="mt-4 h-2 w-full max-w-xs overflow-hidden rounded-full bg-zinc-800">
+        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-6 flex gap-3">{children}</div>
+    </div>
+  );
+}
+
+function ActiveTimer({
+  session,
+  sound,
+  onWorkComplete,
+}: {
+  session: Session;
+  sound: boolean;
+  onWorkComplete: () => void;
+}) {
   const started = new Date(session.started_at).getTime();
   const totalMs = session.duration_minutes * 60 * 1000;
   const endsAt = started + totalMs;
 
   const [now, setNow] = useState(() => Date.now());
   const [pending, start] = useTransition();
-  const completedFiredRef = useRef(false);
+  const firedRef = useRef(false);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -78,15 +317,19 @@ function ActiveTimer({ session }: { session: Session }) {
   const done = remainingMs === 0;
 
   useEffect(() => {
-    if (done && !completedFiredRef.current) {
-      completedFiredRef.current = true;
-      // Auto-complete the session on the server
+    if (done && !firedRef.current) {
+      firedRef.current = true;
+      if (sound) playChime();
       start(() => completeSessionAction(session.id));
+      onWorkComplete();
     }
-  }, [done, session.id, start]);
+  }, [done, session.id, sound, onWorkComplete, start]);
 
   function finish() {
+    if (firedRef.current) return;
+    firedRef.current = true;
     start(() => completeSessionAction(session.id));
+    onWorkComplete();
   }
   function cancel() {
     if (!confirm("Cancel this session?")) return;
@@ -94,54 +337,97 @@ function ActiveTimer({ session }: { session: Session }) {
   }
 
   return (
-    <div className="flex flex-col items-center rounded-3xl border border-zinc-800 bg-zinc-900/40 p-8">
-      {session.label && (
-        <div className="mb-1 text-sm font-semibold text-cyan-400">{session.label}</div>
-      )}
-      <div className="mb-3 text-xs uppercase tracking-wider text-zinc-500">
-        {done ? "Done!" : "In session"}
-      </div>
-      <div className={`text-7xl font-bold tabular-nums tracking-tight ${done ? "text-emerald-400" : "text-zinc-100"}`}>
-        {String(mm).padStart(2, "0")}:{String(ss).padStart(2, "0")}
-      </div>
-      <div className="mt-4 h-2 w-full max-w-xs overflow-hidden rounded-full bg-zinc-800">
-        <div
-          className={`h-full rounded-full transition-all ${done ? "bg-emerald-500" : "bg-cyan-500"}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <div className="mt-6 flex gap-3">
+    <TimerShell
+      label={session.label || ""}
+      state={done ? "Done!" : "Focus"}
+      mm={mm}
+      ss={ss}
+      pct={pct}
+      tone={done ? "done" : "work"}
+    >
+      <button
+        type="button"
+        onClick={cancel}
+        disabled={pending}
+        className="rounded-xl bg-zinc-800 px-5 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+      >
+        Cancel
+      </button>
+      {!done && (
         <button
           type="button"
-          onClick={cancel}
+          onClick={finish}
           disabled={pending}
-          className="rounded-xl bg-zinc-800 px-5 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+          className="rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
         >
-          Cancel
+          Finish early
         </button>
-        {!done && (
-          <button
-            type="button"
-            onClick={finish}
-            disabled={pending}
-            className="rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
-          >
-            Finish early
-          </button>
-        )}
-      </div>
-    </div>
+      )}
+    </TimerShell>
   );
 }
 
-function StartForm() {
+function BreakTimer({
+  breakState,
+  onComplete,
+  onSkip,
+}: {
+  breakState: BreakState;
+  onComplete: () => void;
+  onSkip: () => void;
+}) {
+  const totalMs = breakState.durationMin * 60 * 1000;
+  const [now, setNow] = useState(() => Date.now());
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const remainingMs = Math.max(0, breakState.endsAt - now);
+  const remainingSec = Math.floor(remainingMs / 1000);
+  const mm = Math.floor(remainingSec / 60);
+  const ss = remainingSec % 60;
+  const pct = totalMs > 0 ? Math.min(100, Math.round(((totalMs - remainingMs) / totalMs) * 100)) : 0;
+  const done = remainingMs === 0;
+
+  useEffect(() => {
+    if (done && !firedRef.current) {
+      firedRef.current = true;
+      onComplete();
+    }
+  }, [done, onComplete]);
+
+  return (
+    <TimerShell
+      label={breakState.kind === "long" ? "Long break" : "Break"}
+      state={done ? "Break over" : "Recharge"}
+      mm={mm}
+      ss={ss}
+      pct={pct}
+      tone={done ? "done" : "break"}
+    >
+      <button
+        type="button"
+        onClick={onSkip}
+        className="rounded-xl bg-zinc-800 px-5 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-700"
+      >
+        Skip break
+      </button>
+    </TimerShell>
+  );
+}
+
+function StartForm({
+  pending,
+  onStart,
+}: {
+  pending: boolean;
+  onStart: (minutes: number, label: string) => void;
+}) {
   const [minutes, setMinutes] = useState(25);
   const [label, setLabel] = useState("");
-  const [pending, start] = useTransition();
-
-  function go() {
-    start(() => startSessionAction(minutes, label.trim()));
-  }
 
   return (
     <div className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6">
@@ -177,12 +463,120 @@ function StartForm() {
 
       <button
         type="button"
-        onClick={go}
+        onClick={() => onStart(minutes, label.trim())}
         disabled={pending}
         className="mt-4 h-12 w-full rounded-xl bg-cyan-500 text-base font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
       >
         {pending ? "Starting…" : `Start ${minutes}-minute timer`}
       </button>
+    </div>
+  );
+}
+
+function SettingsPanel({ settings, onSave }: { settings: Settings; onSave: (s: Settings) => void }) {
+  return (
+    <div className="mt-2 space-y-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+      <NumberRow
+        label="Short break (min)"
+        value={settings.shortMin}
+        onChange={(v) => onSave({ ...settings, shortMin: v })}
+      />
+      <NumberRow
+        label="Long break (min)"
+        value={settings.longMin}
+        onChange={(v) => onSave({ ...settings, longMin: v })}
+      />
+      <NumberRow
+        label="Pomodoros per long break"
+        value={settings.perLong}
+        min={2}
+        max={8}
+        onChange={(v) => onSave({ ...settings, perLong: v })}
+      />
+      <ToggleRow
+        label="Auto-start work after break"
+        value={settings.autoStart}
+        onChange={(v) => onSave({ ...settings, autoStart: v })}
+      />
+      <ToggleRow
+        label="Completion sound"
+        value={settings.sound}
+        onChange={(v) => onSave({ ...settings, sound: v })}
+      />
+    </div>
+  );
+}
+
+function NumberRow({
+  label,
+  value,
+  min = 1,
+  max = 60,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min?: number;
+  max?: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <label className="flex items-center justify-between gap-3 text-sm text-zinc-300">
+      <span>{label}</span>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          if (!Number.isNaN(v)) onChange(Math.max(min, Math.min(max, v)));
+        }}
+        className="w-16 rounded-lg bg-zinc-900 px-2 py-1.5 text-right text-sm text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+      />
+    </label>
+  );
+}
+
+function ToggleRow({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!value)}
+      className="flex w-full items-center justify-between gap-3 text-sm text-zinc-300"
+    >
+      <span>{label}</span>
+      <span
+        className={`flex h-6 w-11 items-center rounded-full p-0.5 transition ${value ? "bg-cyan-500" : "bg-zinc-700"}`}
+      >
+        <span className={`h-5 w-5 rounded-full bg-zinc-950 transition ${value ? "translate-x-5" : ""}`} />
+      </span>
+    </button>
+  );
+}
+
+function WeekChart({ week }: { week: DayBucket[] }) {
+  const max = Math.max(1, ...week.map((d) => d.count));
+  return (
+    <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">Last 7 days</div>
+      <div className="flex h-20 items-end gap-1.5">
+        {week.map((d, i) => {
+          const h = d.count === 0 ? 4 : Math.max(10, Math.round((d.count / max) * 100));
+          return (
+            <div key={i} className="flex flex-1 flex-col items-center gap-1">
+              <div
+                title={`${d.label}: ${d.count} pomodoro${d.count === 1 ? "" : "s"}`}
+                className={`w-full rounded-md transition-all ${
+                  d.count === 0 ? "bg-zinc-800" : d.isToday ? "bg-cyan-400" : "bg-cyan-500/50"
+                }`}
+                style={{ height: `${h}%` }}
+              />
+              <div className={`text-[10px] ${d.isToday ? "text-cyan-300" : "text-zinc-500"}`}>{d.short}</div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
