@@ -68,6 +68,10 @@ export const APPS: AppEntry[] = [
   { id: "weight", name: "Weight", category: "habits", icon: "⚖", description: "Weight log", ui: "tracker", config: { trackerType: "weight", unit: "lbs", min: 0, max: 500, aggregate: "latest" } },
   { id: "screentime", name: "Screen Time", category: "habits", icon: "▢", description: "Hours on screens", ui: "tracker", config: { trackerType: "screentime", unit: "hours", min: 0, max: 24, aggregate: "sum" } },
   { id: "writingtracker", name: "Writing", category: "notes", icon: "✑", description: "Words written today", ui: "tracker", config: { trackerType: "writing", unit: "words", min: 0, max: 100000, aggregate: "sum" } },
+  { id: "steps", name: "Steps", category: "habits", icon: "➤", description: "Daily step count", ui: "tracker", config: { trackerType: "steps", unit: "steps", min: 0, max: 100000, aggregate: "sum" } },
+  { id: "caffeine", name: "Caffeine", category: "habits", icon: "◉", description: "Caffeine intake", ui: "tracker", config: { trackerType: "caffeine", unit: "mg", min: 0, max: 2000, aggregate: "sum" } },
+  { id: "stress", name: "Stress", category: "habits", icon: "◭", description: "Stress level", ui: "tracker", config: { trackerType: "stress", labels: ["None", "Low", "Mild", "Moderate", "High", "Severe"], min: 0, max: 5, aggregate: "average" } },
+  { id: "productivity", name: "Productivity", category: "tasks", icon: "▲", description: "Rate your day", ui: "tracker", config: { trackerType: "productivity", labels: ["Wasted", "Poor", "Okay", "Good", "Great", "Peak"], min: 0, max: 5, aggregate: "average" } },
 
   // Checklists
   { id: "grocery", name: "Grocery", category: "org", icon: "◍", description: "Shopping list", ui: "checklist", config: { listType: "grocery", itemLabel: "Item" } },
