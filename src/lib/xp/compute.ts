@@ -10,7 +10,7 @@ import {
   questStatuses,
   questPointsForDay,
 } from "./quests";
-import { localDayKey, todayKey as tzTodayKey, addDays, weekdayNarrow } from "./tz";
+import { localDayKey, localHour, todayKey as tzTodayKey, addDays, weekdayNarrow } from "./tz";
 
 type Supabase = Awaited<ReturnType<typeof createServerSupabase>>;
 
@@ -163,6 +163,25 @@ export async function ensureXp(
   bump(expenses, "expense_date", "expenses", "date");
   bump(finance, "created_at", "finance", "ts");
 
+  // Earliest / latest local hour-of-day across timestamped actions (DATE-only
+  // sources have no time, so they can't pin a clock hour). Powers the
+  // early_bird / night_owl achievements.
+  let firstActionHour: number | null = null;
+  let lastActionHour: number | null = null;
+  const noteHour = (iso: string | null | undefined) => {
+    const h = iso ? localHour(iso, tz) : null;
+    if (h == null) return;
+    if (firstActionHour == null || h < firstActionHour) firstActionHour = h;
+    if (lastActionHour == null || h > lastActionHour) lastActionHour = h;
+  };
+  for (const r of trackers.data || []) noteHour(r.created_at as string);
+  for (const r of pomodoro.data || []) noteHour(r.completed_at as string);
+  for (const r of todos.data || []) noteHour(r.completed_at as string);
+  for (const r of reading.data || []) noteHour(r.finished_at as string);
+  for (const r of notes.data || []) noteHour(r.created_at as string);
+  for (const r of logs.data || []) noteHour(r.created_at as string);
+  for (const r of finance.data || []) noteHour(r.created_at as string);
+
   // Score every active day.
   const todayKey = tzTodayKey(tz, now);
   const scores = new Map<string, { points: number; breakdown: Record<string, number> }>();
@@ -256,6 +275,8 @@ export async function ensureXp(
     focusMinutes,
     todosCompleted,
     activeDays: daysWithXp.size,
+    firstActionHour,
+    lastActionHour,
   };
 
   // Unlock newly-earned achievements (unique constraint dedupes concurrent writes).

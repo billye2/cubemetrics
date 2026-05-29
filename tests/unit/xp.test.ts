@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { xpToReach, levelForXp, levelInfo, titleForLevel } from "@/lib/xp/levels";
 import { scoreDay, emptyActivity, type DayActivity } from "@/lib/xp/rules";
 import { currentStreak, longestStreak } from "@/lib/xp/stats";
-import { localDayKey, todayKey, addDays, isValidIanaZone } from "@/lib/xp/tz";
+import { localDayKey, localHour, todayKey, addDays, isValidIanaZone } from "@/lib/xp/tz";
 import { satisfiedAchievements, type CumulativeStats } from "@/lib/xp/achievements";
 import {
   QUEST_POOL,
@@ -147,6 +147,14 @@ describe("xp timezone", () => {
     expect(isValidIanaZone("Not/AZone!!")).toBe(false);
     expect(isValidIanaZone("")).toBe(false);
   });
+
+  it("localHour projects an instant into the user's local hour-of-day", () => {
+    // 2026-01-01T06:00Z → 06:00 UTC, 22:00 (prev day) in LA, 15:00 in Tokyo.
+    expect(localHour("2026-01-01T06:00:00Z", "UTC")).toBe(6);
+    expect(localHour("2026-01-01T06:00:00Z", "America/Los_Angeles")).toBe(22);
+    expect(localHour("2026-01-01T06:00:00Z", "Asia/Tokyo")).toBe(15);
+    expect(localHour("not-a-date", "UTC")).toBeNull();
+  });
 });
 
 describe("xp achievements", () => {
@@ -159,6 +167,8 @@ describe("xp achievements", () => {
     focusMinutes: 0,
     todosCompleted: 0,
     activeDays: 0,
+    firstActionHour: null,
+    lastActionHour: null,
   };
 
   it("unlocks first_step on any XP", () => {
@@ -171,6 +181,19 @@ describe("xp achievements", () => {
     expect(satisfiedAchievements({ ...base, longestStreak: 30 })).toContain("unstoppable");
     expect(satisfiedAchievements({ ...base, level: 10 })).toContain("centurion");
     expect(satisfiedAchievements({ ...base, appsWithXp: 10 })).toContain("polymath");
+  });
+
+  it("unlocks early_bird only for pre-7am activity", () => {
+    expect(satisfiedAchievements({ ...base, firstActionHour: 6 })).toContain("early_bird");
+    expect(satisfiedAchievements({ ...base, firstActionHour: 0 })).toContain("early_bird");
+    expect(satisfiedAchievements({ ...base, firstActionHour: 7 })).not.toContain("early_bird");
+    expect(satisfiedAchievements(base)).not.toContain("early_bird"); // null → locked
+  });
+
+  it("unlocks night_owl only for post-11pm activity", () => {
+    expect(satisfiedAchievements({ ...base, lastActionHour: 23 })).toContain("night_owl");
+    expect(satisfiedAchievements({ ...base, lastActionHour: 22 })).not.toContain("night_owl");
+    expect(satisfiedAchievements(base)).not.toContain("night_owl"); // null → locked
   });
 });
 

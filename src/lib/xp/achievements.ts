@@ -10,6 +10,8 @@ export interface CumulativeStats {
   focusMinutes: number; // lifetime focus minutes
   todosCompleted: number; // lifetime todos completed
   activeDays: number; // days with any XP
+  firstActionHour: number | null; // earliest local hour-of-day of any logged action (0–23)
+  lastActionHour: number | null; // latest local hour-of-day of any logged action (0–23)
 }
 
 export interface AchievementDef {
@@ -30,6 +32,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   { key: "centurion", name: "Centurion", description: "Reach level 10", icon: "★", test: (s) => s.level >= 10 },
   { key: "polymath", name: "Polymath", description: "Earn XP from 10 different apps", icon: "◈", test: (s) => s.appsWithXp >= 10 },
   { key: "committed", name: "Committed", description: "Be active for 100 days", icon: "◆", test: (s) => s.activeDays >= 100 },
+  { key: "early_bird", name: "Early Bird", description: "Log activity before 7 AM", icon: "🌅", test: (s) => s.firstActionHour != null && s.firstActionHour < 7 },
+  { key: "night_owl", name: "Night Owl", description: "Log activity after 11 PM", icon: "🌙", test: (s) => s.lastActionHour != null && s.lastActionHour >= 23 },
 ];
 
 /** Keys of every achievement currently satisfied by the stats. */

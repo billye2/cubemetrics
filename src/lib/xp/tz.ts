@@ -32,6 +32,29 @@ export function todayKey(tz: string, now: Date = new Date()): string {
   return localDayKey(now, tz);
 }
 
+const HOUR_FMT = new Map<string, Intl.DateTimeFormat>();
+
+function hourFormatter(tz: string): Intl.DateTimeFormat {
+  let f = HOUR_FMT.get(tz);
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", hourCycle: "h23" });
+    HOUR_FMT.set(tz, f);
+  }
+  return f;
+}
+
+/** A UTC instant → the user's local hour-of-day (0–23) in `tz`, or null if invalid. DST-safe. */
+export function localHour(instant: Date | string, tz: string): number | null {
+  const d = typeof instant === "string" ? new Date(instant) : instant;
+  if (Number.isNaN(d.getTime())) return null;
+  try {
+    const h = Number(hourFormatter(tz).format(d));
+    return Number.isFinite(h) ? h % 24 : null;
+  } catch {
+    return d.getUTCHours();
+  }
+}
+
 /** Step a YYYY-MM-DD day by ±n days on the calendar (operate at UTC noon to dodge DST edges). */
 export function addDays(dayKey: string, n: number): string {
   const [y, m, d] = dayKey.split("-").map(Number);
