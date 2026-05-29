@@ -27,6 +27,7 @@ Extends `auth.users`.
 | first_login | TIMESTAMPTZ | |
 | bio | TEXT | |
 | location | TEXT | |
+| timezone | TEXT | IANA zone (e.g. `America/Los_Angeles`); set from the browser at login. Lets the XP layer compute day boundaries in the user's local day. Added in migration `020`. |
 
 > The classic-only `bbs_sessions` and `activity_log` tables are deprecated and will be dropped by migration `014_drop_classic.sql` (not yet applied to the remote — they still exist).
 
@@ -105,6 +106,47 @@ The P1 template upgrades use: checklist `note`; logbook editable `title/body` + 
 `created_at`; goal `due_date`/`description`/`unit` (deadlines, "why", increment buttons); finance
 `frequency` (recurring monthly/annual totals for subscriptions) + due-date urgency. These columns
 already existed on the remote, so the upgrades shipped without a live schema change.
+
+## XP Layer Tables
+
+Three tables back the XP layer (points / levels / streaks / daily quests / achievements). Defined
+in migration `020_xp.sql` — **applied to the remote.** Full design in
+[app-plans/_xp-layer-spec.md](app-plans/_xp-layer-spec.md). XP is **derived** from the existing
+per-app tables, not emitted per action; these tables hold only the cached rollup and unlock/quest
+state. Level, total XP, and streak are aggregates over `xp_daily` and are intentionally **not**
+stored.
+
+### xp_daily
+| Column | Type | Notes |
+|--------|------|-------|
+| user_id | UUID | PK part |
+| day | DATE | PK part — the user's local day |
+| points | INTEGER | total XP earned that day |
+| breakdown | JSONB | per-source map, e.g. `{"focus":40,"habits":24,"quests":20}` |
+| computed_at | TIMESTAMPTZ | |
+
+Per-user-per-day rollup **cache**. PK `(user_id, day)`. Past days freeze once computed; today is
+recomputed on each dashboard load (its source rows are still mutable). Safe to delete and rebuild.
+Indexed on `(user_id, day DESC)`.
+
+### xp_achievements
+| Column | Type |
+|--------|------|
+| id, user_id, achievement_key, unlocked_at |
+
+Unlock ledger. `UNIQUE (user_id, achievement_key)` — presence = unlocked; `unlocked_at` drives the
+"new!" celebration. `achievement_key` matches a definition in `src/lib/xp/`.
+
+### xp_quests
+| Column | Type |
+|--------|------|
+| user_id, day, quest_key, completed_at |
+
+Daily-quest completion. PK `(user_id, day, quest_key)`. The day's three quests are chosen
+deterministically in code (`hash(user + day)`), so this table records only which were completed;
+progress is read from `xp_daily.breakdown`.
+
+All three enforce the standard owner-`FOR ALL` + SysOp-`SELECT` RLS pair.
 
 ## RLS Policy Pattern
 ```sql

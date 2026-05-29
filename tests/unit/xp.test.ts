@@ -3,6 +3,16 @@ import { xpToReach, levelForXp, levelInfo, titleForLevel } from "@/lib/xp/levels
 import { scoreDay, emptyActivity, type DayActivity } from "@/lib/xp/rules";
 import { currentStreak, longestStreak, dayKey } from "@/lib/xp/stats";
 import { satisfiedAchievements, type CumulativeStats } from "@/lib/xp/achievements";
+import {
+  QUEST_POOL,
+  DAILY_QUEST_COUNT,
+  ALL_COMPLETE_BONUS,
+  questSeed,
+  pickDailyQuests,
+  questStatuses,
+  questPointsForDay,
+  metricsFromActivity,
+} from "@/lib/xp/quests";
 
 describe("xp levels", () => {
   it("xpToReach follows the curve", () => {
@@ -141,5 +151,64 @@ describe("xp achievements", () => {
     expect(satisfiedAchievements({ ...base, longestStreak: 30 })).toContain("unstoppable");
     expect(satisfiedAchievements({ ...base, level: 10 })).toContain("centurion");
     expect(satisfiedAchievements({ ...base, appsWithXp: 10 })).toContain("polymath");
+  });
+});
+
+describe("xp quests", () => {
+  it("picks a stable, distinct daily set per (user, day)", () => {
+    const a = pickDailyQuests("user-1", "2026-05-28");
+    const b = pickDailyQuests("user-1", "2026-05-28");
+    expect(a.map((q) => q.key)).toEqual(b.map((q) => q.key));
+    expect(a).toHaveLength(DAILY_QUEST_COUNT);
+    expect(new Set(a.map((q) => q.key)).size).toBe(DAILY_QUEST_COUNT);
+  });
+
+  it("varies the set across users and days", () => {
+    const u1 = pickDailyQuests("user-1", "2026-05-28").map((q) => q.key).join(",");
+    const u2 = pickDailyQuests("user-2", "2026-05-28").map((q) => q.key).join(",");
+    const d2 = pickDailyQuests("user-1", "2026-05-29").map((q) => q.key).join(",");
+    // Not a hard guarantee, but with this pool these should differ.
+    expect(u1 === u2 && u1 === d2).toBe(false);
+  });
+
+  it("questSeed is deterministic", () => {
+    expect(questSeed("u", "2026-05-28")).toBe(questSeed("u", "2026-05-28"));
+    expect(questSeed("u", "2026-05-28")).not.toBe(questSeed("u", "2026-05-29"));
+  });
+
+  it("distributes picks roughly across the pool over many days", () => {
+    const counts = new Map<string, number>();
+    for (let i = 0; i < 200; i++) {
+      const day = `2026-06-${String((i % 28) + 1).padStart(2, "0")}`;
+      for (const q of pickDailyQuests(`user-${i}`, day)) counts.set(q.key, (counts.get(q.key) ?? 0) + 1);
+    }
+    // every quest in the pool should have been chosen at least once
+    expect(counts.size).toBe(QUEST_POOL.length);
+  });
+
+  it("questStatuses marks done at/over target", () => {
+    const def = QUEST_POOL.find((q) => q.key === "todos_five")!;
+    const metrics = metricsFromActivity(
+      { focus: [], timetracker: 0, trackerTypes: [], pomodoro: 0, todos: 5, habits: 0, journal: 0, workout: 0, reading: 0, notes: 0, logs: 0, expenses: 0, finance: 0 },
+      { points: 25, breakdown: { todos: 25 } },
+    );
+    const [st] = questStatuses([def], metrics);
+    expect(st.current).toBe(5);
+    expect(st.done).toBe(true);
+  });
+
+  it("questPointsForDay sums claimed rewards + all-complete bonus", () => {
+    const chosen = pickDailyQuests("user-1", "2026-05-28");
+    const all = new Set(chosen.map((q) => q.key));
+    const expected = chosen.reduce((acc, q) => acc + q.reward, 0) + ALL_COMPLETE_BONUS;
+    expect(questPointsForDay(chosen, all)).toBe(expected);
+    // partial: only the first claimed, no bonus
+    const partial = new Set([chosen[0].key]);
+    expect(questPointsForDay(chosen, partial)).toBe(chosen[0].reward);
+  });
+
+  it("ignores claimed keys outside the chosen set", () => {
+    const chosen = pickDailyQuests("user-1", "2026-05-28");
+    expect(questPointsForDay(chosen, new Set(["not_a_real_quest"]))).toBe(0);
   });
 });
