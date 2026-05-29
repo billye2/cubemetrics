@@ -140,6 +140,7 @@ export const APPS: AppEntry[] = [
   { id: "counter", name: "Counter", category: "org", icon: "#", description: "Tally anything — reps, counts, scores", ui: "modern" },
   { id: "inbox", name: "Inbox", category: "tasks", icon: "⊕", description: "Capture now, sort later", ui: "modern" },
   { id: "prioritymatrix", name: "Priorities", category: "tasks", icon: "⊞", description: "Urgent × important quadrants", ui: "modern" },
+  { id: "kanban", name: "Kanban", category: "work", icon: "▥", description: "To do · Doing · Done board", ui: "modern" },
   { id: "xp", name: "Level", category: "goals", icon: "✦", description: "Your XP, level, streak, and achievements", ui: "modern" },
 ];
 
