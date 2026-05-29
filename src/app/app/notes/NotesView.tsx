@@ -14,10 +14,17 @@ interface Note {
 
 export function NotesView({ notes }: { notes: Note[] }) {
   const [showForm, setShowForm] = useState(false);
+  const [query, setQuery] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, start] = useTransition();
-  const pinned = notes.filter((n) => n.pinned);
-  const rest = notes.filter((n) => !n.pinned);
+  const q = query.trim().toLowerCase();
+  const matches = q
+    ? notes.filter(
+        (n) => n.body.toLowerCase().includes(q) || (n.title ?? "").toLowerCase().includes(q),
+      )
+    : notes;
+  const pinned = matches.filter((n) => n.pinned);
+  const rest = matches.filter((n) => !n.pinned);
 
   function submit(formData: FormData) {
     start(async () => {
@@ -72,10 +79,21 @@ export function NotesView({ notes }: { notes: Note[] }) {
         </form>
       )}
 
+      {notes.length > 3 && (
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search notes…"
+          className="mt-4 w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+        />
+      )}
+
       {notes.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
           <p className="text-sm text-zinc-400">No notes yet.</p>
         </div>
+      ) : matches.length === 0 ? (
+        <p className="mt-6 text-center text-sm text-zinc-500">No notes match “{query}”.</p>
       ) : (
         <>
           {pinned.length > 0 && (

@@ -10,7 +10,7 @@
 
 **P1 — core / completeness**
 - **Edit an entry** — reuse the new-entry form on `/app/journal/[id]/edit` (or inline) so title, body, and mood are revisable; `updateEntryAction`. Highest-impact gap.
-- **Full-text search** — a search box over title + body (server `ilike` or trigram), with mood-filter chips alongside.
+- **Full-text search** — ✅ a search box filters title + body (client-side over the loaded set). Mood-filter chips still open.
 
 **P2 — enhancements**
 - **Writing streak + stat strip** — consecutive-day streak from `entry_date`, plus Entries / This month / Streak. The momentum nudge the reference apps all have.
