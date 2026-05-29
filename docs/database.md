@@ -96,6 +96,13 @@ Backs the Countdown app. `target_date` is a calendar date; `target_time` is opti
 
 Back the Counter / Tally app (migration `023_counters.sql`, **applied to the remote**). `counters.value` is the denormalized running total; `step` is the +/− increment. Every press appends a `counter_events` row (`delta = ±step`) so a counter has history — "today net" (Σ delta on the local day) and a 7-day taps-per-day chart. Resets zero `value` **without** logging an event, so the press metrics stay honest. `counter_events` indexed on `(counter_id, created_at)` and `(user_id, created_at)`.
 
+### kanban_cards
+| Column | Type |
+|--------|------|
+| id, user_id, board_type, title, description, column_name, sort_order, priority, created_at |
+
+Backs the Kanban board app. Created ad-hoc earlier (like the factory tables); migration `026_kanban.sql` is **idempotent** and records the shape + adds the conventional SysOp read policy (the owner policy `Users can access own cards` already existed). A card sits on a board (`board_type`, P1 uses a single `'default'`) in a lane (`column_name` ∈ `todo`/`doing`/`done`), ordered by `sort_order` then `created_at`. `description`/`priority`/multiple boards/reorder are P2. Indexed on `(user_id, board_type, column_name, sort_order)`.
+
 ### inbox_items
 | Column | Type |
 |--------|------|
