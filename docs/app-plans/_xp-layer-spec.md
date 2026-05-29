@@ -188,7 +188,8 @@ Definitions in `src/lib/xp/achievements.ts`; each is a predicate over cumulative
 | task_master | Task Master | 1,000 todos completed |
 | centurion | Centurion | reach level 10 |
 | polymath | Polymath | earn XP from 10 different apps |
-| early_bird / night_owl | … | activity before 7am / after 11pm |
+| early_bird | Early Bird | activity before 7am (local) — ✅ shipped 2026-05-29 |
+| night_owl | Night Owl | activity after 11pm (local) — ✅ shipped 2026-05-29 |
 
 On dashboard load, after aggregates: evaluate each not-yet-unlocked achievement; insert
 `xp_achievements` (unique key prevents dupes). `unlocked_at` within the last day → show a "new!"
