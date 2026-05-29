@@ -89,7 +89,7 @@ export const APPS: AppEntry[] = [
   { id: "routines", name: "Routines", category: "tasks", icon: "⟳", description: "Recurring sequences", ui: "checklist", config: { listType: "routine", itemLabel: "Routine" } },
   { id: "dailyplanner", name: "Daily Planner", category: "tasks", icon: "☰", description: "Today's plan", ui: "checklist", config: { listType: "dailyplan", itemLabel: "Item" } },
   { id: "visionboard", name: "Vision Board", category: "goals", icon: "✧", description: "Where you're heading", ui: "checklist", config: { listType: "vision", itemLabel: "Vision" } },
-  { id: "flashcards", name: "Flashcards", category: "notes", icon: "◫", description: "Cards to review", ui: "checklist", config: { listType: "flashcard", itemLabel: "Card" } },
+  { id: "flashcards", name: "Flashcards", category: "notes", icon: "◫", description: "Cards to review", ui: "modern" },
   { id: "mealplanner", name: "Meals", category: "habits", icon: "◍", description: "Meal planning", ui: "checklist", config: { listType: "meal", itemLabel: "Meal" } },
   { id: "clienttracker", name: "Clients", category: "work", icon: "◉", description: "Client work", ui: "checklist", config: { listType: "client", itemLabel: "Client" } },
 
