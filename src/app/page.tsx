@@ -4,6 +4,7 @@ import { Shell, Card } from "@/components/modern/Shell";
 import { APPS, CATEGORIES } from "@/lib/modern/catalog";
 import { SignOutButton } from "@/components/modern/SignOutButton";
 import { AppSearch } from "@/components/modern/AppSearch";
+import { TimezoneSync } from "@/components/modern/TimezoneSync";
 import { ensureXp } from "@/lib/xp/compute";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +17,7 @@ export default async function Home() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("handle")
+    .select("handle, timezone")
     .eq("id", user.id)
     .single();
 
@@ -30,6 +31,7 @@ export default async function Home() {
 
   return (
     <Shell right={<SignOutButton />}>
+      <TimezoneSync knownTz={profile?.timezone ?? null} />
       <div className="mb-4">
         <p className="text-sm text-zinc-400">Welcome back</p>
         <h2 className="mt-0.5 text-2xl font-bold tracking-tight">{profile?.handle ?? "Friend"}</h2>

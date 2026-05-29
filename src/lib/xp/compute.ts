@@ -2,7 +2,7 @@ import "server-only";
 import type { createServerSupabase } from "@/lib/supabase/server";
 import { scoreDay, emptyActivity, type DayActivity, SOURCE_LABELS, GLOBAL_DAILY_CAP } from "./rules";
 import { levelInfo, type LevelInfo } from "./levels";
-import { currentStreak, longestStreak, dayKey } from "./stats";
+import { currentStreak, longestStreak } from "./stats";
 import { ACHIEVEMENTS, satisfiedAchievements, type CumulativeStats } from "./achievements";
 import {
   metricsFromActivity,
@@ -10,14 +10,17 @@ import {
   questStatuses,
   questPointsForDay,
 } from "./quests";
+import { localDayKey, todayKey as tzTodayKey, addDays, weekdayNarrow } from "./tz";
 
 type Supabase = Awaited<ReturnType<typeof createServerSupabase>>;
 
 const ROW_LIMIT = 5000;
 
-function toDay(v: string | null | undefined): string | null {
+// A row's calendar day. DATE columns are already a local calendar date; TIMESTAMPTZ
+// columns are a UTC instant that must be projected into the user's zone.
+function bucketDay(v: string | null | undefined, kind: "date" | "ts", tz: string): string | null {
   if (!v) return null;
-  return String(v).slice(0, 10);
+  return kind === "date" ? String(v).slice(0, 10) : localDayKey(v, tz);
 }
 
 export interface XpAchievementView {
@@ -61,7 +64,19 @@ export interface XpSummary {
  * rollup in xp_daily, unlock any newly-earned achievements, and return a
  * summary for the home strip + dashboard. Idempotent.
  */
-export async function ensureXp(supabase: Supabase, userId: string, now: Date = new Date()): Promise<XpSummary> {
+export async function ensureXp(
+  supabase: Supabase,
+  userId: string,
+  now: Date = new Date(),
+  tzOverride?: string,
+): Promise<XpSummary> {
+  // Resolve the user's zone so day boundaries match their local day.
+  let tz = tzOverride || "UTC";
+  if (!tzOverride) {
+    const { data: prof } = await supabase.from("profiles").select("timezone").eq("id", userId).single();
+    if (prof?.timezone) tz = prof.timezone as string;
+  }
+
   const [
     trackers,
     pomodoro,
@@ -101,7 +116,8 @@ export async function ensureXp(supabase: Supabase, userId: string, now: Date = n
 
   let focusMinutes = 0;
   for (const r of trackers.data || []) {
-    const day = toDay((r.entry_date as string) ?? (r.created_at as string));
+    // entry_date is a local DATE; fall back to projecting created_at into the zone.
+    const day = (r.entry_date as string)?.slice(0, 10) ?? bucketDay(r.created_at as string, "ts", tz);
     if (!day) continue;
     const a = get(day);
     const type = r.tracker_type as string;
@@ -122,28 +138,33 @@ export async function ensureXp(supabase: Supabase, userId: string, now: Date = n
   }
   for (const [day, set] of trackerSets) get(day).trackerTypes = [...set];
 
-  const bump = (rows: { data: Record<string, unknown>[] | null }, col: string, field: keyof DayActivity) => {
+  const bump = (
+    rows: { data: Record<string, unknown>[] | null },
+    col: string,
+    field: keyof DayActivity,
+    kind: "date" | "ts",
+  ) => {
     for (const r of rows.data || []) {
-      const day = toDay(r[col] as string);
+      const day = bucketDay(r[col] as string, kind, tz);
       if (!day) continue;
       (get(day)[field] as number)++;
     }
   };
 
   const todosCompleted = (todos.data || []).length;
-  bump(pomodoro, "completed_at", "pomodoro");
-  bump(todos, "completed_at", "todos");
-  bump(habits, "checkin_date", "habits");
-  bump(journal, "entry_date", "journal");
-  bump(workout, "performed_on", "workout");
-  bump(reading, "finished_at", "reading");
-  bump(notes, "created_at", "notes");
-  bump(logs, "created_at", "logs");
-  bump(expenses, "expense_date", "expenses");
-  bump(finance, "created_at", "finance");
+  bump(pomodoro, "completed_at", "pomodoro", "ts");
+  bump(todos, "completed_at", "todos", "ts");
+  bump(habits, "checkin_date", "habits", "date");
+  bump(journal, "entry_date", "journal", "date");
+  bump(workout, "performed_on", "workout", "date");
+  bump(reading, "finished_at", "reading", "ts");
+  bump(notes, "created_at", "notes", "ts");
+  bump(logs, "created_at", "logs", "ts");
+  bump(expenses, "expense_date", "expenses", "date");
+  bump(finance, "created_at", "finance", "ts");
 
   // Score every active day.
-  const todayKey = dayKey(now);
+  const todayKey = tzTodayKey(tz, now);
   const scores = new Map<string, { points: number; breakdown: Record<string, number> }>();
   for (const [day, activity] of days) scores.set(day, scoreDay(activity));
 
@@ -223,7 +244,7 @@ export async function ensureXp(supabase: Supabase, userId: string, now: Date = n
   }
 
   const level = levelInfo(totalXp);
-  const streak = currentStreak(daysWithXp, now);
+  const streak = currentStreak(daysWithXp, todayKey);
   const longest = longestStreak(daysWithXp);
 
   const stats: CumulativeStats = {
@@ -276,12 +297,11 @@ export async function ensureXp(supabase: Supabase, userId: string, now: Date = n
   const dailySeries: XpSummary["dailySeries"] = [];
   const windowBreakdown = new Map<string, number>();
   for (let i = 29; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
-    const key = dayKey(d);
+    const key = addDays(todayKey, -i);
     const s = scores.get(key);
     dailySeries.push({
       day: key,
-      short: d.toLocaleDateString(undefined, { weekday: "narrow" }),
+      short: weekdayNarrow(key),
       points: s?.points ?? 0,
       isToday: key === todayKey,
     });

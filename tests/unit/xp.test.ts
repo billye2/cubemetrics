@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { xpToReach, levelForXp, levelInfo, titleForLevel } from "@/lib/xp/levels";
 import { scoreDay, emptyActivity, type DayActivity } from "@/lib/xp/rules";
-import { currentStreak, longestStreak, dayKey } from "@/lib/xp/stats";
+import { currentStreak, longestStreak } from "@/lib/xp/stats";
+import { localDayKey, todayKey, addDays, isValidIanaZone } from "@/lib/xp/tz";
 import { satisfiedAchievements, type CumulativeStats } from "@/lib/xp/achievements";
 import {
   QUEST_POOL,
@@ -93,39 +94,58 @@ describe("xp economy (scoreDay)", () => {
 });
 
 describe("xp streak", () => {
-  const mk = (y: number, m: number, d: number) => new Date(y, m - 1, d);
-
   it("counts consecutive days ending today", () => {
-    const today = mk(2026, 5, 28);
-    const days = new Set([
-      dayKey(mk(2026, 5, 28)),
-      dayKey(mk(2026, 5, 27)),
-      dayKey(mk(2026, 5, 26)),
-    ]);
-    expect(currentStreak(days, today)).toBe(3);
+    const days = new Set(["2026-05-28", "2026-05-27", "2026-05-26"]);
+    expect(currentStreak(days, "2026-05-28")).toBe(3);
   });
 
   it("applies a one-day grace when today has no XP yet", () => {
-    const today = mk(2026, 5, 28);
-    const days = new Set([dayKey(mk(2026, 5, 27)), dayKey(mk(2026, 5, 26))]);
-    expect(currentStreak(days, today)).toBe(2);
+    const days = new Set(["2026-05-27", "2026-05-26"]);
+    expect(currentStreak(days, "2026-05-28")).toBe(2);
   });
 
   it("breaks after a two-day gap", () => {
-    const today = mk(2026, 5, 28);
-    const days = new Set([dayKey(mk(2026, 5, 25))]);
-    expect(currentStreak(days, today)).toBe(0);
+    const days = new Set(["2026-05-25"]);
+    expect(currentStreak(days, "2026-05-28")).toBe(0);
+  });
+
+  it("crosses a month boundary", () => {
+    const days = new Set(["2026-06-01", "2026-05-31", "2026-05-30"]);
+    expect(currentStreak(days, "2026-06-01")).toBe(3);
   });
 
   it("longestStreak finds the longest historical run", () => {
-    const days = [
-      dayKey(mk(2026, 1, 1)),
-      dayKey(mk(2026, 1, 2)),
-      dayKey(mk(2026, 1, 3)),
-      dayKey(mk(2026, 1, 10)),
-      dayKey(mk(2026, 1, 11)),
-    ];
+    const days = ["2026-01-01", "2026-01-02", "2026-01-03", "2026-01-10", "2026-01-11"];
     expect(longestStreak(days)).toBe(3);
+  });
+});
+
+describe("xp timezone", () => {
+  it("projects a UTC instant into the user's local day", () => {
+    // 2026-01-01T06:00Z is still Dec 31 in Los Angeles, Jan 1 in Tokyo/UTC.
+    expect(localDayKey("2026-01-01T06:00:00Z", "America/Los_Angeles")).toBe("2025-12-31");
+    expect(localDayKey("2026-01-01T06:00:00Z", "Asia/Tokyo")).toBe("2026-01-01");
+    expect(localDayKey("2026-01-01T06:00:00Z", "UTC")).toBe("2026-01-01");
+  });
+
+  it("todayKey matches localDayKey(now)", () => {
+    const now = new Date("2026-05-28T20:00:00Z");
+    expect(todayKey("America/New_York", now)).toBe(localDayKey(now, "America/New_York"));
+  });
+
+  it("addDays steps calendar days across boundaries", () => {
+    expect(addDays("2026-01-31", 1)).toBe("2026-02-01");
+    expect(addDays("2026-03-01", -1)).toBe("2026-02-28");
+    expect(addDays("2026-12-31", 1)).toBe("2027-01-01");
+    // across US spring-forward (2026-03-08) stays on calendar days
+    expect(addDays("2026-03-07", 2)).toBe("2026-03-09");
+  });
+
+  it("validates IANA zones", () => {
+    expect(isValidIanaZone("America/Los_Angeles")).toBe(true);
+    expect(isValidIanaZone("UTC")).toBe(true);
+    expect(isValidIanaZone("Not/AZone!!")).toBe(false);
+    expect(isValidIanaZone("")).toBe(false);
   });
 });
 

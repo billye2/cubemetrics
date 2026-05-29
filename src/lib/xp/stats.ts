@@ -1,5 +1,10 @@
 // Streak math over the set of days the user earned XP. Pure + testable.
+// Works on YYYY-MM-DD calendar-day strings so it's timezone-neutral — the caller
+// supplies the user's local "today" (see tz.ts).
 
+import { addDays } from "./tz";
+
+/** Local YYYY-MM-DD for a Date in the *server* zone. Kept for convenience/tests. */
 export function dayKey(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -8,21 +13,21 @@ export function dayKey(d: Date): string {
 }
 
 /**
- * Consecutive-day streak ending today, with a one-day grace: if today has no
- * XP yet, the streak is measured from yesterday so an in-progress day doesn't
+ * Consecutive-day streak ending at `todayKey`, with a one-day grace: if today has
+ * no XP yet, the streak is measured from yesterday so an in-progress day doesn't
  * read as broken. Matches the Focus/Habits streak behavior.
  */
-export function currentStreak(daysWithXp: Iterable<string>, now: Date = new Date()): number {
+export function currentStreak(daysWithXp: Iterable<string>, todayKey: string): number {
   const set = daysWithXp instanceof Set ? daysWithXp : new Set(daysWithXp);
-  const cursor = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  if (!set.has(dayKey(cursor))) {
-    cursor.setDate(cursor.getDate() - 1);
-    if (!set.has(dayKey(cursor))) return 0;
+  let cursor = todayKey;
+  if (!set.has(cursor)) {
+    cursor = addDays(cursor, -1);
+    if (!set.has(cursor)) return 0;
   }
   let streak = 0;
-  while (set.has(dayKey(cursor))) {
+  while (set.has(cursor)) {
     streak++;
-    cursor.setDate(cursor.getDate() - 1);
+    cursor = addDays(cursor, -1);
   }
   return streak;
 }
@@ -32,17 +37,18 @@ export function longestStreak(daysWithXp: Iterable<string>): number {
   const keys = [...new Set(daysWithXp)].sort();
   let best = 0;
   let run = 0;
-  let prev: Date | null = null;
+  let prev: number | null = null;
   for (const k of keys) {
-    const d = new Date(k + "T00:00:00");
-    if (prev) {
-      const gap = Math.round((d.getTime() - prev.getTime()) / 86_400_000);
+    const [y, m, d] = k.split("-").map(Number);
+    const ms = Date.UTC(y, (m || 1) - 1, d || 1, 12); // noon avoids DST off-by-one
+    if (prev !== null) {
+      const gap = Math.round((ms - prev) / 86_400_000);
       run = gap === 1 ? run + 1 : 1;
     } else {
       run = 1;
     }
     if (run > best) best = run;
-    prev = d;
+    prev = ms;
   }
   return best;
 }
