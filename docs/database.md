@@ -94,6 +94,13 @@ Backs the Countdown app. `target_date` is a calendar date; `target_time` is opti
 
 Back the Counter / Tally app (migration `023_counters.sql`, **applied to the remote**). `counters.value` is the denormalized running total; `step` is the +/− increment. Every press appends a `counter_events` row (`delta = ±step`) so a counter has history — "today net" (Σ delta on the local day) and a 7-day taps-per-day chart. Resets zero `value` **without** logging an event, so the press metrics stay honest. `counter_events` indexed on `(counter_id, created_at)` and `(user_id, created_at)`.
 
+### inbox_items
+| Column | Type |
+|--------|------|
+| id, user_id, text, created_at |
+
+Backs the Quick Capture / Inbox app (migration `024_inbox.sql`, **applied to the remote**). Append-only capture; **process-to-zero** — an item exists iff it's still un-triaged. Triaging inserts a row into the destination (`todos`, `notes`, or `checklists` with `list_type='backlog'`) then deletes the inbox row. No status column. Indexed on `(user_id, created_at)`.
+
 ## Factory Tables
 
 Five shared tables back the generic template apps. Each row is scoped by `user_id` + a `*_type`
