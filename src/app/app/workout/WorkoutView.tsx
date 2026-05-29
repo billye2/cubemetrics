@@ -14,6 +14,7 @@ export interface WorkoutSet {
   exercise: string;
   reps: number | null;
   weight: number | null;
+  rpe: number | null;
   created_at: string;
 }
 
@@ -156,6 +157,7 @@ function SessionCard({
   const exRef = useRef<HTMLInputElement>(null);
   const repsRef = useRef<HTMLInputElement>(null);
   const weightRef = useRef<HTMLInputElement>(null);
+  const rpeRef = useRef<HTMLInputElement>(null);
 
   const date = new Date(session.performed_on + "T12:00:00").toLocaleDateString(undefined, {
     weekday: "short",
@@ -177,11 +179,11 @@ function SessionCard({
     if (!exercise) return;
     const reps = repsRef.current?.value ? Number(repsRef.current.value) : null;
     const weight = weightRef.current?.value ? Number(weightRef.current.value) : null;
+    const rpe = rpeRef.current?.value ? Number(rpeRef.current.value) : null;
     start(async () => {
-      await addSetAction(session.id, exercise, reps, weight);
-      if (repsRef.current) repsRef.current.value = "";
-      if (weightRef.current) weightRef.current.value = "";
-      // keep exercise so consecutive sets are fast to add
+      await addSetAction(session.id, exercise, reps, weight, rpe);
+      // Keep exercise + reps/weight/rpe so the next set of the same lift is one tap
+      // (prior-set prefill — the common case when working through sets).
       exRef.current?.focus();
     });
   }
@@ -226,6 +228,7 @@ function SessionCard({
                         {isPr && <span title="Personal record">★</span>}
                         {s.reps ?? "–"}
                         {s.weight != null && <span className="text-zinc-500">×{Number(s.weight)}</span>}
+                        {s.rpe != null && <span className="text-zinc-600" title="RPE">@{s.rpe}</span>}
                         <button
                           type="button"
                           onClick={() => start(() => deleteSetAction(s.id))}
@@ -267,6 +270,16 @@ function SessionCard({
             step="any"
             placeholder="wt"
             className="w-16 rounded-lg bg-zinc-900 px-2 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+          />
+          <input
+            ref={rpeRef}
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={10}
+            placeholder="rpe"
+            title="Rate of perceived exertion (1–10)"
+            className="w-14 rounded-lg bg-zinc-900 px-2 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
           />
           <button
             type="button"
