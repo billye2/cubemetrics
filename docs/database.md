@@ -96,6 +96,13 @@ Backs the Countdown app. `target_date` is a calendar date; `target_time` is opti
 
 Back the Counter / Tally app (migration `023_counters.sql`, **applied to the remote**). `counters.value` is the denormalized running total; `step` is the +/− increment. Every press appends a `counter_events` row (`delta = ±step`) so a counter has history — "today net" (Σ delta on the local day) and a 7-day taps-per-day chart. Resets zero `value` **without** logging an event, so the press metrics stay honest. `counter_events` indexed on `(counter_id, created_at)` and `(user_id, created_at)`.
 
+### net_worth_accounts + net_worth_snapshots
+| net_worth_accounts | net_worth_snapshots |
+|--------------------|---------------------|
+| id, user_id, name, kind, value, created_at | id, user_id, assets, liabilities, net, captured_on, created_at |
+
+Back the Net Worth app (migration `028_net_worth.sql`, **applied to the remote**). Accounts are named balances tagged `kind` ∈ `asset`/`liability` with a mutable current `value`; net worth = Σassets − Σliabilities computed live. A snapshot freezes the totals on `captured_on` for the trend line (account values overwrite in place — snapshots are the history). Auto-pull from savings/debt is P2. Snapshots indexed on `(user_id, captured_on)`.
+
 ### job_applications
 | Column | Type |
 |--------|------|
