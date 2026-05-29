@@ -87,9 +87,19 @@ them in every file, the cross-cutting template work is collected in:
 
 Individual app files reference these and add only what's app-specific.
 
+## Status & finished plans
+
+- **[`_status.md`](_status.md)** is the at-a-glance completion tracker (✅ done / 🟢 at bar /
+  🟡 partial / 🔴 graduate-pending) — start there to see what's shipped vs. open.
+- **[`finished/`](finished/)** holds plans whose entire app-specific scope shipped (thin
+  catalog-entry apps, fully-implemented specs) plus the consumed `_review-*.md` audits. Nothing
+  there needs re-reviewing; it's kept for history.
+
 ## Catalog index
 
-One file per catalog entry (68 apps). Grouped by how they're rendered today.
+One file per catalog entry. Grouped by how they're rendered today. (Fully-done thin entries —
+brag, interviews, challenge, income, steps, caffeine, stress, productivity — now live in
+[`finished/`](finished/).)
 
 **Reference apps — already built to the bar:**
 [focus](focus.md) · [timetracker](timetracker.md) · [countdown](countdown.md) ·
@@ -107,9 +117,9 @@ One file per catalog entry (68 apps). Grouped by how they're rendered today.
 > - **Custom:** [counter](counter.md) · [inbox](inbox.md) *(Quick Capture)* ·
 >   [prioritymatrix](prioritymatrix.md) *(Eisenhower)* · [kanban](kanban.md) ·
 >   [jobtracker](jobtracker.md) *(Job Hunt)* · [networth](networth.md) · [keepintouch](keepintouch.md)
-> - **Catalog-entry (template):** [brag](brag.md) *(Wins)* · [interviews](interviews.md) ·
->   [challenge](challenge.md) · [income](income.md) · [steps](steps.md) · [caffeine](caffeine.md) ·
->   [stress](stress.md) · [productivity](productivity.md)
+> - **Catalog-entry (template):** [brag](finished/brag.md) *(Wins)* · [interviews](finished/interviews.md) ·
+>   [challenge](finished/challenge.md) · [income](finished/income.md) · [steps](finished/steps.md) · [caffeine](finished/caffeine.md) ·
+>   [stress](finished/stress.md) · [productivity](finished/productivity.md) — *(now in `finished/`)*
 > - **Schedule family** ([`_schedule-template.md`](_schedule-template.md)): **Car** (`carcare`) +
 >   **Meds** (`medication`). Re-pointing the existing recurring apps
 >   (cleaning/homemaint/plantcare/petcare/warranty/routines) onto it is a P2 per-app data migration.
