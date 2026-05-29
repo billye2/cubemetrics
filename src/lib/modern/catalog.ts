@@ -139,6 +139,7 @@ export const APPS: AppEntry[] = [
   { id: "habits", name: "Habits", category: "habits", icon: "⊙", description: "Daily habits", ui: "modern" },
   { id: "counter", name: "Counter", category: "org", icon: "#", description: "Tally anything — reps, counts, scores", ui: "modern" },
   { id: "inbox", name: "Inbox", category: "tasks", icon: "⊕", description: "Capture now, sort later", ui: "modern" },
+  { id: "prioritymatrix", name: "Priorities", category: "tasks", icon: "⊞", description: "Urgent × important quadrants", ui: "modern" },
   { id: "xp", name: "Level", category: "goals", icon: "✦", description: "Your XP, level, streak, and achievements", ui: "modern" },
 ];
 

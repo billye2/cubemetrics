@@ -36,7 +36,9 @@ Extends `auth.users`.
 ### todos
 | Column | Type |
 |--------|------|
-| id, user_id, title, completed, priority, due_date, completed_at, created_at |
+| id, user_id, title, completed, priority, due_date, completed_at, created_at, quadrant |
+
+`quadrant SMALLINT` (default `0`, migration `025_todo_quadrant.sql`, **applied to the remote**) backs the Priority Matrix app: `0` unsorted, `1` Do (urgent+important), `2` Schedule (important, not urgent), `3` Delegate (urgent, not important), `4` Drop (neither). Additive with a default — the Todo app is unaffected; both apps share the same rows.
 
 ### journal_entries
 | Column | Type |
