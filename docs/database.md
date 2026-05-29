@@ -28,7 +28,7 @@ Extends `auth.users`.
 | bio | TEXT | |
 | location | TEXT | |
 
-> The classic-only `bbs_sessions` and `activity_log` tables were dropped in migration `014_drop_classic.sql`.
+> The classic-only `bbs_sessions` and `activity_log` tables are deprecated and will be dropped by migration `014_drop_classic.sql` (not yet applied to the remote — they still exist).
 
 ## App Tables
 
@@ -77,7 +77,14 @@ Extends `auth.users`.
 |--------|------|
 | id, user_id, category, body, status, app_id, github_issue_number, github_issue_url, created_at |
 
-Public SELECT policy allows all users to browse the feedback board. Insert/update/delete restricted to own rows. `app_id` tags which catalog app the feedback is about (null = general). `status` flows `new` → `approved` (a GitHub issue was opened; `github_issue_*` populated) → or `rejected`. The admin review queue reads/updates across users via the service-role client (bypasses RLS); see [environment.md](environment.md).
+RLS scopes reads/writes to the owner only (`Users can manage own feedback`). The classic "Public can read all feedback" policy was removed in migration `015` — the modern UI uses an admin-only review flow instead of a public board. `app_id` tags which catalog app the feedback is about (null = general). `status` flows `new` → `approved` (a GitHub issue was opened; `github_issue_*` populated) → or `rejected`. The admin review queue reads/updates across users via the service-role client (bypasses RLS); see [environment.md](environment.md).
+
+### countdowns
+| Column | Type |
+|--------|------|
+| id, user_id, title, target_date, target_time, category, recurring_yearly, note, created_at |
+
+Backs the Countdown app. `target_date` is a calendar date; `target_time` is optional and combines with the date in local time. `recurring_yearly` marks events that repeat each year (birthdays, anniversaries, holidays) — the "next occurrence" is computed client-side from the original month/day. Indexed on `(user_id, target_date)`.
 
 ## RLS Policy Pattern
 ```sql
