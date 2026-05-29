@@ -54,7 +54,7 @@ folder every session. Updated as work lands (builder role: tick the plan's own c
 | sleep | 🟡 Partial | ✓ daily goal; P1: ideal-range band (7–9h); P2: weekly avg |
 | energy | 🟡 Partial | time-of-day tagging, energy curve |
 | screentime | 🟡 Partial | ✓ at-most cap ring + quick-add; P3: category split |
-| stopwatch | 🔴 Graduate | needs a real start/stop timer, not a number field |
+| stopwatch | 🟢 At bar | ✓ graduated to a real start/stop/lap timer (custom page); P3: keep-awake, sound |
 
 ## Checklists (factory `checklist`)
 
