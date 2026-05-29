@@ -126,7 +126,7 @@ export const APPS: AppEntry[] = [
   // Tracker-backed time apps (minutes logged per session)
   { id: "focus", name: "Focus", category: "time", icon: "◉", description: "Timer for one deep-work session", ui: "modern" },
   { id: "timetracker", name: "Time Tracker", category: "time", icon: "⌚", description: "Log where your day went, by category", ui: "modern" },
-  { id: "countdown", name: "Countdown", category: "time", icon: "⏳", description: "Days to events", ui: "tracker", config: { trackerType: "countdown", unit: "days", min: 0, max: 9999 } },
+  { id: "countdown", name: "Countdown", category: "time", icon: "⏳", description: "Live countdown to upcoming dates", ui: "modern" },
   { id: "meditation", name: "Meditation", category: "time", icon: "☯", description: "Minutes meditated", ui: "tracker", config: { trackerType: "meditation", unit: "minutes", min: 0, max: 240 } },
   { id: "stopwatch", name: "Stopwatch", category: "time", icon: "⏲", description: "Time anything", ui: "tracker", config: { trackerType: "stopwatch", unit: "minutes", min: 0, max: 1440 } },
   { id: "calendar", name: "Calendar", category: "org", icon: "◰", description: "Events", ui: "modern" },
