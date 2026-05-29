@@ -89,9 +89,25 @@ export default async function AppDispatch({
       .order("status", { ascending: true })
       .order("created_at", { ascending: false })
       .limit(100);
+    const goals = data || [];
+    // Progress history for sparklines on goals with a target.
+    const history: Record<number, number[]> = {};
+    const ids = goals.map((g) => g.id);
+    if (ids.length > 0) {
+      const { data: prog } = await supabase
+        .from("goal_progress")
+        .select("goal_id, value, created_at")
+        .eq("user_id", user.id)
+        .in("goal_id", ids)
+        .order("created_at", { ascending: true })
+        .limit(1000);
+      for (const p of prog || []) {
+        (history[p.goal_id as number] ??= []).push(Number(p.value) || 0);
+      }
+    }
     return (
       <Shell back={back} title={app.name}>
-        <GoalView appId={app.id} config={config} goals={data || []} />
+        <GoalView appId={app.id} config={config} goals={goals} history={history} />
       </Shell>
     );
   }

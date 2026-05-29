@@ -136,6 +136,8 @@ export async function goalAddAction(
 
 export async function goalUpdateProgressAction(appId: string, id: number, current: number) {
   const { supabase, userId, path } = await ctx(appId);
+  // Record the update in history (for the trend) then set the latest value.
+  await supabase.from("goal_progress").insert({ user_id: userId, goal_id: id, value: current });
   await supabase.from("goals").update({ current_value: current }).eq("id", id).eq("user_id", userId);
   revalidatePath(path);
 }
