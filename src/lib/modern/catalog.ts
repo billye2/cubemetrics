@@ -124,7 +124,7 @@ export const APPS: AppEntry[] = [
   { id: "invoices", name: "Invoices", category: "work", icon: "⌗", description: "Billing", ui: "finance", config: { itemType: "invoice", hasAmount: true, hasDueDate: true } },
 
   // Tracker-backed time apps (minutes logged per session)
-  { id: "focus", name: "Focus", category: "time", icon: "◉", description: "Minutes of deep work", ui: "tracker", config: { trackerType: "focus", unit: "minutes", min: 0, max: 720 } },
+  { id: "focus", name: "Focus", category: "time", icon: "◉", description: "Deep work sessions with a timer", ui: "modern" },
   { id: "timetracker", name: "Time Tracker", category: "time", icon: "⌚", description: "Where time goes", ui: "tracker", config: { trackerType: "timetracker", unit: "minutes", min: 0, max: 1440 } },
   { id: "countdown", name: "Countdown", category: "time", icon: "⏳", description: "Days to events", ui: "tracker", config: { trackerType: "countdown", unit: "days", min: 0, max: 9999 } },
   { id: "meditation", name: "Meditation", category: "time", icon: "☯", description: "Minutes meditated", ui: "tracker", config: { trackerType: "meditation", unit: "minutes", min: 0, max: 240 } },
