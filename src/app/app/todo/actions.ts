@@ -32,6 +32,14 @@ export async function toggleTodoAction(id: number, completed: boolean) {
   revalidatePath("/app/todo");
 }
 
+export async function updateTodoAction(id: number, title: string) {
+  const trimmed = title.trim();
+  if (!trimmed) return;
+  const { supabase, userId } = await requireUser();
+  await supabase.from("todos").update({ title: trimmed }).eq("id", id).eq("user_id", userId);
+  revalidatePath("/app/todo");
+}
+
 export async function deleteTodoAction(id: number) {
   const { supabase, userId } = await requireUser();
   await supabase.from("todos").delete().eq("id", id).eq("user_id", userId);

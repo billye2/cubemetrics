@@ -44,6 +44,18 @@ export async function checkInAction(habitId: number) {
   revalidatePath("/app/habits");
 }
 
+export async function renameHabitAction(id: number, name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const { supabase, userId } = await requireUser();
+  await supabase
+    .from("habits")
+    .update({ name: trimmed })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath("/app/habits");
+}
+
 export async function deleteHabitAction(id: number) {
   const { supabase, userId } = await requireUser();
   await supabase
