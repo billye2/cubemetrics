@@ -85,3 +85,52 @@ them in every file, the cross-cutting template work is collected in:
 - [`_finance-template.md`](_finance-template.md)
 
 Individual app files reference these and add only what's app-specific.
+
+## Catalog index
+
+One file per catalog entry (68 apps). Grouped by how they're rendered today.
+
+**Reference apps — already built to the bar:**
+[focus](focus.md) · [timetracker](timetracker.md) · [countdown](countdown.md)
+
+**Custom pages:**
+[todo](todo.md) · [journal](journal.md) · [notes](notes.md) · [calendar](calendar.md) ·
+[expenses](expenses.md) · [reading](reading.md) · [habits](habits.md) · [pomodoro](pomodoro.md) ·
+[feedback](feedback.md) *(system app)*
+
+**Trackers** ([_tracker-template.md](_tracker-template.md)):
+[mood](mood.md) · [water](water.md) · [sleep](sleep.md) · [energy](energy.md) ·
+[weight](weight.md) · [screentime](screentime.md) · [writingtracker](writingtracker.md) ·
+[meditation](meditation.md) · [stopwatch](stopwatch.md)
+
+**Checklists** ([_checklist-template.md](_checklist-template.md)):
+[grocery](grocery.md) · [wishlist](wishlist.md) · [packing](packing.md) · [bucketlist](bucketlist.md) ·
+[bookmarks](bookmarks.md) · [backlog](backlog.md) · [contacts](contacts.md) · [inventory](inventory.md) ·
+[fileindex](fileindex.md) · [homemaint](homemaint.md) · [cleaning](cleaning.md) · [plantcare](plantcare.md) ·
+[petcare](petcare.md) · [warranty](warranty.md) · [travelplanner](travelplanner.md) · [vocabulary](vocabulary.md) ·
+[routines](routines.md) · [dailyplanner](dailyplanner.md) · [visionboard](visionboard.md) ·
+[flashcards](flashcards.md) · [mealplanner](mealplanner.md) · [clienttracker](clienttracker.md)
+
+**Logbooks** ([_logbook-template.md](_logbook-template.md)):
+[gratitude](gratitude.md) · [meeting](meeting.md) · [standup](standup.md) · [brainstorm](brainstorm.md) ·
+[decisionmatrix](decisionmatrix.md) · [workout](workout.md) · [learninglog](learninglog.md) ·
+[weeklyreview](weeklyreview.md) · [feedbacklog](feedbacklog.md) · [oneononep](oneononep.md) ·
+[retro](retro.md) · [recipes](recipes.md)
+
+**Goals** ([_goal-template.md](_goal-template.md)):
+[goals](goals.md) · [okr](okr.md) · [milestones](milestones.md) · [streaks](streaks.md) ·
+[courses](courses.md) · [skilltree](skilltree.md) · [projecttracker](projecttracker.md) ·
+[savings](savings.md) · [debtpayoff](debtpayoff.md)
+
+**Finance** ([_finance-template.md](_finance-template.md)):
+[budget](budget.md) · [bills](bills.md) · [subscriptions](subscriptions.md) · [invoices](invoices.md)
+
+### Apps recommended to "graduate" from a factory template to a custom page
+
+The single biggest cross-cutting finding: a number of apps are forced through a template that's the
+wrong model for them. Flagged for graduation in their files —
+**stopwatch** (real start/stop timer), **bookmarks, contacts, inventory, fileindex, vocabulary,
+flashcards, mealplanner, clienttracker, warranty, plantcare, visionboard** (checklists that aren't
+checklists), **decisionmatrix, workout, recipes** (structured logbooks), **okr, skilltree,
+projecttracker, savings, debtpayoff** (goals that aren't single progress bars), and **subscriptions,
+budget** (finance beyond a payables list). **streaks** should likely merge into **habits**.
