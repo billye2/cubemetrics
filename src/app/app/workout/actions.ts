@@ -39,6 +39,7 @@ export async function addSetAction(
   exercise: string,
   reps: number | null,
   weight: number | null,
+  rpe: number | null = null,
 ) {
   const trimmed = exercise.trim();
   if (!trimmed) return;
@@ -49,6 +50,7 @@ export async function addSetAction(
     exercise: trimmed,
     reps,
     weight,
+    rpe: rpe != null && rpe >= 1 && rpe <= 10 ? rpe : null,
   });
   revalidatePath(PATH);
 }

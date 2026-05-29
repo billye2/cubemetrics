@@ -30,7 +30,7 @@ export default async function WorkoutPage() {
   if (sessionIds.length > 0) {
     const { data } = await supabase
       .from("workout_sets")
-      .select("id, session_id, exercise, reps, weight, created_at")
+      .select("id, session_id, exercise, reps, weight, rpe, created_at")
       .eq("user_id", user.id)
       .in("session_id", sessionIds)
       .order("created_at", { ascending: true });
