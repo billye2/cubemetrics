@@ -21,7 +21,7 @@ direct explicit instruction can still override the active role for a single acti
 | Role | Use it when you want… |
 |------|------------------------|
 | [spec-writer](spec-writer.md) | research, plans, and specs written to `docs/` — no code, no git. **(default mental mode for this repo)** |
-| [builder](builder.md) | the change actually implemented and verified in code (stops before commit/push). |
+| [builder](builder.md) | the next task from `docs/app-plans/` implemented, verified, and shipped — commits/pushes to `master` (auto-deploys) and applies migrations once tests + build are green. |
 | [reviewer](reviewer.md) | a critical read / punch-list of a diff or spec — no edits. |
 
 ## Adding a role
