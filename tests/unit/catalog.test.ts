@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { APPS, CATEGORIES, getApp, getAppsByCategory, type UiType } from "@/lib/modern/catalog";
 
-const VALID_UI: UiType[] = ["modern", "tracker", "checklist", "logbook", "goal", "finance"];
+const VALID_UI: UiType[] = ["modern", "tracker", "checklist", "logbook", "goal", "finance", "schedule"];
 
 describe("modern catalog", () => {
   it("has apps and all ids are unique", () => {

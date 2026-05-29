@@ -190,3 +190,54 @@ export async function financeDeleteAction(appId: string, id: number) {
   await supabase.from("finance_items").delete().eq("id", id).eq("user_id", userId);
   revalidatePath(path);
 }
+
+// === Schedule / recurring ===
+function cleanInterval(days: number): number {
+  return Number.isFinite(days) && days > 0 ? Math.min(Math.floor(days), 3650) : 30;
+}
+
+export async function scheduleAddAction(
+  appId: string,
+  scheduleType: string,
+  title: string,
+  intervalDays: number,
+  note: string = "",
+) {
+  if (!title.trim()) return;
+  const { supabase, userId, path } = await ctx(appId);
+  await supabase.from("schedule_items").insert({
+    user_id: userId,
+    schedule_type: scheduleType,
+    title: title.trim().slice(0, 200),
+    interval_days: cleanInterval(intervalDays),
+    note: note.trim() || null,
+  });
+  revalidatePath(path);
+}
+
+/** Mark done today — stamps last_done and thereby reschedules the next due date. */
+export async function scheduleDoneAction(appId: string, id: number) {
+  const { supabase, userId, path } = await ctx(appId);
+  await supabase
+    .from("schedule_items")
+    .update({ last_done: new Date().toISOString().split("T")[0] })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath(path);
+}
+
+export async function scheduleSetIntervalAction(appId: string, id: number, intervalDays: number) {
+  const { supabase, userId, path } = await ctx(appId);
+  await supabase
+    .from("schedule_items")
+    .update({ interval_days: cleanInterval(intervalDays) })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath(path);
+}
+
+export async function scheduleDeleteAction(appId: string, id: number) {
+  const { supabase, userId, path } = await ctx(appId);
+  await supabase.from("schedule_items").delete().eq("id", id).eq("user_id", userId);
+  revalidatePath(path);
+}
