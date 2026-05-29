@@ -83,6 +83,7 @@ them in every file, the cross-cutting template work is collected in:
 - [`_logbook-template.md`](_logbook-template.md)
 - [`_goal-template.md`](_goal-template.md)
 - [`_finance-template.md`](_finance-template.md)
+- [`_schedule-template.md`](_schedule-template.md) — recurring tasks (sixth family; added 2026-05-29)
 
 Individual app files reference these and add only what's app-specific.
 
@@ -99,6 +100,19 @@ One file per catalog entry (68 apps). Grouped by how they're rendered today.
 > Flashcards graduated from the logbook/checklist templates to custom pages; Pomodoro gained its
 > work/break cycle automation. The per-template P1 sections below are now largely shipped — treat
 > their *Current state* notes as describing the pre-upgrade shell.
+>
+> **Status (2026-05-29) — the new-app shortlist is fully shipped.** Every item in
+> [`_new-app-candidates.md`](_new-app-candidates.md) is live, plus a **sixth factory family**
+> (`schedule`). New apps this round:
+> - **Custom:** [counter](counter.md) · [inbox](inbox.md) *(Quick Capture)* ·
+>   [prioritymatrix](prioritymatrix.md) *(Eisenhower)* · [kanban](kanban.md) ·
+>   [jobtracker](jobtracker.md) *(Job Hunt)* · [networth](networth.md) · [keepintouch](keepintouch.md)
+> - **Catalog-entry (template):** [brag](brag.md) *(Wins)* · [interviews](interviews.md) ·
+>   [challenge](challenge.md) · [income](income.md) · [steps](steps.md) · [caffeine](caffeine.md) ·
+>   [stress](stress.md) · [productivity](productivity.md)
+> - **Schedule family** ([`_schedule-template.md`](_schedule-template.md)): **Car** (`carcare`) +
+>   **Meds** (`medication`). Re-pointing the existing recurring apps
+>   (cleaning/homemaint/plantcare/petcare/warranty/routines) onto it is a P2 per-app data migration.
 
 **Custom pages:**
 [todo](todo.md) · [journal](journal.md) · [notes](notes.md) · [calendar](calendar.md) ·
