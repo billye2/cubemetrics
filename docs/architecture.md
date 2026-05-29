@@ -64,9 +64,10 @@ Template apps share a config (`FactoryConfig`) and a backing table (`daily_track
 `src/app/app/feedback/` + `HeaderFeedback`:
 1. Users submit feedback (tagged with the app via `app_id`) — stored in `user_feedback`.
 2. An admin-only **Review** tab lists pending feedback.
-3. Approving opens a GitHub issue (`src/lib/github/issues.ts`) containing an `@claude` mention so the Claude Code GitHub app can pick it up, and records the issue URL on the row. Rejecting marks it not planned.
+3. Approving opens a GitHub issue (`src/lib/github/issues.ts`) containing an `@claude` mention and records the issue URL on the row. Rejecting marks it not planned.
+4. `.github/workflows/claude.yml` runs `anthropics/claude-code-action@v1` on `issues`, `issue_comment`, `pull_request_review_comment`, and `pull_request_review` events whose body contains `@claude`. It uses the `ANTHROPIC_API_KEY` repo secret and runs Claude Code inside the Actions runner with permission to push branches and open PRs.
 
-See [environment.md](environment.md) for the required env vars.
+Requires the `ANTHROPIC_API_KEY` repository secret (not a deployment-environment secret) — see [environment.md](environment.md).
 
 ---
 
