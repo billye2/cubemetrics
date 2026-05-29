@@ -1,15 +1,24 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { checklistAddAction, checklistToggleAction, checklistDeleteAction } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
 
 interface Item {
   id: number;
   title: string;
+  note: string | null;
   completed: boolean;
   created_at: string;
 }
+
+type SortMode = "newest" | "alpha" | "active";
+
+const SORTS: { id: SortMode; label: string }[] = [
+  { id: "active", label: "To do first" },
+  { id: "newest", label: "Newest" },
+  { id: "alpha", label: "A–Z" },
+];
 
 export function ChecklistView({
   appId,
@@ -21,46 +30,122 @@ export function ChecklistView({
   items: Item[];
 }) {
   const listType = config.listType!;
+  const itemLabel = (config.itemLabel ?? "item").toLowerCase();
   const formRef = useRef<HTMLFormElement>(null);
+  const noteRef = useRef<HTMLInputElement>(null);
   const [pending, start] = useTransition();
   const [showDone, setShowDone] = useState(false);
-  const active = items.filter((i) => !i.completed);
-  const done = items.filter((i) => i.completed);
+  const [sort, setSort] = useState<SortMode>("active");
+  const [showNote, setShowNote] = useState(false);
+
+  const total = items.length;
+  const doneCount = items.filter((i) => i.completed).length;
+  const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+
+  const sorted = useMemo(() => {
+    const copy = [...items];
+    if (sort === "alpha") copy.sort((a, b) => a.title.localeCompare(b.title));
+    else if (sort === "newest") copy.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    return copy;
+  }, [items, sort]);
+
+  const active = sorted.filter((i) => !i.completed);
+  const done = sorted.filter((i) => i.completed);
 
   function submit(formData: FormData) {
     const title = String(formData.get("title") || "");
     if (!title.trim()) return;
+    const note = String(formData.get("note") || "");
     start(async () => {
-      await checklistAddAction(appId, listType, title);
+      await checklistAddAction(appId, listType, title, note);
       formRef.current?.reset();
+      setShowNote(false);
     });
   }
 
   return (
     <div>
+      {total > 0 && (
+        <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <div className="mb-2 flex items-center justify-between text-xs">
+            <span className="font-semibold text-zinc-300">
+              {doneCount} of {total} done
+            </span>
+            <span className="font-semibold text-cyan-400">{pct}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-cyan-500"}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       <form
         ref={formRef}
         action={submit}
-        className="flex items-center gap-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-2"
+        className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-2"
       >
-        <input
-          name="title"
-          autoComplete="off"
-          placeholder={`Add ${(config.itemLabel ?? "item").toLowerCase()}…`}
-          className="flex-1 bg-transparent px-2 py-2 text-base text-zinc-100 placeholder:text-zinc-500 outline-none"
-        />
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
-        >
-          Add
-        </button>
+        <div className="flex items-center gap-2">
+          <input
+            name="title"
+            autoComplete="off"
+            placeholder={`Add ${itemLabel}…`}
+            className="flex-1 bg-transparent px-2 py-2 text-base text-zinc-100 placeholder:text-zinc-500 outline-none"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              setShowNote((v) => !v);
+              setTimeout(() => noteRef.current?.focus(), 0);
+            }}
+            aria-label="Add detail"
+            className={`rounded-lg px-2 py-2 text-sm ${showNote ? "text-cyan-400" : "text-zinc-500 hover:text-zinc-300"}`}
+          >
+            ＋
+          </button>
+          <button
+            type="submit"
+            disabled={pending}
+            className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
+          >
+            Add
+          </button>
+        </div>
+        {showNote && (
+          <input
+            ref={noteRef}
+            name="note"
+            autoComplete="off"
+            placeholder="Detail (link, quantity, phone…)"
+            className="mt-1 w-full bg-transparent px-2 py-1.5 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none"
+          />
+        )}
       </form>
 
-      {active.length === 0 && done.length === 0 ? (
+      {total > 2 && (
+        <div className="mt-3 flex gap-1.5">
+          {SORTS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setSort(s.id)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                sort === s.id
+                  ? "bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/30"
+                  : "text-zinc-500 hover:text-zinc-300"
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {total === 0 ? (
         <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
-          <p className="text-sm text-zinc-400">No {(config.itemLabel ?? "item").toLowerCase()}s yet.</p>
+          <p className="text-sm text-zinc-400">No {itemLabel}s yet.</p>
         </div>
       ) : (
         <ul className="mt-4 space-y-2">
@@ -103,6 +188,8 @@ function Row({ appId, item }: { appId: string; item: Item }) {
     start(() => checklistDeleteAction(appId, item.id));
   }
 
+  const isLink = item.note ? /^https?:\/\//i.test(item.note.trim()) : false;
+
   return (
     <li className={`flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 ${pending ? "opacity-50" : ""}`}>
       <button
@@ -121,6 +208,20 @@ function Row({ appId, item }: { appId: string; item: Item }) {
         <div className={`break-words text-sm ${item.completed ? "text-zinc-500 line-through" : "text-zinc-100"}`}>
           {item.title}
         </div>
+        {item.note &&
+          (isLink ? (
+            <a
+              href={item.note}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="block truncate text-xs text-cyan-400 hover:text-cyan-300"
+            >
+              {item.note}
+            </a>
+          ) : (
+            <div className="break-words text-xs text-zinc-500">{item.note}</div>
+          ))}
       </div>
       <button
         type="button"
