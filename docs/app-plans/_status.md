@@ -92,7 +92,9 @@ folder every session. Updated as work lands (builder role: tick the plan's own c
 
 | Plan | Status | Note |
 |------|--------|------|
-| _tracker-template · _checklist-template · _logbook-template · _goal-template · _finance-template | 🟡 Partial | P1 shipped across all five; P2/P3 open (template P2 lifts many apps at once) |
+| _tracker-template | 🟢 At bar | P1 + P2 (goals/quick-add) + P3 chart styles (bars/band/line/dots) all shipped |
+| _logbook-template | 🟡 Partial | P1 + ✓ Markdown rendering; open: tags, per-app structure |
+| _checklist-template · _goal-template · _finance-template | 🟡 Partial | P1 shipped; P2/P3 open (template P2 lifts many apps at once) |
 | _schedule-template | 🟢 At bar | P1 shipped (carcare, medication); P2 = re-point recurring checklist apps |
 | _xp-layer-spec | 🟢 At bar | Phases 1–4 shipped (levels, achievements incl. early_bird/night_owl, quests, timezone). Follow-on: §6 per-app `*_date` write-time tz correctness |
 | _xp-quests-spec · _xp-timezone-spec | ✅ Done | fully implemented — in `finished/` |
