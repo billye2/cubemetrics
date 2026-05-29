@@ -40,7 +40,7 @@ src/app/
   globals.css               — Tailwind + base styles
   app/<id>/                 — Custom app pages (todo, journal, feedback, …)
   app/[id]/page.tsx         — Factory dispatch for template apps (+ "coming soon" fallback)
-  app/[id]/_factories/      — Tracker / Checklist / Logbook / Goal / Finance views
+  app/[id]/_factories/      — Tracker / Checklist / Logbook / Goal / Finance / Schedule views
   api/auth/                 — Google OAuth login, logout, callback
 src/components/modern/      — Shared UI primitives (Shell, HeaderFeedback, AppSearch, Card, SignOutButton)
 src/lib/
@@ -56,7 +56,7 @@ tests/                      — Unit tests (Vitest)
 - All routes use `export const dynamic = "force-dynamic"` — auth-aware, no CDN caching.
 - Tailwind utility classes inline. Dark mode is the only mode. Cyan accent (`cyan-500`).
 - Phone-first layout. Safe-area insets respected. 44px+ tap targets.
-- The app catalog lives in `src/lib/modern/catalog.ts` — the single source of truth for the grid. Add new apps there; template apps (`tracker`/`checklist`/`logbook`/`goal`/`finance`) need only a catalog entry, custom apps add a page + `actions.ts`.
+- The app catalog lives in `src/lib/modern/catalog.ts` — the single source of truth for the grid. Add new apps there; template apps (`tracker`/`checklist`/`logbook`/`goal`/`finance`/`schedule`) need only a catalog entry, custom apps add a page + `actions.ts`.
 - Press the **Feedback** button in any app's header to send feedback tagged with that app. Admins (`ADMIN_EMAIL`) review it under `/app/feedback` and approve → opens a GitHub issue mentioning `@claude`.
 - Auth: Google OAuth only via Supabase, full-page nav, lands at `/api/auth/callback`.
 - Never commit `.env*` files — secrets stay local.
