@@ -15,13 +15,16 @@ export default async function CalendarPage() {
   from.setMonth(from.getMonth() - 6);
   const to = new Date();
   to.setMonth(to.getMonth() + 12);
+  const windowStart = from.toISOString().slice(0, 10);
+  const windowEnd = to.toISOString().slice(0, 10);
 
+  // Pull one-off events inside the window plus every recurring series (whatever
+  // its anchor date) — recurring rows expand into in-window occurrences on read.
   const { data } = await supabase
     .from("calendar_events")
-    .select("id, title, description, start_date, start_time, end_date, end_time")
+    .select("id, title, description, start_date, start_time, end_date, end_time, recurrence")
     .eq("user_id", user.id)
-    .gte("start_date", from.toISOString().slice(0, 10))
-    .lte("start_date", to.toISOString().slice(0, 10))
+    .or(`recurrence.not.is.null,and(start_date.gte.${windowStart},start_date.lte.${windowEnd})`)
     .order("start_date", { ascending: true })
     .order("start_time", { ascending: true, nullsFirst: true })
     .limit(1000);
@@ -30,7 +33,7 @@ export default async function CalendarPage() {
 
   return (
     <Shell back={{ href: "/", label: "Apps" }} title="Calendar">
-      <CalendarView events={(data || []) as Event[]} today={today} />
+      <CalendarView events={(data || []) as Event[]} today={today} windowStart={windowStart} windowEnd={windowEnd} />
     </Shell>
   );
 }

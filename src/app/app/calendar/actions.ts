@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { normalizeRecurrence } from "./lib";
 
 async function requireUser() {
   const supabase = await createServerSupabase();
@@ -18,6 +19,7 @@ function parseEventForm(formData: FormData) {
   const end_time = String(formData.get("end_time") || "").trim() || null;
   const end_date = String(formData.get("end_date") || "").trim() || null;
   const description = String(formData.get("description") || "").trim();
+  const recurrence = normalizeRecurrence(String(formData.get("recurrence") || "").trim());
   return {
     title,
     start_date,
@@ -26,6 +28,7 @@ function parseEventForm(formData: FormData) {
     // Only store an end_date when it's strictly after the start.
     end_date: end_date && end_date > start_date ? end_date : null,
     description,
+    recurrence,
   };
 }
 
