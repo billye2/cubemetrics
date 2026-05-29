@@ -99,7 +99,7 @@ export const APPS: AppEntry[] = [
   { id: "standup", name: "Standups", category: "notes", icon: "⌂", description: "Daily standups", ui: "logbook", config: { logType: "standup", entryLabel: "Standup", hasTitle: false } },
   { id: "brainstorm", name: "Brainstorm", category: "notes", icon: "✺", description: "Idea sessions", ui: "logbook", config: { logType: "brainstorm", entryLabel: "Session", hasTitle: true } },
   { id: "decisionmatrix", name: "Decisions", category: "notes", icon: "◰", description: "Decisions log", ui: "logbook", config: { logType: "decision", entryLabel: "Decision", hasTitle: true } },
-  { id: "workout", name: "Workout", category: "habits", icon: "✚", description: "Training log", ui: "logbook", config: { logType: "workout", entryLabel: "Workout", hasTitle: true } },
+  { id: "workout", name: "Workout", category: "habits", icon: "✚", description: "Training log", ui: "modern" },
   { id: "learninglog", name: "Learning Log", category: "learning", icon: "✦", description: "What you learned", ui: "logbook", config: { logType: "learning", entryLabel: "Lesson", hasTitle: true } },
   { id: "weeklyreview", name: "Weekly Review", category: "tasks", icon: "⌗", description: "Reflect each week", ui: "logbook", config: { logType: "weekly", entryLabel: "Review", hasTitle: true } },
   { id: "feedbacklog", name: "Feedback Log", category: "work", icon: "✎", description: "Feedback given/received", ui: "logbook", config: { logType: "feedbacklog", entryLabel: "Entry", hasTitle: true } },
