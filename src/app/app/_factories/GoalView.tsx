@@ -33,10 +33,12 @@ export function GoalView({
   appId,
   config,
   goals,
+  history = {},
 }: {
   appId: string;
   config: FactoryConfig;
   goals: Goal[];
+  history?: Record<number, number[]>;
 }) {
   const goalType = config.goalType!;
   const formRef = useRef<HTMLFormElement>(null);
@@ -183,7 +185,7 @@ export function GoalView({
       ) : (
         <ul className="mt-4 space-y-3">
           {active.map((g) => (
-            <GoalCard key={g.id} appId={appId} goal={g} config={config} />
+            <GoalCard key={g.id} appId={appId} goal={g} config={config} history={history[g.id]} />
           ))}
         </ul>
       )}
@@ -201,7 +203,7 @@ export function GoalView({
           {showDone && (
             <ul className="mt-3 space-y-3">
               {done.map((g) => (
-                <GoalCard key={g.id} appId={appId} goal={g} config={config} />
+                <GoalCard key={g.id} appId={appId} goal={g} config={config} history={history[g.id]} />
               ))}
             </ul>
           )}
@@ -222,7 +224,17 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "am
   );
 }
 
-function GoalCard({ appId, goal, config }: { appId: string; goal: Goal; config: FactoryConfig }) {
+function GoalCard({
+  appId,
+  goal,
+  config,
+  history,
+}: {
+  appId: string;
+  goal: Goal;
+  config: FactoryConfig;
+  history?: number[];
+}) {
   const [pending, start] = useTransition();
   const [editing, setEditing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -287,6 +299,7 @@ function GoalCard({ appId, goal, config }: { appId: string; goal: Goal; config: 
               style={{ width: `${pct}%` }}
             />
           </div>
+          {history && history.length >= 2 && <Sparkline values={history} target={target} />}
         </div>
       )}
 
@@ -346,5 +359,22 @@ function GoalCard({ appId, goal, config }: { appId: string; goal: Goal; config: 
         </div>
       )}
     </li>
+  );
+}
+
+/** Tiny inline trend of progress updates. Scaled 0..max(target, peak). */
+function Sparkline({ values, target }: { values: number[]; target: number }) {
+  const pts = values.slice(-20);
+  const max = Math.max(target, ...pts, 1);
+  const w = 100;
+  const h = 24;
+  const step = pts.length > 1 ? w / (pts.length - 1) : w;
+  const d = pts
+    .map((v, i) => `${i === 0 ? "M" : "L"}${(i * step).toFixed(1)},${(h - (v / max) * h).toFixed(1)}`)
+    .join(" ");
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="mt-2 h-6 w-full" aria-hidden>
+      <path d={d} fill="none" stroke="rgb(34 211 238)" strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+    </svg>
   );
 }
