@@ -15,7 +15,7 @@ export default async function XpPage() {
   if (!user) redirect("/");
 
   const xp = await ensureXp(supabase, user.id);
-  const { level, streak, longestStreak, todayPoints, dailySeries, breakdownTotals, achievements } = xp;
+  const { level, streak, longestStreak, todayPoints, dailySeries, breakdownTotals, achievements, todayQuests, questsCompletedToday } = xp;
 
   const chartMax = Math.max(1, ...dailySeries.map((d) => d.points));
   const breakdownMax = Math.max(1, ...breakdownTotals.map((b) => b.points));
@@ -48,6 +48,51 @@ export default async function XpPage() {
         <Stat label="Streak" value={streak > 0 ? `${streak}🔥` : "—"} sub={streak === 1 ? "day" : "days"} />
         <Stat label="Best streak" value={longestStreak > 0 ? String(longestStreak) : "—"} sub="days" />
       </div>
+
+      {/* Today's quests */}
+      {todayQuests.length > 0 && (
+        <div className="mt-6">
+          <h3 className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            <span>Today&apos;s quests</span>
+            <span className={questsCompletedToday === todayQuests.length ? "text-cyan-400" : "text-zinc-600"}>
+              {questsCompletedToday}/{todayQuests.length}
+              {questsCompletedToday === todayQuests.length ? " · +50 bonus!" : ""}
+            </span>
+          </h3>
+          <ul className="space-y-2">
+            {todayQuests.map((q) => {
+              const pct = Math.min(100, Math.round((q.current / q.target) * 100));
+              return (
+                <li
+                  key={q.key}
+                  className={`flex items-center gap-3 rounded-2xl border p-3 ${
+                    q.done ? "border-cyan-500/30 bg-cyan-500/5" : "border-zinc-800 bg-zinc-900/40"
+                  }`}
+                >
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg ${q.done ? "bg-cyan-500/15 text-cyan-300" : "bg-zinc-800 text-zinc-400"}`}>
+                    {q.done ? "✓" : q.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className={`truncate text-sm font-semibold ${q.done ? "text-zinc-100" : "text-zinc-200"}`}>{q.label}</span>
+                      <span className={`shrink-0 text-xs font-semibold ${q.done ? "text-cyan-400" : "text-zinc-500"}`}>+{q.reward}</span>
+                    </div>
+                    <div className="text-xs text-zinc-500">{q.description}</div>
+                    {!q.done && (
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-zinc-800">
+                          <div className="h-full rounded-full bg-cyan-500/70" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-[10px] tabular-nums text-zinc-500">{q.current}/{q.target}</span>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
 
       {/* 30-day XP chart */}
       <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">

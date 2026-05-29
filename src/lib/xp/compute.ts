@@ -1,9 +1,15 @@
 import "server-only";
 import type { createServerSupabase } from "@/lib/supabase/server";
-import { scoreDay, emptyActivity, type DayActivity, SOURCE_LABELS } from "./rules";
+import { scoreDay, emptyActivity, type DayActivity, SOURCE_LABELS, GLOBAL_DAILY_CAP } from "./rules";
 import { levelInfo, type LevelInfo } from "./levels";
 import { currentStreak, longestStreak, dayKey } from "./stats";
 import { ACHIEVEMENTS, satisfiedAchievements, type CumulativeStats } from "./achievements";
+import {
+  metricsFromActivity,
+  pickDailyQuests,
+  questStatuses,
+  questPointsForDay,
+} from "./quests";
 
 type Supabase = Awaited<ReturnType<typeof createServerSupabase>>;
 
@@ -24,6 +30,17 @@ export interface XpAchievementView {
   isNew: boolean;
 }
 
+export interface XpQuestView {
+  key: string;
+  label: string;
+  description: string;
+  icon: string;
+  current: number;
+  target: number;
+  done: boolean;
+  reward: number;
+}
+
 export interface XpSummary {
   level: LevelInfo;
   streak: number;
@@ -35,6 +52,8 @@ export interface XpSummary {
   breakdownTotals: { source: string; label: string; points: number }[];
   achievements: XpAchievementView[];
   newlyUnlocked: string[];
+  todayQuests: XpQuestView[];
+  questsCompletedToday: number;
 }
 
 /**
@@ -128,6 +147,61 @@ export async function ensureXp(supabase: Supabase, userId: string, now: Date = n
   const scores = new Map<string, { points: number; breakdown: Record<string, number> }>();
   for (const [day, activity] of days) scores.set(day, scoreDay(activity));
 
+  // --- Daily quests ---
+  // Existing claims, grouped by day.
+  const { data: claimRows } = await supabase
+    .from("xp_quests")
+    .select("day, quest_key")
+    .eq("user_id", userId);
+  const claimsByDay = new Map<string, Set<string>>();
+  for (const c of claimRows || []) {
+    const set = claimsByDay.get(c.day as string) ?? new Set<string>();
+    set.add(c.quest_key as string);
+    claimsByDay.set(c.day as string, set);
+  }
+
+  // Auto-claim today's newly-completed quests (today only — quests complete on their own day).
+  const todayActivity = days.get(todayKey) ?? emptyActivity();
+  const todayScore = scores.get(todayKey) ?? scoreDay(emptyActivity());
+  const todayMetrics = metricsFromActivity(todayActivity, todayScore);
+  const todayQuestDefs = pickDailyQuests(userId, todayKey);
+  const claimedToday = claimsByDay.get(todayKey) ?? new Set<string>();
+  const statuses = questStatuses(todayQuestDefs, todayMetrics);
+  const newlyDone = statuses.filter((s) => s.done && !claimedToday.has(s.def.key));
+  if (newlyDone.length > 0) {
+    await supabase
+      .from("xp_quests")
+      .upsert(
+        newlyDone.map((s) => ({ user_id: userId, day: todayKey, quest_key: s.def.key, completed_at: now.toISOString() })),
+        { onConflict: "user_id,day,quest_key", ignoreDuplicates: true },
+      );
+    for (const s of newlyDone) claimedToday.add(s.def.key);
+    claimsByDay.set(todayKey, claimedToday);
+  }
+
+  // Fold quest XP into each day's breakdown (deterministic chosen set per day → consistent history).
+  for (const [day, s] of scores) {
+    const claimed = claimsByDay.get(day);
+    if (!claimed || claimed.size === 0) continue;
+    const qp = questPointsForDay(pickDailyQuests(userId, day), claimed);
+    if (qp > 0) {
+      s.breakdown.quests = qp;
+      s.points = Math.min(s.points + qp, GLOBAL_DAILY_CAP);
+    }
+  }
+
+  const todayQuests: XpQuestView[] = statuses.map((s) => ({
+    key: s.def.key,
+    label: s.def.label,
+    description: s.def.description,
+    icon: s.def.icon,
+    current: s.current,
+    target: s.target,
+    done: s.done || claimedToday.has(s.def.key),
+    reward: s.def.reward,
+  }));
+  const questsCompletedToday = todayQuests.filter((q) => q.done).length;
+
   // Upsert the rollup. Include today even if zero so same-day removals reflect.
   const rows = [...scores.entries()]
     .filter(([day, s]) => s.points > 0 || day === todayKey)
@@ -144,14 +218,13 @@ export async function ensureXp(supabase: Supabase, userId: string, now: Date = n
     if (s.points > 0) {
       daysWithXp.add(day);
       totalXp += s.points;
-      for (const k of Object.keys(s.breakdown)) if (k !== "breadth") sourcesEver.add(k);
+      for (const k of Object.keys(s.breakdown)) if (k !== "breadth" && k !== "quests") sourcesEver.add(k);
     }
   }
 
   const level = levelInfo(totalXp);
   const streak = currentStreak(daysWithXp, now);
   const longest = longestStreak(daysWithXp);
-  const todayScore = scores.get(todayKey);
 
   const stats: CumulativeStats = {
     totalXp,
@@ -230,5 +303,7 @@ export async function ensureXp(supabase: Supabase, userId: string, now: Date = n
     breakdownTotals,
     achievements,
     newlyUnlocked,
+    todayQuests,
+    questsCompletedToday,
   };
 }

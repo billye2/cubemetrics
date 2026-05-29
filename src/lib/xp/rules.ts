@@ -59,7 +59,7 @@ const CAP = {
 /** Bonus per app first touched that day — rewards breadth over grinding one app. */
 const BREADTH_BONUS = 5;
 /** Safety ceiling on a single day's total. */
-const GLOBAL_DAILY_CAP = 300;
+export const GLOBAL_DAILY_CAP = 300;
 
 export const SOURCE_LABELS: Record<string, string> = {
   focus: "Focus",
@@ -75,6 +75,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   logs: "Logs",
   expenses: "Expenses",
   finance: "Finance",
+  quests: "Quests",
   breadth: "Breadth bonus",
 };
 
