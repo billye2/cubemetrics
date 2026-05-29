@@ -14,6 +14,7 @@ export async function addEventAction(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   const start_date = String(formData.get("start_date") || "").trim();
   const start_time = String(formData.get("start_time") || "").trim() || null;
+  const end_date = String(formData.get("end_date") || "").trim() || null;
   const description = String(formData.get("description") || "").trim();
   if (!title || !start_date) return;
   const { supabase, userId } = await requireUser();
@@ -22,6 +23,8 @@ export async function addEventAction(formData: FormData) {
     title,
     start_date,
     start_time,
+    // Only store an end_date when it's after the start (ignore same/earlier).
+    end_date: end_date && end_date > start_date ? end_date : null,
     description,
   });
   revalidatePath("/app/calendar");
