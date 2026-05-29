@@ -36,10 +36,10 @@ folder every session. Updated as work lands (builder role: tick the plan's own c
 | keepintouch | 🟢 At bar | P2: touch log, notes, snooze |
 | countdown | 🟢 At bar | P2: edit action; P3: pin, progress ring |
 | reading | 🟡 Partial | P1: progress bars (page/total), edit; P2: stats strip, yearly goal |
-| habits | 🟡 Partial | P1: edit name, backfill missed day; P2: heatmap, archive UX |
-| todo | 🟡 Partial | P1: inline edit (in progress), due dates; P2: stats, today filter |
+| habits | 🟡 Partial | ✓ edit name (inline); P1: backfill missed day; P2: heatmap, archive UX |
+| todo | 🟡 Partial | ✓ edit title (inline); P1: due dates; P2: stats, today filter |
 | journal | 🟡 Partial | P1: edit, search; P2: streak, mood chart, prompts |
-| notes | 🟡 Partial | P1: edit (in progress), search; P2: tags surface, sort |
+| notes | 🟡 Partial | ✓ edit title+body (inline, fixes updated_at); P1: search; P2: tags surface, sort |
 | expenses | 🟡 Partial | P1: category breakdown, edit; P2: trend, filter, budget link |
 | feedback | 🟡 Partial | P1: edit/withdraw while new; P2: changelog, upvote |
 
@@ -103,8 +103,8 @@ folder every session. Updated as work lands (builder role: tick the plan's own c
 These lift many apps at once and are the strongest remaining picks now the per-review punch-lists
 are consumed:
 
-- **Inline-edit sweep** (`<InlineEdit>` primitive) — add the missing edit action to todo, notes,
-  habits, journal, countdown. *In progress.*
+- **Inline-edit sweep** (`<InlineEdit>` primitive) — ✓ shipped for todo, notes, habits.
+  Remaining: journal and countdown (richer multi-field forms — a separate pass).
 - **Tracker-template P2** — `dailyGoal` ring + `quickAdd` steppers — lights up water, steps,
   meditation, writingtracker, sleep, screentime in one change.
 - **`<DailyBarChart>` primitive** — Focus/TimeTracker/Countdown/Pomodoro/Workout all hand-roll the
