@@ -49,9 +49,9 @@ folder every session. Updated as work lands (builder role: tick the plan's own c
 |-----|--------|------|
 | steps · caffeine · stress · productivity | ✅ Done | thin catalog entries — in `finished/` |
 | mood | 🟡 Partial | emoji entry + line/dot chart open (graduate candidate) |
-| weight | 🟡 Partial | line chart + moving-avg open (graduate candidate) |
+| weight | 🟢 At bar | ✓ auto-fit line chart; P3: goal-weight line, 30/90-day toggle, BMI |
 | water · meditation · writingtracker | 🟢 At bar | ✓ daily-goal ring + quick-add; P3: per-app chart polish |
-| sleep | 🟡 Partial | ✓ daily goal; P1: ideal-range band (7–9h); P2: weekly avg |
+| sleep | 🟢 At bar | ✓ daily goal + ideal-range band (7–9h); P2: sleep debt, bed/wake entry |
 | energy | 🟡 Partial | time-of-day tagging, energy curve |
 | screentime | 🟡 Partial | ✓ at-most cap ring + quick-add; P3: category split |
 | stopwatch | 🟢 At bar | ✓ graduated to a real start/stop/lap timer (custom page); P3: keep-awake, sound |
