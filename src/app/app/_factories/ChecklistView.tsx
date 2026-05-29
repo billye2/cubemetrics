@@ -1,7 +1,12 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { checklistAddAction, checklistToggleAction, checklistDeleteAction } from "./actions";
+import {
+  checklistAddAction,
+  checklistToggleAction,
+  checklistDeleteAction,
+  checklistReorderAction,
+} from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
 
 interface Item {
@@ -9,15 +14,17 @@ interface Item {
   title: string;
   note: string | null;
   completed: boolean;
+  sort_order: number;
   created_at: string;
 }
 
-type SortMode = "newest" | "alpha" | "active";
+type SortMode = "newest" | "alpha" | "active" | "manual";
 
 const SORTS: { id: SortMode; label: string }[] = [
   { id: "active", label: "To do first" },
   { id: "newest", label: "Newest" },
   { id: "alpha", label: "A–Z" },
+  { id: "manual", label: "Manual" },
 ];
 
 export function ChecklistView({
@@ -46,6 +53,8 @@ export function ChecklistView({
     const copy = [...items];
     if (sort === "alpha") copy.sort((a, b) => a.title.localeCompare(b.title));
     else if (sort === "newest") copy.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    else if (sort === "manual")
+      copy.sort((a, b) => a.sort_order - b.sort_order || (a.created_at < b.created_at ? -1 : 1));
     return copy;
   }, [items, sort]);
 
@@ -61,6 +70,10 @@ export function ChecklistView({
       formRef.current?.reset();
       setShowNote(false);
     });
+  }
+
+  function move(id: number, direction: "up" | "down") {
+    start(() => checklistReorderAction(appId, listType, id, direction));
   }
 
   return (
@@ -149,8 +162,16 @@ export function ChecklistView({
         </div>
       ) : (
         <ul className="mt-4 space-y-2">
-          {active.map((i) => (
-            <Row key={i.id} appId={appId} item={i} />
+          {active.map((i, idx) => (
+            <Row
+              key={i.id}
+              appId={appId}
+              item={i}
+              manual={sort === "manual"}
+              isFirst={idx === 0}
+              isLast={idx === active.length - 1}
+              onMove={(d) => move(i.id, d)}
+            />
           ))}
         </ul>
       )}
@@ -178,7 +199,21 @@ export function ChecklistView({
   );
 }
 
-function Row({ appId, item }: { appId: string; item: Item }) {
+function Row({
+  appId,
+  item,
+  manual = false,
+  isFirst = false,
+  isLast = false,
+  onMove,
+}: {
+  appId: string;
+  item: Item;
+  manual?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
+  onMove?: (direction: "up" | "down") => void;
+}) {
   const [pending, start] = useTransition();
   function toggle() {
     start(() => checklistToggleAction(appId, item.id, !item.completed));
@@ -192,6 +227,28 @@ function Row({ appId, item }: { appId: string; item: Item }) {
 
   return (
     <li className={`flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 ${pending ? "opacity-50" : ""}`}>
+      {manual && onMove && (
+        <div className="flex shrink-0 flex-col">
+          <button
+            type="button"
+            onClick={() => onMove("up")}
+            disabled={isFirst || pending}
+            aria-label="Move up"
+            className="px-1 text-zinc-500 hover:text-cyan-300 disabled:opacity-30"
+          >
+            ▲
+          </button>
+          <button
+            type="button"
+            onClick={() => onMove("down")}
+            disabled={isLast || pending}
+            aria-label="Move down"
+            className="px-1 text-zinc-500 hover:text-cyan-300 disabled:opacity-30"
+          >
+            ▼
+          </button>
+        </div>
+      )}
       <button
         type="button"
         onClick={toggle}

@@ -19,8 +19,10 @@ or (b) graduate to a purpose-built custom app where a flat checklist is the wron
   Backed by a `note` column on `checklists`.
 - **Progress header.** "7 of 12 done" + a thin progress bar — instant sense of completion. Trivial
   to add and meaningful for packing, dailyplanner, cleaning.
-- **Reorder / sort.** Manual drag-reorder or at least a sort toggle (alpha / newest / done-last).
-  A 30-item grocery or packing list needs ordering.
+- [x] **Reorder / sort.** Sort toggle (To-do-first / Newest / A–Z) **plus a Manual mode** with
+  up/down chevrons on active rows. Manual order is stored in the `sort_order` column;
+  `checklistReorderAction` re-normalizes dense 0..n ranks on each move (robust when every row
+  still defaults to 0). Drag-reorder on long-press is a later refinement.
 
 ## P2 — grouping & reuse
 
