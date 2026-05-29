@@ -131,6 +131,7 @@ export const APPS: AppEntry[] = [
   { id: "subscriptions", name: "Subscriptions", category: "finance", icon: "⟳", description: "Recurring charges", ui: "finance", config: { itemType: "subscription", hasAmount: true } },
   { id: "invoices", name: "Invoices", category: "work", icon: "⌗", description: "Billing", ui: "finance", config: { itemType: "invoice", hasAmount: true, hasDueDate: true } },
   { id: "income", name: "Income", category: "finance", icon: "↑", description: "Money in, by source", ui: "finance", config: { itemType: "income", hasAmount: true } },
+  { id: "networth", name: "Net Worth", category: "finance", icon: "❖", description: "Assets − liabilities over time", ui: "modern" },
 
   // Tracker-backed time apps (minutes logged per session)
   { id: "focus", name: "Focus", category: "time", icon: "◉", description: "Timer for one deep-work session", ui: "modern" },
