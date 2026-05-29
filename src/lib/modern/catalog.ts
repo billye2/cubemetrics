@@ -31,6 +31,10 @@ export interface FactoryConfig {
   goalDirection?: "at-least" | "at-most";
   /** One-tap increment buttons for additive (sum) trackers, e.g. water [1, 2]. */
   quickAdd?: number[];
+  /** "line" draws an auto-fit line chart (weight) instead of the default 0-based bars. */
+  chartStyle?: "bars" | "line";
+  /** A healthy [min, max] band shaded on the chart, e.g. sleep [7, 9]. */
+  idealRange?: [number, number];
   // checklist
   listType?: string;
   itemLabel?: string;
@@ -72,9 +76,9 @@ export const APPS: AppEntry[] = [
   // Trackers
   { id: "mood", name: "Mood", category: "habits", icon: "☺", description: "How you feel", ui: "tracker", config: { trackerType: "mood", labels: ["Awful", "Bad", "Meh", "Okay", "Good", "Great"], min: 0, max: 5, aggregate: "average" } },
   { id: "water", name: "Water", category: "habits", icon: "◐", description: "Glasses of water", ui: "tracker", config: { trackerType: "water", unit: "glasses", min: 0, max: 16, aggregate: "sum", dailyGoal: 8, quickAdd: [1, 2] } },
-  { id: "sleep", name: "Sleep", category: "habits", icon: "☾", description: "Hours of sleep", ui: "tracker", config: { trackerType: "sleep", unit: "hours", min: 0, max: 14, aggregate: "latest", dailyGoal: 8 } },
+  { id: "sleep", name: "Sleep", category: "habits", icon: "☾", description: "Hours of sleep", ui: "tracker", config: { trackerType: "sleep", unit: "hours", min: 0, max: 14, aggregate: "latest", dailyGoal: 8, idealRange: [7, 9] } },
   { id: "energy", name: "Energy", category: "habits", icon: "✸", description: "Energy level", ui: "tracker", config: { trackerType: "energy", labels: ["Drained", "Low", "Okay", "Good", "High"], min: 0, max: 4, aggregate: "average" } },
-  { id: "weight", name: "Weight", category: "habits", icon: "⚖", description: "Weight log", ui: "tracker", config: { trackerType: "weight", unit: "lbs", min: 0, max: 500, aggregate: "latest" } },
+  { id: "weight", name: "Weight", category: "habits", icon: "⚖", description: "Weight log", ui: "tracker", config: { trackerType: "weight", unit: "lbs", min: 0, max: 500, aggregate: "latest", chartStyle: "line" } },
   { id: "screentime", name: "Screen Time", category: "habits", icon: "▢", description: "Hours on screens", ui: "tracker", config: { trackerType: "screentime", unit: "hours", min: 0, max: 24, aggregate: "sum", dailyGoal: 2, goalDirection: "at-most", quickAdd: [0.5, 1] } },
   { id: "writingtracker", name: "Writing", category: "notes", icon: "✑", description: "Words written today", ui: "tracker", config: { trackerType: "writing", unit: "words", min: 0, max: 100000, aggregate: "sum", dailyGoal: 500, quickAdd: [100, 250, 500] } },
   { id: "steps", name: "Steps", category: "habits", icon: "➤", description: "Daily step count", ui: "tracker", config: { trackerType: "steps", unit: "steps", min: 0, max: 100000, aggregate: "sum", dailyGoal: 8000, quickAdd: [1000, 2500, 5000] } },

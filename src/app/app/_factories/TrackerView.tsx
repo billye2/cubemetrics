@@ -304,6 +304,21 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
+function DayLabels({ buckets }: { buckets: ReturnType<typeof bucketByDay> }) {
+  return (
+    <div className="mt-1 flex gap-1.5">
+      {buckets.map((b) => (
+        <div
+          key={b.key}
+          className={`flex-1 text-center text-[10px] ${b.isToday ? "text-cyan-300" : "text-zinc-500"}`}
+        >
+          {b.short}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SevenDayChart({
   buckets,
   config,
@@ -313,25 +328,49 @@ function SevenDayChart({
   config: FactoryConfig;
   mode: AggregateMode;
 }) {
+  // Weight-style trackers want an auto-fit line, not 0-based bars.
+  if (config.chartStyle === "line") {
+    return <LineChart buckets={buckets} config={config} mode={mode} />;
+  }
+
   const goal = config.dailyGoal;
-  // Scale the axis to include the goal so its line is always on-chart.
-  const max = Math.max(0.0001, goal ?? 0, ...buckets.map((b) => b.value));
-  const goalPct = goal && goal > 0 ? Math.min(100, (goal / max) * 100) : null;
+  const range = config.idealRange;
+  // Scale the axis to include the goal / band so they're always on-chart.
+  const max = Math.max(0.0001, goal ?? 0, range?.[1] ?? 0, ...buckets.map((b) => b.value));
+  // When a band is present it replaces the single goal line (avoids clutter).
+  const goalPct = goal && goal > 0 && !range ? Math.min(100, (goal / max) * 100) : null;
   const atMost = config.goalDirection === "at-most";
+  const bandBottom = range ? (range[0] / max) * 100 : 0;
+  const bandHeight = range ? ((Math.min(range[1], max) - range[0]) / max) * 100 : 0;
+
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
       <div className="mb-2 flex items-center justify-between">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
           Last 7 days
         </div>
-        {goal && goal > 0 && (
-          <div className="text-[10px] text-amber-400/80">
-            {atMost ? "cap" : "goal"} {formatValue(goal, config, mode)}
+        {range ? (
+          <div className="text-[10px] text-emerald-400/80">
+            ideal {formatValue(range[0], config, mode)}–{formatValue(range[1], config, mode)}
             {config.unit ? ` ${config.unit}` : ""}
           </div>
+        ) : (
+          goal && goal > 0 && (
+            <div className="text-[10px] text-amber-400/80">
+              {atMost ? "cap" : "goal"} {formatValue(goal, config, mode)}
+              {config.unit ? ` ${config.unit}` : ""}
+            </div>
+          )
         )}
       </div>
       <div className="relative flex h-24 items-end gap-1.5">
+        {range && (
+          <div
+            className="pointer-events-none absolute inset-x-0 z-0 border-y border-dashed border-emerald-500/30 bg-emerald-500/10"
+            style={{ bottom: `${bandBottom}%`, height: `${bandHeight}%` }}
+            title={`Ideal: ${formatValue(range[0], config, mode)}–${formatValue(range[1], config, mode)}${config.unit ? ` ${config.unit}` : ""}`}
+          />
+        )}
         {goalPct !== null && (
           <div
             className="pointer-events-none absolute inset-x-0 z-10 border-t border-dashed border-amber-400/60"
@@ -342,8 +381,8 @@ function SevenDayChart({
         {buckets.map((b) => {
           const has = b.count > 0;
           const h = !has ? 4 : Math.max(8, Math.round((b.value / max) * 100));
-          // Only "at-least" goals tint a day emerald for hitting the target;
-          // "at-most" caps rely on the dashed cap line instead.
+          // Tint a day emerald when it hits an at-least goal or lands in the ideal band.
+          const inRange = !!range && has && b.value >= range[0] && b.value <= range[1];
           const hitGoal = !atMost && !!goal && goal > 0 && has && b.value >= goal;
           const title = has
             ? `${b.label}: ${formatValue(b.value, config, mode)}${config.unit ? ` ${config.unit}` : ""}`
@@ -352,10 +391,10 @@ function SevenDayChart({
             <div
               key={b.key}
               title={title}
-              className={`w-full flex-1 rounded-md transition-all motion-reduce:transition-none ${
+              className={`relative z-[5] w-full flex-1 rounded-md transition-all motion-reduce:transition-none ${
                 !has
                   ? "bg-zinc-800"
-                  : hitGoal
+                  : inRange || hitGoal
                   ? "bg-emerald-500/70"
                   : b.isToday
                   ? "bg-cyan-400"
@@ -366,16 +405,99 @@ function SevenDayChart({
           );
         })}
       </div>
-      <div className="mt-1 flex gap-1.5">
-        {buckets.map((b) => (
+      <DayLabels buckets={buckets} />
+    </div>
+  );
+}
+
+function LineChart({
+  buckets,
+  config,
+  mode,
+}: {
+  buckets: ReturnType<typeof bucketByDay>;
+  config: FactoryConfig;
+  mode: AggregateMode;
+}) {
+  const n = buckets.length;
+  const present = buckets
+    .map((b, i) => ({ i, b }))
+    .filter((p) => p.b.count > 0);
+
+  const header = (extra?: React.ReactNode) => (
+    <div className="mb-2 flex items-center justify-between">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+        Last 7 days
+      </div>
+      {extra}
+    </div>
+  );
+
+  if (present.length === 0) {
+    return (
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+        {header()}
+        <div className="flex h-24 items-center justify-center text-xs text-zinc-600">
+          No entries yet
+        </div>
+        <DayLabels buckets={buckets} />
+      </div>
+    );
+  }
+
+  const values = present.map((p) => p.b.value);
+  const rawLo = Math.min(...values);
+  const rawHi = Math.max(...values);
+  // Auto-fit the y-axis to the data (with padding) so weight near 150–160 fills
+  // the chart instead of hugging the top of a 0-based axis.
+  let lo = rawLo;
+  let hi = rawHi;
+  if (lo === hi) {
+    lo -= 1;
+    hi += 1;
+  } else {
+    const pad = (hi - lo) * 0.15;
+    lo -= pad;
+    hi += pad;
+  }
+  const span = hi - lo || 1;
+  const xOf = (i: number) => 4 + (i / (n - 1)) * 92;
+  const yOf = (v: number) => 8 + (1 - (v - lo) / span) * 84;
+  const polyline = present.map((p) => `${xOf(p.i).toFixed(2)},${yOf(p.b.value).toFixed(2)}`).join(" ");
+  const latestIdx = present[present.length - 1].i;
+
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+      {header(
+        <div className="text-[10px] text-zinc-500">
+          {formatValue(rawLo, config, mode)}–{formatValue(rawHi, config, mode)}
+          {config.unit ? ` ${config.unit}` : ""}
+        </div>,
+      )}
+      <div className="relative h-24">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
+          <polyline
+            points={polyline}
+            fill="none"
+            stroke="#22d3ee"
+            strokeWidth={1.5}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        {present.map((p) => (
           <div
-            key={b.key}
-            className={`flex-1 text-center text-[10px] ${b.isToday ? "text-cyan-300" : "text-zinc-500"}`}
-          >
-            {b.short}
-          </div>
+            key={p.i}
+            title={`${p.b.label}: ${formatValue(p.b.value, config, mode)}${config.unit ? ` ${config.unit}` : ""}`}
+            className={`absolute h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-zinc-950 ${
+              p.i === latestIdx ? "bg-emerald-400" : "bg-cyan-400"
+            }`}
+            style={{ left: `${xOf(p.i)}%`, top: `${yOf(p.b.value)}%` }}
+          />
         ))}
       </div>
+      <DayLabels buckets={buckets} />
     </div>
   );
 }
