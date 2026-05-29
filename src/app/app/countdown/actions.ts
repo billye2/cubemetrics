@@ -33,6 +33,33 @@ export async function addCountdownAction(
   revalidatePath("/app/countdown");
 }
 
+export async function updateCountdownAction(
+  id: number,
+  title: string,
+  targetDate: string,
+  targetTime: string,
+  category: string,
+  recurringYearly: boolean,
+  note: string,
+) {
+  const cleanTitle = title.trim();
+  if (!cleanTitle || !targetDate) return;
+  const { supabase, userId } = await requireUser();
+  await supabase
+    .from("countdowns")
+    .update({
+      title: cleanTitle,
+      target_date: targetDate,
+      target_time: targetTime || null,
+      category: category.trim() || null,
+      recurring_yearly: recurringYearly,
+      note: note.trim() || null,
+    })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath("/app/countdown");
+}
+
 export async function deleteCountdownAction(id: number) {
   const { supabase, userId } = await requireUser();
   await supabase
