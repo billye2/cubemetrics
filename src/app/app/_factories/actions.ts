@@ -63,6 +63,42 @@ export async function checklistDeleteAction(appId: string, id: number) {
   revalidatePath(path);
 }
 
+/**
+ * Move an active (incomplete) item one slot up or down in manual order. Ranks
+ * are re-normalized to a dense 0..n on each move, so this is reliable even when
+ * every row still has the default sort_order of 0.
+ */
+export async function checklistReorderAction(
+  appId: string,
+  listType: string,
+  id: number,
+  direction: "up" | "down",
+) {
+  const { supabase, userId, path } = await ctx(appId);
+  const { data: rows } = await supabase
+    .from("checklists")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("list_type", listType)
+    .eq("completed", false)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+  if (!rows) return;
+
+  const order = rows.map((r) => r.id as number);
+  const idx = order.indexOf(id);
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (idx < 0 || swapIdx < 0 || swapIdx >= order.length) return;
+
+  [order[idx], order[swapIdx]] = [order[swapIdx], order[idx]];
+  await Promise.all(
+    order.map((rid, i) =>
+      supabase.from("checklists").update({ sort_order: i }).eq("id", rid).eq("user_id", userId),
+    ),
+  );
+  revalidatePath(path);
+}
+
 // === Logbook ===
 export async function logbookAddAction(
   appId: string,
