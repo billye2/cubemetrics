@@ -1,15 +1,17 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { trackerAddAction, trackerDeleteAction } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
-
-interface Entry {
-  id: number;
-  value: number;
-  note: string | null;
-  created_at: string;
-}
+import {
+  type TrackerEntry,
+  type AggregateMode,
+  bucketByDay,
+  todayAggregate,
+  averageOver,
+  computeStreak,
+  formatValue,
+} from "./trackerLib";
 
 export function TrackerView({
   appId,
@@ -18,16 +20,20 @@ export function TrackerView({
 }: {
   appId: string;
   config: FactoryConfig;
-  entries: Entry[];
+  entries: TrackerEntry[];
 }) {
   const trackerType = config.trackerType!;
+  const mode: AggregateMode = config.aggregate ?? (config.labels ? "average" : "latest");
   const [selected, setSelected] = useState<number | null>(null);
   const noteRef = useRef<HTMLInputElement>(null);
   const valueRef = useRef<HTMLInputElement>(null);
   const [pending, start] = useTransition();
-  const today = new Date().toISOString().slice(0, 10);
-  const todays = entries.filter((e) => e.created_at.startsWith(today));
-  const lastValue = entries[0]?.value;
+
+  const today = useMemo(() => todayAggregate(entries, mode), [entries, mode]);
+  const buckets = useMemo(() => bucketByDay(entries, 7, mode), [entries, mode]);
+  const sevenDayAvg = useMemo(() => averageOver(buckets), [buckets]);
+  const streak = useMemo(() => computeStreak(entries), [entries]);
+  const lastEntry = entries[0];
 
   function submit() {
     const val = selected ?? Number(valueRef.current?.value || 0);
@@ -43,26 +49,19 @@ export function TrackerView({
 
   return (
     <div>
-      {/* Big "today" display */}
-      <div className="mb-5 flex flex-col items-center rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
-        <div className="text-xs uppercase tracking-wider text-zinc-500">Today</div>
-        <div className="mt-1 text-4xl font-bold tracking-tight text-cyan-400">
-          {todays.length > 0
-            ? displayValue(todays[0].value, config)
-            : lastValue !== undefined
-            ? <span className="text-zinc-600">{displayValue(lastValue, config)}</span>
-            : <span className="text-zinc-700">—</span>}
-        </div>
-        {config.unit && todays.length > 0 && (
-          <div className="text-sm text-zinc-500">{config.unit}</div>
-        )}
-        {todays.length === 0 && lastValue !== undefined && (
-          <div className="mt-1 text-xs text-zinc-500">last logged value</div>
-        )}
-      </div>
+      <Hero today={today} lastEntry={lastEntry} mode={mode} config={config} />
 
-      {/* Logging form */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3">
+      <StatsStrip
+        today={today}
+        sevenDayAvg={sevenDayAvg}
+        streak={streak}
+        mode={mode}
+        config={config}
+      />
+
+      <SevenDayChart buckets={buckets} config={config} mode={mode} />
+
+      <div className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3">
         {config.labels ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
             {config.labels.map((label, i) => (
@@ -109,14 +108,15 @@ export function TrackerView({
         </button>
       </div>
 
-      {/* History */}
-      <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-zinc-500">History</h3>
+      <h3 className="mb-2 mt-6 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        History
+      </h3>
       {entries.length === 0 ? (
         <p className="text-sm text-zinc-500">No values logged yet.</p>
       ) : (
         <ul className="space-y-2">
-          {entries.map((e) => (
-            <EntryRow key={e.id} appId={appId} entry={e} config={config} />
+          {entries.slice(0, 30).map((e) => (
+            <EntryRow key={e.id} appId={appId} entry={e} config={config} mode={mode} />
           ))}
         </ul>
       )}
@@ -124,12 +124,142 @@ export function TrackerView({
   );
 }
 
-function displayValue(v: number, config: FactoryConfig) {
-  if (config.labels) return config.labels[Math.round(v)] ?? String(v);
-  return String(v);
+function Hero({
+  today,
+  lastEntry,
+  mode,
+  config,
+}: {
+  today: number | null;
+  lastEntry: TrackerEntry | undefined;
+  mode: AggregateMode;
+  config: FactoryConfig;
+}) {
+  return (
+    <div className="mb-4 flex flex-col items-center rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
+      <div className="text-xs uppercase tracking-wider text-zinc-500">Today</div>
+      <div className="mt-1 text-4xl font-bold tracking-tight text-cyan-400">
+        {today !== null ? (
+          formatValue(today, config, mode)
+        ) : lastEntry ? (
+          <span className="text-zinc-600">{formatValue(Number(lastEntry.value) || 0, config, mode)}</span>
+        ) : (
+          <span className="text-zinc-700">—</span>
+        )}
+      </div>
+      {config.unit && today !== null && (
+        <div className="text-sm text-zinc-500">{config.unit}</div>
+      )}
+      {today === null && lastEntry && (
+        <div className="mt-1 text-xs text-zinc-500">last logged value</div>
+      )}
+    </div>
+  );
 }
 
-function EntryRow({ appId, entry, config }: { appId: string; entry: Entry; config: FactoryConfig }) {
+function StatsStrip({
+  today,
+  sevenDayAvg,
+  streak,
+  mode,
+  config,
+}: {
+  today: number | null;
+  sevenDayAvg: number | null;
+  streak: number;
+  mode: AggregateMode;
+  config: FactoryConfig;
+}) {
+  const avgLabel = mode === "sum" ? "7d avg/day" : "7d avg";
+  return (
+    <div className="mb-4 grid grid-cols-3 gap-3">
+      <Stat
+        label="Today"
+        value={today !== null ? formatValue(today, config, mode) : "—"}
+        sub={today !== null ? config.unit : undefined}
+      />
+      <Stat
+        label={avgLabel}
+        value={sevenDayAvg !== null ? formatValue(sevenDayAvg, config, "average") : "—"}
+        sub={sevenDayAvg !== null ? config.unit : undefined}
+      />
+      <Stat
+        label="Streak"
+        value={streak > 0 ? String(streak) : "—"}
+        sub={streak > 0 ? (streak === 1 ? "day" : "days") : "start one"}
+      />
+    </div>
+  );
+}
+
+function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
+      <div className="text-xl font-bold tracking-tight text-cyan-400">{value}</div>
+      <div className="text-[10px] uppercase tracking-wider text-zinc-500">
+        {sub ? `${label} · ${sub}` : label}
+      </div>
+    </div>
+  );
+}
+
+function SevenDayChart({
+  buckets,
+  config,
+  mode,
+}: {
+  buckets: ReturnType<typeof bucketByDay>;
+  config: FactoryConfig;
+  mode: AggregateMode;
+}) {
+  const max = Math.max(0.0001, ...buckets.map((b) => b.value));
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+        Last 7 days
+      </div>
+      <div className="flex h-24 items-end gap-1.5">
+        {buckets.map((b) => {
+          const has = b.count > 0;
+          const h = !has ? 4 : Math.max(8, Math.round((b.value / max) * 100));
+          const title = has
+            ? `${b.label}: ${formatValue(b.value, config, mode)}${config.unit ? ` ${config.unit}` : ""}`
+            : `${b.label}: no entries`;
+          return (
+            <div key={b.key} className="flex flex-1 flex-col items-center gap-1">
+              <div
+                title={title}
+                className={`w-full rounded-md transition-all ${
+                  !has
+                    ? "bg-zinc-800"
+                    : b.isToday
+                    ? "bg-cyan-400"
+                    : "bg-cyan-500/50"
+                }`}
+                style={{ height: `${h}%` }}
+              />
+              <div className={`text-[10px] ${b.isToday ? "text-cyan-300" : "text-zinc-500"}`}>
+                {b.short}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function EntryRow({
+  appId,
+  entry,
+  config,
+  mode,
+}: {
+  appId: string;
+  entry: TrackerEntry;
+  config: FactoryConfig;
+  mode: AggregateMode;
+}) {
   const [pending, start] = useTransition();
   const date = new Date(entry.created_at);
   const dateLabel = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -141,14 +271,18 @@ function EntryRow({ appId, entry, config }: { appId: string; entry: Entry; confi
   }
 
   return (
-    <li className={`flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-2 ${pending ? "opacity-50" : ""}`}>
+    <li
+      className={`flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-2 ${
+        pending ? "opacity-50" : ""
+      }`}
+    >
       <div className="w-16 text-xs text-zinc-500">
         <div>{dateLabel}</div>
         <div className="text-zinc-600">{timeLabel}</div>
       </div>
       <div className="flex-1 min-w-0">
         <div className="text-sm font-semibold text-zinc-100">
-          {displayValue(entry.value, config)}
+          {formatValue(Number(entry.value) || 0, config, mode)}
           {config.unit && <span className="ml-1 text-xs font-normal text-zinc-500">{config.unit}</span>}
         </div>
         {entry.note && <div className="truncate text-xs text-zinc-400">{entry.note}</div>}
