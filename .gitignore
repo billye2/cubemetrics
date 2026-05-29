@@ -48,3 +48,4 @@ next-env.d.ts
 # …but version the shareable roles + slash commands (not local settings/worktrees)
 !.claude/roles/
 !.claude/commands/
+!.claude/skills/
