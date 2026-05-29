@@ -19,6 +19,19 @@ export async function addNoteAction(formData: FormData) {
   revalidatePath("/app/notes");
 }
 
+export async function updateNoteAction(id: number, title: string, body: string) {
+  const cleanTitle = title.trim();
+  const cleanBody = body.trim();
+  if (!cleanTitle && !cleanBody) return;
+  const { supabase, userId } = await requireUser();
+  await supabase
+    .from("notes")
+    .update({ title: cleanTitle, body: cleanBody, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath("/app/notes");
+}
+
 export async function deleteNoteAction(id: number) {
   const { supabase, userId } = await requireUser();
   await supabase.from("notes").delete().eq("id", id).eq("user_id", userId);

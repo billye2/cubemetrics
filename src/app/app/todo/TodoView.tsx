@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { addTodoAction, toggleTodoAction, deleteTodoAction } from "./actions";
+import { addTodoAction, toggleTodoAction, deleteTodoAction, updateTodoAction } from "./actions";
+import { InlineEdit } from "@/components/modern/InlineEdit";
 
 interface Todo {
   id: number;
@@ -145,13 +146,19 @@ function TodoRow({ todo }: { todo: Todo }) {
         {todo.completed && <span className="text-xs leading-none">✓</span>}
       </button>
       <div className="min-w-0 flex-1">
-        <div
-          className={`break-words text-sm ${
-            todo.completed ? "text-zinc-500 line-through" : "text-zinc-100"
-          }`}
+        <InlineEdit
+          value={todo.title}
+          ariaLabel="Edit task"
+          onSave={(next) => updateTodoAction(todo.id, next)}
         >
-          {todo.title}
-        </div>
+          <div
+            className={`break-words text-sm ${
+              todo.completed ? "text-zinc-500 line-through" : "text-zinc-100"
+            }`}
+          >
+            {todo.title}
+          </div>
+        </InlineEdit>
       </div>
       {todo.priority > 0 && !todo.completed && (
         <span

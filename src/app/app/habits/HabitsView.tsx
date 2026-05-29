@@ -2,7 +2,8 @@
 
 import { useRef, useTransition } from "react";
 import type { HabitWithStats } from "./page";
-import { addHabit, checkInAction, deleteHabitAction } from "./actions";
+import { addHabit, checkInAction, deleteHabitAction, renameHabitAction } from "./actions";
+import { InlineEdit } from "@/components/modern/InlineEdit";
 
 export function HabitsView({ habits }: { habits: HabitWithStats[] }) {
   return (
@@ -146,9 +147,15 @@ function HabitRow({ habit }: { habit: HabitWithStats }) {
       }`}
     >
       <div className="min-w-0 flex-1">
-        <div className="break-words text-sm font-medium text-zinc-100">
-          {habit.name}
-        </div>
+        <InlineEdit
+          value={habit.name}
+          ariaLabel="Rename habit"
+          onSave={(next) => renameHabitAction(habit.id, next)}
+        >
+          <div className="break-words text-sm font-medium text-zinc-100">
+            {habit.name}
+          </div>
+        </InlineEdit>
         <div className="mt-1 flex flex-wrap gap-3 text-xs text-zinc-400">
           <span className="inline-flex items-center gap-1">
             <span className="text-amber-400">⚡</span>
