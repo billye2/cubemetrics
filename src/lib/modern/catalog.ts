@@ -74,17 +74,17 @@ export const APPS: AppEntry[] = [
   { id: "notes", name: "Notes", category: "notes", icon: "✐", description: "Quick notes", ui: "modern" },
 
   // Trackers
-  { id: "mood", name: "Mood", category: "habits", icon: "☺", description: "How you feel", ui: "tracker", config: { trackerType: "mood", labels: ["Awful", "Bad", "Meh", "Okay", "Good", "Great"], min: 0, max: 5, aggregate: "average" } },
+  { id: "mood", name: "Mood", category: "habits", icon: "☺", description: "How you feel", ui: "tracker", config: { trackerType: "mood", labels: ["Awful", "Bad", "Meh", "Okay", "Good", "Great"], min: 0, max: 5, aggregate: "average", chartStyle: "line" } },
   { id: "water", name: "Water", category: "habits", icon: "◐", description: "Glasses of water", ui: "tracker", config: { trackerType: "water", unit: "glasses", min: 0, max: 16, aggregate: "sum", dailyGoal: 8, quickAdd: [1, 2] } },
   { id: "sleep", name: "Sleep", category: "habits", icon: "☾", description: "Hours of sleep", ui: "tracker", config: { trackerType: "sleep", unit: "hours", min: 0, max: 14, aggregate: "latest", dailyGoal: 8, idealRange: [7, 9] } },
-  { id: "energy", name: "Energy", category: "habits", icon: "✸", description: "Energy level", ui: "tracker", config: { trackerType: "energy", labels: ["Drained", "Low", "Okay", "Good", "High"], min: 0, max: 4, aggregate: "average" } },
+  { id: "energy", name: "Energy", category: "habits", icon: "✸", description: "Energy level", ui: "tracker", config: { trackerType: "energy", labels: ["Drained", "Low", "Okay", "Good", "High"], min: 0, max: 4, aggregate: "average", chartStyle: "line" } },
   { id: "weight", name: "Weight", category: "habits", icon: "⚖", description: "Weight log", ui: "tracker", config: { trackerType: "weight", unit: "lbs", min: 0, max: 500, aggregate: "latest", chartStyle: "line" } },
   { id: "screentime", name: "Screen Time", category: "habits", icon: "▢", description: "Hours on screens", ui: "tracker", config: { trackerType: "screentime", unit: "hours", min: 0, max: 24, aggregate: "sum", dailyGoal: 2, goalDirection: "at-most", quickAdd: [0.5, 1] } },
   { id: "writingtracker", name: "Writing", category: "notes", icon: "✑", description: "Words written today", ui: "tracker", config: { trackerType: "writing", unit: "words", min: 0, max: 100000, aggregate: "sum", dailyGoal: 500, quickAdd: [100, 250, 500] } },
   { id: "steps", name: "Steps", category: "habits", icon: "➤", description: "Daily step count", ui: "tracker", config: { trackerType: "steps", unit: "steps", min: 0, max: 100000, aggregate: "sum", dailyGoal: 8000, quickAdd: [1000, 2500, 5000] } },
   { id: "caffeine", name: "Caffeine", category: "habits", icon: "◉", description: "Caffeine intake", ui: "tracker", config: { trackerType: "caffeine", unit: "mg", min: 0, max: 2000, aggregate: "sum", dailyGoal: 400, goalDirection: "at-most", quickAdd: [95, 150] } },
-  { id: "stress", name: "Stress", category: "habits", icon: "◭", description: "Stress level", ui: "tracker", config: { trackerType: "stress", labels: ["None", "Low", "Mild", "Moderate", "High", "Severe"], min: 0, max: 5, aggregate: "average" } },
-  { id: "productivity", name: "Productivity", category: "tasks", icon: "▲", description: "Rate your day", ui: "tracker", config: { trackerType: "productivity", labels: ["Wasted", "Poor", "Okay", "Good", "Great", "Peak"], min: 0, max: 5, aggregate: "average" } },
+  { id: "stress", name: "Stress", category: "habits", icon: "◭", description: "Stress level", ui: "tracker", config: { trackerType: "stress", labels: ["None", "Low", "Mild", "Moderate", "High", "Severe"], min: 0, max: 5, aggregate: "average", chartStyle: "line" } },
+  { id: "productivity", name: "Productivity", category: "tasks", icon: "▲", description: "Rate your day", ui: "tracker", config: { trackerType: "productivity", labels: ["Wasted", "Poor", "Okay", "Good", "Great", "Peak"], min: 0, max: 5, aggregate: "average", chartStyle: "line" } },
 
   // Checklists
   { id: "grocery", name: "Grocery", category: "org", icon: "◍", description: "Shopping list", ui: "checklist", config: { listType: "grocery", itemLabel: "Item" } },

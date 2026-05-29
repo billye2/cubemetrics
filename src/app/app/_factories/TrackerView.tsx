@@ -448,17 +448,22 @@ function LineChart({
   const values = present.map((p) => p.b.value);
   const rawLo = Math.min(...values);
   const rawHi = Math.max(...values);
-  // Auto-fit the y-axis to the data (with padding) so weight near 150–160 fills
-  // the chart instead of hugging the top of a 0-based axis.
-  let lo = rawLo;
-  let hi = rawHi;
-  if (lo === hi) {
-    lo -= 1;
-    hi += 1;
+  // Scale trackers (mood/energy/…) use a fixed ordinal axis so the line reads
+  // against the whole Awful→Great range; numeric trackers (weight) auto-fit to
+  // the data (with padding) so values near 150–160 fill the chart.
+  const isScale = !!config.labels;
+  let lo: number;
+  let hi: number;
+  if (isScale) {
+    lo = 0;
+    hi = config.labels!.length - 1;
+  } else if (rawLo === rawHi) {
+    lo = rawLo - 1;
+    hi = rawHi + 1;
   } else {
-    const pad = (hi - lo) * 0.15;
-    lo -= pad;
-    hi += pad;
+    const pad = (rawHi - rawLo) * 0.15;
+    lo = rawLo - pad;
+    hi = rawHi + pad;
   }
   const span = hi - lo || 1;
   const xOf = (i: number) => 4 + (i / (n - 1)) * 92;
@@ -470,7 +475,9 @@ function LineChart({
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
       {header(
         <div className="text-[10px] text-zinc-500">
-          {formatValue(rawLo, config, mode)}–{formatValue(rawHi, config, mode)}
+          {rawLo === rawHi
+            ? formatValue(rawLo, config, mode)
+            : `${formatValue(rawLo, config, mode)}–${formatValue(rawHi, config, mode)}`}
           {config.unit ? ` ${config.unit}` : ""}
         </div>,
       )}
