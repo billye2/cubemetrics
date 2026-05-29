@@ -96,6 +96,13 @@ Backs the Countdown app. `target_date` is a calendar date; `target_time` is opti
 
 Back the Counter / Tally app (migration `023_counters.sql`, **applied to the remote**). `counters.value` is the denormalized running total; `step` is the +/− increment. Every press appends a `counter_events` row (`delta = ±step`) so a counter has history — "today net" (Σ delta on the local day) and a 7-day taps-per-day chart. Resets zero `value` **without** logging an event, so the press metrics stay honest. `counter_events` indexed on `(counter_id, created_at)` and `(user_id, created_at)`.
 
+### contacts
+| Column | Type |
+|--------|------|
+| id, user_id, name, email, phone, company, note, tags, created_at, cadence_days, last_contacted |
+
+Backs the **Keep in Touch** app (migration `029_keepintouch.sql`, idempotent, **applied to the remote**). Created ad-hoc earlier and never wired to a UI — note the catalog's "Contacts" *checklist* app stores its rows in the shared `checklists` table (`list_type='contacts'`), **not** here. Migration `029` records the shape, adds `cadence_days INTEGER` (reach out every N days) + `last_contacted DATE`, and adds the SysOp read policy (owner policy `Users can access own contacts` already existed). "Next due" = `last_contacted + cadence_days`; touch-log history + the `note`/`email`/`phone`/`tags` fields are P2. Indexed on `(user_id, last_contacted)`.
+
 ### net_worth_accounts + net_worth_snapshots
 | net_worth_accounts | net_worth_snapshots |
 |--------------------|---------------------|
