@@ -9,8 +9,13 @@
 - No lap support, no label for "what am I timing."
 - Logging a remembered number of minutes defeats the purpose of a stopwatch.
 
+> **Status (2026-05-29):** ✅ P1 shipped — graduated to a custom app (`ui: "modern"`,
+> `src/app/app/stopwatch/`). Timestamp-based start/pause/resume/lap/reset in `localStorage`, live
+> hh:mm:ss, optional label, Stop & log → `daily_trackers`, today total + 7-day chart + history.
+> Remaining: P3 keep-awake / sound / mid-reset resume.
+
 **Plan**
-- **P1 — build a real stopwatch (the whole point).**
+- **P1 — build a real stopwatch (the whole point).** ✅ shipped
   - **Graduate to a custom app** (`ui: "modern"`, add `src/app/app/stopwatch/page.tsx` + `actions.ts`).
   - **Start / stop / reset** stopwatch using a **timestamp-based** clock (store `startedAt` in `localStorage` so it survives reloads — same pattern as Focus/Pomodoro), with a large live mm:ss / hh:mm:ss display.
   - Optional **label** ("what are you timing?") and **laps** (split list while running).

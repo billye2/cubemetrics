@@ -24,6 +24,18 @@ export async function addEntryAction(formData: FormData) {
   redirect("/app/journal");
 }
 
+export async function updateEntryAction(id: number, title: string, body: string, mood: string | null) {
+  const cleanBody = body.trim();
+  if (!cleanBody) return;
+  const { supabase, userId } = await requireUser();
+  await supabase
+    .from("journal_entries")
+    .update({ title: title.trim(), body: cleanBody, mood: mood?.trim() || null })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath("/app/journal");
+}
+
 export async function deleteEntryAction(id: number) {
   const { supabase, userId } = await requireUser();
   await supabase.from("journal_entries").delete().eq("id", id).eq("user_id", userId);

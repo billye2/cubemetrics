@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { logbookAddAction, logbookUpdateAction, logbookDeleteAction } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
 import { countWithinDays } from "./factoryLib";
+import { renderMarkdown } from "./markdown";
 
 interface LogEntry {
   id: number;
@@ -285,12 +286,16 @@ function EntryCard({ appId, entry, hasTitle }: { appId: string; entry: LogEntry;
         </div>
       </div>
       {entry.title && <h3 className="mb-1 text-base font-semibold text-zinc-100">{entry.title}</h3>}
-      <p
-        onClick={() => setExpanded((v) => !v)}
-        className="whitespace-pre-wrap break-words text-sm text-zinc-300"
-      >
-        {expanded ? entry.body : preview}
-      </p>
+      {entry.body.length > 200 && !expanded ? (
+        <p
+          onClick={() => setExpanded(true)}
+          className="cursor-pointer whitespace-pre-wrap break-words text-sm text-zinc-300"
+        >
+          {preview}
+        </p>
+      ) : (
+        renderMarkdown(entry.body)
+      )}
       {entry.body.length > 200 && (
         <button
           type="button"

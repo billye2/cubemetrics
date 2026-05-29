@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { addCountdownAction, deleteCountdownAction } from "./actions";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { addCountdownAction, deleteCountdownAction, updateCountdownAction } from "./actions";
 import {
   type Countdown,
   type ResolvedCountdown,
@@ -59,14 +59,14 @@ export function CountdownsView({ rows }: { rows: Countdown[] }) {
 
       <Section title="Upcoming" empty="Nothing on the horizon yet.">
         {upcoming.map((r, i) => (
-          <CountdownCard key={r.id} item={r} now={now} fallbackIndex={i} />
+          <CountdownCard key={r.id} item={r} now={now} fallbackIndex={i} recentCategories={recentCategories} />
         ))}
       </Section>
 
       {past.length > 0 && (
         <Section title="Just passed">
           {past.map((r, i) => (
-            <CountdownCard key={r.id} item={r} now={now} fallbackIndex={i} />
+            <CountdownCard key={r.id} item={r} now={now} fallbackIndex={i} recentCategories={recentCategories} />
           ))}
         </Section>
       )}
@@ -99,53 +99,57 @@ function Section({
   );
 }
 
-function AddForm({ recentCategories }: { recentCategories: string[] }) {
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState(todayInput());
-  const [time, setTime] = useState("");
-  const [category, setCategory] = useState("");
-  const [customCategory, setCustomCategory] = useState(false);
-  const [recurring, setRecurring] = useState(false);
-  const noteRef = useRef<HTMLInputElement>(null);
-  const [pending, start] = useTransition();
-  const [open, setOpen] = useState(false);
+interface CountdownFormValues {
+  title: string;
+  date: string;
+  time: string;
+  category: string;
+  recurring: boolean;
+  note: string;
+}
+
+// Shared field set for both the add form and the per-card edit form.
+function CountdownFields({
+  heading,
+  submitLabel,
+  recentCategories,
+  initial,
+  pending,
+  onSubmit,
+  onCancel,
+}: {
+  heading: string;
+  submitLabel: string;
+  recentCategories: string[];
+  initial: CountdownFormValues;
+  pending: boolean;
+  onSubmit: (v: CountdownFormValues) => void;
+  onCancel: () => void;
+}) {
+  const [title, setTitle] = useState(initial.title);
+  const [date, setDate] = useState(initial.date);
+  const [time, setTime] = useState(initial.time);
+  const [category, setCategory] = useState(initial.category);
+  const [customCategory, setCustomCategory] = useState(
+    !!initial.category && !recentCategories.includes(initial.category),
+  );
+  const [recurring, setRecurring] = useState(initial.recurring);
+  const [note, setNote] = useState(initial.note);
 
   function submit() {
     if (!title.trim() || !date) return;
-    const note = noteRef.current?.value || "";
-    start(async () => {
-      await addCountdownAction(title.trim(), date, time, category.trim(), recurring, note);
-      setTitle("");
-      setTime("");
-      setCategory("");
-      setCustomCategory(false);
-      setRecurring(false);
-      if (noteRef.current) noteRef.current.value = "";
-      setOpen(false);
-    });
-  }
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 text-sm font-semibold text-zinc-400 hover:border-cyan-500/40 hover:text-cyan-300"
-      >
-        <span aria-hidden>+</span> Add a countdown
-      </button>
-    );
+    onSubmit({ title: title.trim(), date, time, category: category.trim(), recurring, note });
   }
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
       <div className="flex items-center justify-between">
         <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-          New countdown
+          {heading}
         </div>
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={onCancel}
           className="rounded-lg px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300"
         >
           Close
@@ -156,6 +160,7 @@ function AddForm({ recentCategories }: { recentCategories: string[] }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         autoComplete="off"
+        autoFocus
         placeholder="What are you counting down to?"
         className="mt-3 w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
       />
@@ -239,7 +244,8 @@ function AddForm({ recentCategories }: { recentCategories: string[] }) {
       </label>
 
       <input
-        ref={noteRef}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
         placeholder="Note (optional)"
         className="mt-3 w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
       />
@@ -250,9 +256,43 @@ function AddForm({ recentCategories }: { recentCategories: string[] }) {
         disabled={pending || !title.trim() || !date}
         className="mt-4 h-11 w-full rounded-xl bg-cyan-500 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-40"
       >
-        {pending ? "Saving…" : "Add countdown"}
+        {pending ? "Saving…" : submitLabel}
       </button>
     </div>
+  );
+}
+
+function AddForm({ recentCategories }: { recentCategories: string[] }) {
+  const [open, setOpen] = useState(false);
+  const [pending, start] = useTransition();
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 text-sm font-semibold text-zinc-400 hover:border-cyan-500/40 hover:text-cyan-300"
+      >
+        <span aria-hidden>+</span> Add a countdown
+      </button>
+    );
+  }
+
+  return (
+    <CountdownFields
+      heading="New countdown"
+      submitLabel="Add countdown"
+      recentCategories={recentCategories}
+      initial={{ title: "", date: todayInput(), time: "", category: "", recurring: false, note: "" }}
+      pending={pending}
+      onCancel={() => setOpen(false)}
+      onSubmit={(v) =>
+        start(async () => {
+          await addCountdownAction(v.title, v.date, v.time, v.category, v.recurring, v.note);
+          setOpen(false);
+        })
+      }
+    />
   );
 }
 
@@ -260,12 +300,44 @@ function CountdownCard({
   item,
   now,
   fallbackIndex,
+  recentCategories,
 }: {
   item: ResolvedCountdown;
   now: Date;
   fallbackIndex: number;
+  recentCategories: string[];
 }) {
   const [pending, start] = useTransition();
+  const [editing, setEditing] = useState(false);
+
+  if (editing) {
+    return (
+      <li>
+        <CountdownFields
+          heading="Edit countdown"
+          submitLabel="Save"
+          recentCategories={recentCategories}
+          initial={{
+            title: item.title,
+            date: item.target_date,
+            time: item.target_time ?? "",
+            category: item.category ?? "",
+            recurring: item.recurring_yearly,
+            note: item.note ?? "",
+          }}
+          pending={pending}
+          onCancel={() => setEditing(false)}
+          onSubmit={(v) =>
+            start(async () => {
+              await updateCountdownAction(item.id, v.title, v.date, v.time, v.category, v.recurring, v.note);
+              setEditing(false);
+            })
+          }
+        />
+      </li>
+    );
+  }
+
   const b = breakdown(now, item.nextAt);
   const granularity = pickGranularity(b.totalMs);
   const formatted = formatBreakdown(b, granularity);
@@ -311,14 +383,24 @@ function CountdownCard({
             {cat && <> · {cat}</>}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={remove}
-          className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-red-400"
-          aria-label="Delete"
-        >
-          ×
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-cyan-400"
+            aria-label="Edit"
+          >
+            ✎
+          </button>
+          <button
+            type="button"
+            onClick={remove}
+            className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-red-400"
+            aria-label="Delete"
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       <div className="mt-3 flex items-baseline gap-2">
