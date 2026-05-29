@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { addEventAction, deleteEventAction } from "./actions";
+import { addEventAction, updateEventAction, deleteEventAction } from "./actions";
 
 export interface Event {
   id: number;
@@ -10,6 +10,7 @@ export interface Event {
   start_date: string;
   start_time: string | null;
   end_date: string | null;
+  end_time: string | null;
 }
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -31,9 +32,15 @@ function eachDay(start: string, end: string): string[] {
   return out;
 }
 
-function fmtTime(t: string | null): string {
-  if (!t) return "All day";
+function fmtTime(t: string): string {
   return new Date(`1970-01-01T${t}`).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+}
+
+/** "All day" / "2:00 PM" / "2:00 – 3:30 PM" from start/end times. */
+function timeRange(start: string | null, end: string | null): string {
+  if (!start) return "All day";
+  if (end && end > start) return `${fmtTime(start)} – ${fmtTime(end)}`;
+  return fmtTime(start);
 }
 
 export function CalendarView({ events, today }: { events: Event[]; today: string }) {
@@ -97,22 +104,30 @@ export function CalendarView({ events, today }: { events: Event[]; today: string
             placeholder="Title"
             className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
           />
-          <div className="flex gap-2">
-            <input
-              name="start_date"
-              type="date"
-              required
-              defaultValue={formDate}
-              className="flex-1 rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
-            />
+          <input
+            name="start_date"
+            type="date"
+            required
+            defaultValue={formDate}
+            className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+          />
+          <div className="flex items-center gap-2">
             <input
               name="start_time"
               type="time"
-              className="w-32 rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+              aria-label="Start time"
+              className="flex-1 rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+            />
+            <span className="text-xs text-zinc-500">to</span>
+            <input
+              name="end_time"
+              type="time"
+              aria-label="End time"
+              className="flex-1 rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
             />
           </div>
           <label className="block text-[11px] uppercase tracking-wider text-zinc-500">
-            Ends (optional — for multi-day)
+            Ends on (optional — multi-day)
             <input
               name="end_date"
               type="date"
@@ -336,7 +351,7 @@ function Agenda({ events, today }: { events: Event[]; today: string }) {
       ) : (
         <div className="space-y-4">
           {groups(upcoming).map(([date, evs]) => (
-            <DaySection key={date} date={date} events={evs} />
+            <DaySection key={date} date={date} events={evs} isToday={date === today} />
           ))}
         </div>
       )}
@@ -364,12 +379,27 @@ function Agenda({ events, today }: { events: Event[]; today: string }) {
   );
 }
 
-function DaySection({ date, events, muted = false }: { date: string; events: Event[]; muted?: boolean }) {
+function DaySection({
+  date,
+  events,
+  muted = false,
+  isToday = false,
+}: {
+  date: string;
+  events: Event[];
+  muted?: boolean;
+  isToday?: boolean;
+}) {
   const d = new Date(date + "T00:00:00");
   const label = d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
   return (
     <div>
-      <div className={`mb-2 text-sm font-semibold ${muted ? "text-zinc-500" : "text-cyan-400"}`}>{label}</div>
+      <div className={`mb-2 flex items-center gap-2 text-sm font-semibold ${muted ? "text-zinc-500" : "text-cyan-400"}`}>
+        <span>{label}</span>
+        {isToday && (
+          <span className="rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300">Today</span>
+        )}
+      </div>
       <ul className="space-y-2">
         {events.map((e) => (
           <EventRow key={e.id} event={e} muted={muted} />
@@ -381,15 +411,86 @@ function DaySection({ date, events, muted = false }: { date: string; events: Eve
 
 function EventRow({ event, muted }: { event: Event; muted?: boolean }) {
   const [pending, start] = useTransition();
+  const [editing, setEditing] = useState(false);
+
   function remove() {
     if (!confirm("Delete this event?")) return;
     start(() => deleteEventAction(event.id));
   }
+
+  function submitEdit(formData: FormData) {
+    start(async () => {
+      await updateEventAction(event.id, formData);
+      setEditing(false);
+    });
+  }
+
   const multiDay = event.end_date && event.end_date > event.start_date;
+
+  if (editing) {
+    return (
+      <li className="rounded-xl border border-cyan-500/30 bg-zinc-900/40 p-3">
+        <form action={submitEdit} className="space-y-2">
+          <input
+            name="title"
+            required
+            defaultValue={event.title}
+            autoComplete="off"
+            className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+          />
+          <input
+            name="start_date"
+            type="date"
+            required
+            defaultValue={event.start_date}
+            className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+          />
+          <div className="flex items-center gap-2">
+            <input
+              name="start_time"
+              type="time"
+              aria-label="Start time"
+              defaultValue={event.start_time ?? ""}
+              className="flex-1 rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+            />
+            <span className="text-xs text-zinc-500">to</span>
+            <input
+              name="end_time"
+              type="time"
+              aria-label="End time"
+              defaultValue={event.end_time ?? ""}
+              className="flex-1 rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+            />
+          </div>
+          <input
+            name="end_date"
+            type="date"
+            aria-label="End date"
+            defaultValue={event.end_date ?? ""}
+            className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+          />
+          <textarea
+            name="description"
+            rows={2}
+            defaultValue={event.description ?? ""}
+            className="w-full resize-none rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+          />
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setEditing(false)} className="flex-1 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-zinc-300 hover:bg-zinc-700">
+              Cancel
+            </button>
+            <button type="submit" disabled={pending} className="flex-1 rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50">
+              Save
+            </button>
+          </div>
+        </form>
+      </li>
+    );
+  }
 
   return (
     <li className={`flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 ${pending ? "opacity-50" : ""}`}>
-      <div className={`w-16 shrink-0 text-xs font-semibold ${muted ? "text-zinc-600" : "text-zinc-300"}`}>{fmtTime(event.start_time)}</div>
+      <div className={`w-20 shrink-0 text-xs font-semibold ${muted ? "text-zinc-600" : "text-zinc-300"}`}>{timeRange(event.start_time, event.end_time)}</div>
       <div className="min-w-0 flex-1">
         <div className={`text-sm font-semibold ${muted ? "text-zinc-500" : "text-zinc-100"}`}>{event.title}</div>
         {multiDay && (
@@ -401,13 +502,14 @@ function EventRow({ event, muted }: { event: Event; muted?: boolean }) {
           <div className="mt-0.5 whitespace-pre-wrap break-words text-xs text-zinc-400">{event.description}</div>
         )}
       </div>
-      <button
-        type="button"
-        onClick={remove}
-        className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-red-400"
-      >
-        ×
-      </button>
+      <div className="flex shrink-0 items-center gap-1">
+        <button type="button" onClick={() => setEditing(true)} className="rounded-lg px-2 py-1 text-xs font-medium text-zinc-500 hover:bg-zinc-800 hover:text-cyan-300">
+          Edit
+        </button>
+        <button type="button" onClick={remove} className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-red-400">
+          ×
+        </button>
+      </div>
     </li>
   );
 }

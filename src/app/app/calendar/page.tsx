@@ -18,7 +18,7 @@ export default async function CalendarPage() {
 
   const { data } = await supabase
     .from("calendar_events")
-    .select("id, title, description, start_date, start_time, end_date")
+    .select("id, title, description, start_date, start_time, end_date, end_time")
     .eq("user_id", user.id)
     .gte("start_date", from.toISOString().slice(0, 10))
     .lte("start_date", to.toISOString().slice(0, 10))
