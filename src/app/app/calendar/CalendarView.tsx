@@ -2,16 +2,9 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { addEventAction, updateEventAction, deleteEventAction } from "./actions";
+import { expandEvents, RECURRENCE_LABEL, type Event, type Occurrence } from "./lib";
 
-export interface Event {
-  id: number;
-  title: string;
-  description: string | null;
-  start_date: string;
-  start_time: string | null;
-  end_date: string | null;
-  end_time: string | null;
-}
+export type { Event } from "./lib";
 
 const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
 
@@ -43,7 +36,17 @@ function timeRange(start: string | null, end: string | null): string {
   return fmtTime(start);
 }
 
-export function CalendarView({ events, today }: { events: Event[]; today: string }) {
+export function CalendarView({
+  events,
+  today,
+  windowStart,
+  windowEnd,
+}: {
+  events: Event[];
+  today: string;
+  windowStart: string;
+  windowEnd: string;
+}) {
   const [mode, setMode] = useState<"month" | "agenda">("month");
   const [ty, tm] = useMemo(() => {
     const d = new Date(today + "T00:00:00");
@@ -55,10 +58,16 @@ export function CalendarView({ events, today }: { events: Event[]; today: string
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, start] = useTransition();
 
-  // date string -> events occurring that day (multi-day events span their range).
+  // Recurring series expand into concrete occurrences across the visible window.
+  const occurrences = useMemo(
+    () => expandEvents(events, windowStart, windowEnd),
+    [events, windowStart, windowEnd],
+  );
+
+  // date string -> occurrences on that day (multi-day spans cover their range).
   const byDay = useMemo(() => {
-    const map = new Map<string, Event[]>();
-    for (const e of events) {
+    const map = new Map<string, Occurrence[]>();
+    for (const e of occurrences) {
       const days = e.end_date && e.end_date > e.start_date ? eachDay(e.start_date, e.end_date) : [e.start_date];
       for (const day of days) {
         const arr = map.get(day) ?? [];
@@ -67,7 +76,7 @@ export function CalendarView({ events, today }: { events: Event[]; today: string
       }
     }
     return map;
-  }, [events]);
+  }, [occurrences]);
 
   function submit(formData: FormData) {
     start(async () => {
@@ -134,6 +143,10 @@ export function CalendarView({ events, today }: { events: Event[]; today: string
               className="mt-1 w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
             />
           </label>
+          <label className="block text-[11px] uppercase tracking-wider text-zinc-500">
+            Repeats
+            <RecurrenceSelect />
+          </label>
           <textarea
             name="description"
             placeholder="Notes (optional)"
@@ -173,7 +186,7 @@ export function CalendarView({ events, today }: { events: Event[]; today: string
           }}
         />
       ) : (
-        <Agenda events={events} today={today} />
+        <Agenda events={occurrences} today={today} />
       )}
 
       {mode === "month" && selected && (
@@ -187,6 +200,21 @@ export function CalendarView({ events, today }: { events: Event[]; today: string
         />
       )}
     </div>
+  );
+}
+
+function RecurrenceSelect({ defaultValue = "" }: { defaultValue?: string }) {
+  return (
+    <select
+      name="recurrence"
+      defaultValue={defaultValue}
+      className="mt-1 w-full appearance-none rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+    >
+      <option value="">Doesn’t repeat</option>
+      <option value="daily">Daily</option>
+      <option value="weekly">Weekly</option>
+      <option value="monthly">Monthly</option>
+    </select>
   );
 }
 
@@ -216,7 +244,7 @@ function MonthGrid({
   cursor: { y: number; m: number };
   setCursor: (c: { y: number; m: number }) => void;
   today: string;
-  byDay: Map<string, Event[]>;
+  byDay: Map<string, Occurrence[]>;
   selected: string | null;
   onSelect: (d: string) => void;
   onJumpToday: () => void;
@@ -299,7 +327,7 @@ function MonthGrid({
   );
 }
 
-function SelectedDay({ date, events, onAdd }: { date: string; events: Event[]; onAdd: () => void }) {
+function SelectedDay({ date, events, onAdd }: { date: string; events: Occurrence[]; onAdd: () => void }) {
   const label = new Date(date + "T00:00:00").toLocaleDateString(undefined, {
     weekday: "long",
     month: "long",
@@ -318,7 +346,7 @@ function SelectedDay({ date, events, onAdd }: { date: string; events: Event[]; o
       ) : (
         <ul className="space-y-2">
           {sorted.map((e) => (
-            <EventRow key={e.id} event={e} />
+            <EventRow key={e.occKey} event={e} />
           ))}
         </ul>
       )}
@@ -326,13 +354,13 @@ function SelectedDay({ date, events, onAdd }: { date: string; events: Event[]; o
   );
 }
 
-function Agenda({ events, today }: { events: Event[]; today: string }) {
+function Agenda({ events, today }: { events: Occurrence[]; today: string }) {
   const [showPast, setShowPast] = useState(false);
   const upcoming = events.filter((e) => (e.end_date || e.start_date) >= today);
   const past = events.filter((e) => (e.end_date || e.start_date) < today).reverse();
 
-  const groups = (list: Event[]): [string, Event[]][] => {
-    const map = new Map<string, Event[]>();
+  const groups = (list: Occurrence[]): [string, Occurrence[]][] => {
+    const map = new Map<string, Occurrence[]>();
     for (const e of list) {
       const arr = map.get(e.start_date) ?? [];
       arr.push(e);
@@ -386,7 +414,7 @@ function DaySection({
   isToday = false,
 }: {
   date: string;
-  events: Event[];
+  events: Occurrence[];
   muted?: boolean;
   isToday?: boolean;
 }) {
@@ -402,19 +430,22 @@ function DaySection({
       </div>
       <ul className="space-y-2">
         {events.map((e) => (
-          <EventRow key={e.id} event={e} muted={muted} />
+          <EventRow key={e.occKey} event={e} muted={muted} />
         ))}
       </ul>
     </div>
   );
 }
 
-function EventRow({ event, muted }: { event: Event; muted?: boolean }) {
+function EventRow({ event, muted }: { event: Occurrence; muted?: boolean }) {
   const [pending, start] = useTransition();
   const [editing, setEditing] = useState(false);
 
   function remove() {
-    if (!confirm("Delete this event?")) return;
+    const msg = event.repeats
+      ? "Delete this repeating event and all of its occurrences?"
+      : "Delete this event?";
+    if (!confirm(msg)) return;
     start(() => deleteEventAction(event.id));
   }
 
@@ -431,6 +462,9 @@ function EventRow({ event, muted }: { event: Event; muted?: boolean }) {
     return (
       <li className="rounded-xl border border-cyan-500/30 bg-zinc-900/40 p-3">
         <form action={submitEdit} className="space-y-2">
+          {event.repeats && (
+            <p className="text-[11px] text-zinc-500">Editing applies to the whole repeating series.</p>
+          )}
           <input
             name="title"
             required
@@ -442,7 +476,7 @@ function EventRow({ event, muted }: { event: Event; muted?: boolean }) {
             name="start_date"
             type="date"
             required
-            defaultValue={event.start_date}
+            defaultValue={event.seriesStart}
             className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
           />
           <div className="flex items-center gap-2">
@@ -466,9 +500,13 @@ function EventRow({ event, muted }: { event: Event; muted?: boolean }) {
             name="end_date"
             type="date"
             aria-label="End date"
-            defaultValue={event.end_date ?? ""}
+            defaultValue={event.seriesEnd ?? ""}
             className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
           />
+          <label className="block text-[11px] uppercase tracking-wider text-zinc-500">
+            Repeats
+            <RecurrenceSelect defaultValue={event.recurrence ?? ""} />
+          </label>
           <textarea
             name="description"
             rows={2}
@@ -492,7 +530,14 @@ function EventRow({ event, muted }: { event: Event; muted?: boolean }) {
     <li className={`flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 ${pending ? "opacity-50" : ""}`}>
       <div className={`w-20 shrink-0 text-xs font-semibold ${muted ? "text-zinc-600" : "text-zinc-300"}`}>{timeRange(event.start_time, event.end_time)}</div>
       <div className="min-w-0 flex-1">
-        <div className={`text-sm font-semibold ${muted ? "text-zinc-500" : "text-zinc-100"}`}>{event.title}</div>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-sm font-semibold ${muted ? "text-zinc-500" : "text-zinc-100"}`}>{event.title}</span>
+          {event.repeats && event.recurrence && (
+            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${muted ? "bg-zinc-800 text-zinc-500" : "bg-zinc-800 text-cyan-300"}`} title={`Repeats ${RECURRENCE_LABEL[event.recurrence as keyof typeof RECURRENCE_LABEL]?.toLowerCase()}`}>
+              ↻ {RECURRENCE_LABEL[event.recurrence as keyof typeof RECURRENCE_LABEL]}
+            </span>
+          )}
+        </div>
         {multiDay && (
           <div className="text-[11px] text-cyan-400">
             through {new Date(event.end_date! + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" })}

@@ -2,21 +2,21 @@
 
 **Purpose** — A personal calendar: schedule events with date/time and see what's coming up.
 
-**Current state** — Custom page, agenda-style. A collapsible "+ New event" form captures title, date (defaults to today), optional time, and a description. Events render as an agenda grouped by day under **Upcoming**, with a collapsible **Past** section. Each row shows time (or "All day") + title + notes, with inline delete and confirm. Day headers use friendly labels and drop the year when it's the current year.
+**Current state** — Custom page with a **Month grid ⇄ Agenda toggle**. A collapsible "+ Event" form captures title, date (defaults to the selected/ today), start + end time, an optional multi-day end date, a **repeat cadence** (none / daily / weekly / monthly), and a description. Month view marks days with event dots and taps through to that day's list; Agenda groups by day under **Upcoming** with a collapsible **Past** section. Rows show the time range (e.g. "2:00 – 3:30 PM") or "All day", a `↻` repeat badge for recurring series, inline edit (pre-filled, series-aware) and delete-with-confirm. Today is highlighted in both views.
 
-**Gaps** — Several. **No edit / reschedule** — a wrong date means delete and re-create. **The `end_date`, `end_time`, and `recurrence` columns all exist but are entirely unused** — so there are no durations, no multi-day events, and no repeating events. There's **only an agenda view, no month grid**, which is the canonical calendar affordance. No today highlight in the list, no visual distinction between all-day and timed events beyond a label, no reminders. It's a sorted event list, not yet a calendar.
+**Gaps** — Mostly closed. P1 (edit/reschedule, `end_time` durations, today highlight) and most of P2 (month grid + toggle, multi-day via `end_date`, recurrence) are shipped. Recurring events expand into occurrences at read-time across the visible window; editing/deleting acts on the whole series (no per-occurrence overrides — that's a P3). Still missing: reminders/notifications, color categories, a week view, and ICS/cross-app surfacing (all P3).
 
 **Plan**
 
-**P1 — core / completeness**
-- **Edit / reschedule an event** — open the form pre-filled on tap; `updateEventAction`. Removes the delete-and-recreate tax.
-- **Use `end_time` for duration** — capture end time, show "2:00–3:30 PM" and compute duration; lay timed events visually below all-day ones within a day.
-- **Today highlight** — mark today's day section distinctly and pin it to the top of Upcoming.
+**P1 — core / completeness** — ✅ shipped
+- [x] **Edit / reschedule an event** — form pre-filled on tap; `updateEventAction`. Removes the delete-and-recreate tax.
+- [x] **Use `end_time` for duration** — captures end time, shows "2:00 – 3:30 PM" via `timeRange()`.
+- [x] **Today highlight** — cyan circle in the month grid + a "Today" badge in the agenda.
 
 **P2 — enhancements**
-- **Month grid view + toggle** — a segmented Agenda ⇄ Month switch; the month grid marks days with events (dots/counts) and taps through to that day's agenda. The missing core visualization.
-- **Recurrence** — wire up the existing `recurrence` column (daily / weekly / monthly) with a picker on the form, and expand recurring events into occurrences across the visible range on read.
-- **Multi-day events** — use the existing `end_date` so an event can span days, rendered across each day it covers in both views.
+- [x] **Month grid view + toggle** — segmented Agenda ⇄ Month switch; the grid marks days with event dots and taps through to that day's list.
+- [x] **Recurrence** — `recurrence` column (daily / weekly / monthly) wired with a picker on the add + edit forms; recurring events expand into occurrences across the visible range on read (`lib.ts` `expandEvents`, unit-tested). Edit/delete act on the whole series.
+- [x] **Multi-day events** — `end_date` spans days, rendered across each covered day in both views; recurring multi-day spans carry their duration onto every occurrence.
 
 **P3 — delight**
 - **Reminders / notifications** — browser Notification (with permission) for events within N minutes; optional lead-time per event.
