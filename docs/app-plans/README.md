@@ -91,11 +91,18 @@ Individual app files reference these and add only what's app-specific.
 One file per catalog entry (68 apps). Grouped by how they're rendered today.
 
 **Reference apps — already built to the bar:**
-[focus](focus.md) · [timetracker](timetracker.md) · [countdown](countdown.md)
+[focus](focus.md) · [timetracker](timetracker.md) · [countdown](countdown.md) ·
+[pomodoro](pomodoro.md) *(work/break cycles)* · [workout](workout.md) *(sets×reps×weight)* ·
+[flashcards](flashcards.md) *(SM-2-lite study)*
+
+> **Status (2026-05-28):** All five factory templates have had their P1 upgrade. Workout and
+> Flashcards graduated from the logbook/checklist templates to custom pages; Pomodoro gained its
+> work/break cycle automation. The per-template P1 sections below are now largely shipped — treat
+> their *Current state* notes as describing the pre-upgrade shell.
 
 **Custom pages:**
 [todo](todo.md) · [journal](journal.md) · [notes](notes.md) · [calendar](calendar.md) ·
-[expenses](expenses.md) · [reading](reading.md) · [habits](habits.md) · [pomodoro](pomodoro.md) ·
+[expenses](expenses.md) · [reading](reading.md) · [habits](habits.md) ·
 [feedback](feedback.md) *(system app)*
 
 **Trackers** ([_tracker-template.md](_tracker-template.md)):
@@ -109,13 +116,15 @@ One file per catalog entry (68 apps). Grouped by how they're rendered today.
 [fileindex](fileindex.md) · [homemaint](homemaint.md) · [cleaning](cleaning.md) · [plantcare](plantcare.md) ·
 [petcare](petcare.md) · [warranty](warranty.md) · [travelplanner](travelplanner.md) · [vocabulary](vocabulary.md) ·
 [routines](routines.md) · [dailyplanner](dailyplanner.md) · [visionboard](visionboard.md) ·
-[flashcards](flashcards.md) · [mealplanner](mealplanner.md) · [clienttracker](clienttracker.md)
+[mealplanner](mealplanner.md) · [clienttracker](clienttracker.md)
+*(flashcards graduated to a custom page)*
 
 **Logbooks** ([_logbook-template.md](_logbook-template.md)):
 [gratitude](gratitude.md) · [meeting](meeting.md) · [standup](standup.md) · [brainstorm](brainstorm.md) ·
-[decisionmatrix](decisionmatrix.md) · [workout](workout.md) · [learninglog](learninglog.md) ·
+[decisionmatrix](decisionmatrix.md) · [learninglog](learninglog.md) ·
 [weeklyreview](weeklyreview.md) · [feedbacklog](feedbacklog.md) · [oneononep](oneononep.md) ·
 [retro](retro.md) · [recipes](recipes.md)
+*(workout graduated to a custom page)*
 
 **Goals** ([_goal-template.md](_goal-template.md)):
 [goals](goals.md) · [okr](okr.md) · [milestones](milestones.md) · [streaks](streaks.md) ·
