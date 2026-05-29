@@ -32,13 +32,16 @@ export default async function AppDispatch({
   const back = { href: "/", label: "Apps" };
 
   if (app.ui === "tracker") {
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
     const { data } = await supabase
       .from("daily_trackers")
       .select("id, value, note, created_at")
       .eq("user_id", user.id)
       .eq("tracker_type", config.trackerType!)
+      .gte("created_at", sixtyDaysAgo.toISOString())
       .order("created_at", { ascending: false })
-      .limit(60);
+      .limit(500);
     return (
       <Shell back={back} title={app.name}>
         <TrackerView appId={app.id} config={config} entries={data || []} />
