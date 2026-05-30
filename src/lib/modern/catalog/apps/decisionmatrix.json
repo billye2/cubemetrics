@@ -4,11 +4,6 @@
   "name": "Decisions",
   "category": "notes",
   "icon": "◰",
-  "description": "Decisions log",
-  "ui": "logbook",
-  "config": {
-    "logType": "decision",
-    "entryLabel": "Decision",
-    "hasTitle": true
-  }
+  "description": "Weighted decision matrix",
+  "ui": "modern"
 }

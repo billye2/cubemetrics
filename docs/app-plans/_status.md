@@ -65,6 +65,9 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 | inventory | 🟢 At bar | graduated from checklist; quantity/value/location/category, total-worth roll-up (P1); P2/P3: photos, filters |
 | mealplanner | 🟢 At bar | graduated from checklist; week grid (date×slot), recipe link, grocery-list generator (P1–P3) |
 | fileindex | 🟢 At bar | graduated from checklist; searchable catalog (name/location/type/tags/desc), filters (P1 + partial P2/P3) |
+| contacts | 🟢 At bar | graduated from checklist; mini-CRM on shared `contacts` table (address book + tags + birthday strip) — P1+P2+P3 |
+| decisionmatrix | 🟢 At bar | graduated from logbook; weighted options×criteria matrix, computed winner, chosen/rationale/revisit (P1–P3) |
+| debtpayoff | 🟢 At bar | graduated from goal; multi-debt with APR/min-payment, payment log, payoff projection + snowball/avalanche (P1+P2) |
 
 ## Trackers (factory `tracker`)
 
@@ -85,8 +88,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | grocery · wishlist · packing · bucketlist · backlog | 🟡 Partial | per-app fields (quantity, price/priority, sections, achieved, promote-to-todo) |
 | homemaint · cleaning · petcare · routines · dailyplanner · travelplanner | 🟡 Partial | recurrence / daily-reset / date-scoping — candidates to re-point onto the `schedule` family |
-| bookmarks · contacts · visionboard · clienttracker | 🔴 Graduate | checklist is the wrong model; each needs a custom app |
-| ~~warranty~~ · ~~vocabulary~~ · ~~plantcare~~ · ~~inventory~~ · ~~fileindex~~ · ~~mealplanner~~ | ✅ Graduated | now custom apps (see Custom apps table) |
+| bookmarks · visionboard · clienttracker | 🔴 Graduate | checklist is the wrong model; each needs a custom app |
+| ~~warranty~~ · ~~vocabulary~~ · ~~plantcare~~ · ~~inventory~~ · ~~fileindex~~ · ~~mealplanner~~ · ~~contacts~~ | ✅ Graduated | now custom apps (see Custom apps table) |
 
 ## Logbooks (factory `logbook`)
 
@@ -94,8 +97,7 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | brag · interviews | ✅ Done | thin catalog entries — in `finished/` |
 | gratitude · meeting · standup · brainstorm · learninglog · feedbacklog · oneononep · retro | 🟡 Partial | per-app structure (streak, attendees, person grouping, action items) |
-| decisionmatrix | 🔴 Graduate | structured models the logbook can't express |
-| ~~weeklyreview~~ · ~~recipes~~ | ✅ Graduated | now custom apps (see Custom apps table) |
+| ~~weeklyreview~~ · ~~recipes~~ · ~~decisionmatrix~~ | ✅ Graduated | now custom apps (see Custom apps table) |
 
 ## Goals (factory `goal`)
 
@@ -103,8 +105,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | challenge | ✅ Done | thin catalog entry — in `finished/` |
 | goals · milestones · courses | 🟡 Partial | categories, timeline, lesson checklist |
-| streaks · debtpayoff | 🔴 Graduate | a single progress bar is the wrong shape (streaks → merge with Habits) |
-| ~~projecttracker~~ · ~~skilltree~~ · ~~savings~~ · ~~okr~~ | ✅ Graduated | now custom apps (see Custom apps table) |
+| streaks | 🔴 Graduate | a single progress bar is the wrong shape (streaks → merge with Habits) |
+| ~~projecttracker~~ · ~~skilltree~~ · ~~savings~~ · ~~okr~~ · ~~debtpayoff~~ | ✅ Graduated | now custom apps (see Custom apps table) |
 
 ## Finance (factory `finance`)
 
