@@ -26,7 +26,7 @@ export const APPS: AppEntry[] = [
   {"id":"bookmarks","name":"Bookmarks","category":"org","icon":"☖","description":"Saved links","ui":"checklist","config":{"listType":"bookmark","itemLabel":"Bookmark"}},
   {"id":"backlog","name":"Backlog","category":"tasks","icon":"☷","description":"Someday/maybe","ui":"checklist","config":{"listType":"backlog","itemLabel":"Item"}},
   {"id":"contacts","name":"Contacts","category":"org","icon":"☻","description":"People","ui":"checklist","config":{"listType":"contacts","itemLabel":"Contact"}},
-  {"id":"inventory","name":"Inventory","category":"org","icon":"▦","description":"Things you own","ui":"checklist","config":{"listType":"inventory","itemLabel":"Item"}},
+  {"id":"inventory","name":"Inventory","category":"org","icon":"▦","description":"Things you own — value, location & photos","ui":"modern"},
   {"id":"fileindex","name":"File Index","category":"org","icon":"☰","description":"File catalog","ui":"checklist","config":{"listType":"fileindex","itemLabel":"File"}},
   {"id":"homemaint","name":"Home","category":"lifestyle","icon":"⌂","description":"Home maintenance","ui":"checklist","config":{"listType":"homemaint","itemLabel":"Task"}},
   {"id":"cleaning","name":"Cleaning","category":"lifestyle","icon":"✦","description":"Cleaning schedule","ui":"checklist","config":{"listType":"cleaning","itemLabel":"Task"}},

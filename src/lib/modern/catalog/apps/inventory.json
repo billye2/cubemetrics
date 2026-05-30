@@ -4,10 +4,6 @@
   "name": "Inventory",
   "category": "org",
   "icon": "▦",
-  "description": "Things you own",
-  "ui": "checklist",
-  "config": {
-    "listType": "inventory",
-    "itemLabel": "Item"
-  }
+  "description": "Things you own — value, location & photos",
+  "ui": "modern"
 }
