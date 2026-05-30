@@ -30,7 +30,6 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 
 | App | Branch | Claimed (UTC) | Notes |
 |-----|--------|---------------|-------|
-| bookmarks | claude/bookmarks-build | 2026-05-30T14:55 | P2/P3 follow-up (#82): read-it-later, import/export, clipboard autofill |
 
 ## Custom apps
 
@@ -69,9 +68,9 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 | contacts | 🟢 At bar | graduated from checklist; mini-CRM on shared `contacts` table (address book + tags + birthday strip) — P1+P2+P3 |
 | decisionmatrix | 🟢 At bar | graduated from logbook; weighted options×criteria matrix, computed winner, chosen/rationale/revisit (P1–P3) |
 | debtpayoff | 🟢 At bar | graduated from goal; multi-debt with APR/min-payment, payment log, payoff projection + snowball/avalanche (P1+P2) |
-| clienttracker | 🟢 At bar | graduated from checklist; mini-CRM pipeline (lead→active→done/lost), contact/value/next-action, due surfacing (P1) |
-| budget | 🟢 At bar | graduated from finance; per-category planned-vs-actual on `budget_targets`, actuals read from `expenses` join (P1) |
-| bookmarks | 🟢 At bar | graduated from checklist; link locker with tags/folder/favicon/last-opened on `bookmarks` table (P1+) |
+| clienttracker | 🟢 At bar | graduated from checklist; mini-CRM pipeline (lead→active→done/lost), contact/value/next-action, due surfacing; P3 activity log (`client_events`) + won/lost conversion + Countdown link (P1–P3) |
+| budget | 🟢 At bar | graduated from finance; per-category planned-vs-actual on `budget_targets`, actuals read from `expenses` join; P2/P3 month nav, rollover, bar chart, pace (P1–P3) |
+| bookmarks | 🟢 At bar | graduated from checklist; link locker with tags/folder/favicon/last-opened on `bookmarks` table; P2/P3 read-it-later (`unread`), import/export, clipboard autofill (P1–P3) |
 
 ## Trackers (factory `tracker`)
 
