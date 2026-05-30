@@ -104,9 +104,9 @@ Back the Counter / Tally app (migration `023_counters.sql`, **applied to the rem
 ### contacts
 | Column | Type |
 |--------|------|
-| id, user_id, name, email, phone, company, note, tags, created_at, cadence_days, last_contacted |
+| id, user_id, name, email, phone, company, note, tags, created_at, cadence_days, last_contacted, birthday |
 
-Backs the **Keep in Touch** app (migration `029_keepintouch.sql`, idempotent, **applied to the remote**). Created ad-hoc earlier and never wired to a UI — note the catalog's "Contacts" *checklist* app stores its rows in the shared `checklists` table (`list_type='contacts'`), **not** here. Migration `029` records the shape, adds `cadence_days INTEGER` (reach out every N days) + `last_contacted DATE`, and adds the SysOp read policy (owner policy `Users can access own contacts` already existed). "Next due" = `last_contacted + cadence_days`; touch-log history + the `note`/`email`/`phone`/`tags` fields are P2. Indexed on `(user_id, last_contacted)`.
+Shared by the **Keep in Touch** and **Contacts** apps (migration `029_keepintouch.sql`, **applied to the remote**; `20260530T0820_contacts_birthday.sql` adds the `birthday DATE` column, idempotent). The catalog's **Contacts** app graduated off the shared `checklists` factory (was `list_type='contacts'`) into a custom mini-CRM backed by this table — address book (name/email/phone/company/note/tags) plus the cadence fields Keep in Touch uses. Migration `029` records the shape, adds `cadence_days INTEGER` (reach out every N days) + `last_contacted DATE`, and the SysOp read policy (owner policy `Users can access own contacts` already existed). The birthday column powers the upcoming-birthdays strip (P3). "Next due" = `last_contacted + cadence_days`. Indexed on `(user_id, last_contacted)`.
 
 ### net_worth_accounts + net_worth_snapshots
 | net_worth_accounts | net_worth_snapshots |
@@ -224,6 +224,20 @@ Backs the Meals app (migration `20260530T0730_meal_plan.sql`). Graduates off the
 | id, user_id, name, location, type, tags (TEXT[] default '{}'), size_bytes (BIGINT), file_date (DATE), description, created_at |
 
 Backs the File Index app (migration `20260530T0720_file_index.sql`). Graduates off the shared `checklists` factory (`list_type='fileindex'`) into a catalog model: an entry is metadata for retrieval (where a file/document/disk lives), not a task to check off. The point is search + filter across name / location / type / tags / description. RLS: owner `FOR ALL` ("Users can access own file_index") + SysOp `FOR SELECT`. Indexed on `(user_id, created_at DESC)`.
+
+### decisions + decision_options + decision_criteria + decision_scores
+| decisions | decision_options | decision_criteria | decision_scores |
+|-----------|------------------|-------------------|-----------------|
+| id, user_id, question, status, chosen_option_id, rationale, revisit_at (DATE), outcome, created_at | id, user_id, decision_id, label, sort_order, created_at | id, user_id, decision_id, label, weight (1–5), sort_order, created_at | id, user_id, decision_id, option_id, criterion_id, score (1–10), created_at; UNIQUE (option_id, criterion_id) |
+
+Back the **Decisions** app (migration `20260530T0800_decisions.sql`). Graduates off the shared `logbook` factory (a title + text blob couldn't compute a matrix) into a real weighted decision matrix: options are the rows, criteria are weighted columns, and each cell is a score. Weighted score per option = Σ(score × weight); the winner is computed in the app, not stored. P2 records the option actually chosen (`chosen_option_id`, may differ from the computed winner), a `rationale`, a `revisit_at`, and an `outcome`. Children carry `user_id` directly and cascade on decision delete. RLS on all four tables: owner `FOR ALL` + SysOp `FOR SELECT`. Indexed per-child on `(decision_id, …)` and decisions on `(user_id, created_at DESC)`.
+
+### debts + debt_payments
+| debts | debt_payments |
+|-------|---------------|
+| id, user_id, name, original_balance, current_balance, apr, min_payment, status ('active'/'paid'), created_at | id, user_id, debt_id, amount, paid_on (DATE), note, created_at |
+
+Back the **Debt** app (migration `20260530T0815_debts.sql`). Graduates off the shared `goal` factory into a finance-shaped app: a debt is a balance paid DOWN toward $0 (not a bar filled toward a target), carries an `apr` and a `min_payment`, and keeps a payment history so progress is preserved instead of overwriting a running number. `current_balance` = `original_balance − SUM(debt_payments)` floored at 0; per-debt payoff projection + snowball/avalanche strategy are computed in `lib.ts`. RLS on both: owner `FOR ALL` + SysOp `FOR SELECT`. Indexed on `debts (user_id, created_at)`, `debt_payments (debt_id, paid_on)` + `(user_id, paid_on)`.
 
 ## Factory Tables
 
