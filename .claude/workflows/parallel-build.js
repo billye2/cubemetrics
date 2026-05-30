@@ -123,8 +123,8 @@ const integration = await agent(
    2. Run \`npm run build:catalog\` to reassemble catalog/_generated.ts from every lane's catalog/apps/*.json.
    3. Fold each lane's schema delta (from its docs/app-plans/<id>.md) into docs/database.md; clear merged rows from _status.md "Active claims".
    4. UNION GATE — run \`npm test\` AND \`npm run build\` across the merged tree; both must be green. Audit the combined diff for secrets (public repo).
-   5. Only if green + clean: push to master (auto-deploys), apply any new migrations to remote Supabase, close the linked issues, and delete the merged branches/worktrees.
-   Do NOT push a union you couldn't verify, and do NOT land a lane that fails to merge cleanly — bounce it back instead.
+   5. Only if green + clean: push the integration branch and open ONE PR into master (master has hard branch protection — direct pushes are rejected). Wait for the \`verify\` CI check to pass, then \`gh pr merge --squash\` (this auto-deploys). Apply any new migrations to remote Supabase, close the linked issues, and delete the merged branches/worktrees.
+   Do NOT merge a union you couldn't verify, and do NOT land a lane that fails to merge cleanly — bounce it back instead.
    Report what landed, the union test/build result, and anything bounced.`,
   {
     label: 'integrate',
