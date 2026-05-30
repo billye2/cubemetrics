@@ -22,12 +22,16 @@ PR) and need to land together. For a single lane, the builder ships itself — n
   This is the gate that catches breakage which only appears once independently-green branches
   combine (catalog assembly, a shared-doc fold, two apps touching the same table). Audit the
   *combined* diff for leaked secrets (public repo).
-- **Ship.** Once the union is green and clean, commit and push to `master` (auto-deploys) and apply
-  any new migrations to the remote Supabase project. Then delete merged worktrees/branches and
-  release their claims — no branch outlives the run.
+- **Ship via the integration PR.** `master` has hard branch protection (`enforce_admins=true`,
+  required `verify` check) — **direct pushes are rejected, including yours.** So: push the merged
+  integration branch, open one PR into `master`, wait for the `verify` CI check (the same
+  test + build gate) to go green, then `gh pr merge --squash`. The merge auto-deploys. Apply any
+  new migrations to remote Supabase, then delete merged worktrees/branches and release their claims
+  — no branch outlives the run.
 
-**Gates before you push (non-negotiable):**
-- The **union** build + tests are green — never push red. A lane being green alone is not enough.
+**Gates before you merge the integration PR (non-negotiable):**
+- The **union** build + tests are green locally *and* the PR's `verify` check is green — never
+  merge red. A lane being green alone is not enough.
 - Combined-diff secret audit done.
 - Honest, co-authored commit message naming what shipped from which lanes and what's still P2/P3.
 

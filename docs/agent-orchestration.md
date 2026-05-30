@@ -217,22 +217,25 @@ node scripts/seed-backlog-issues.mjs --create --all        # seed every open can
 Prefer seeding a focused subset (e.g. the 🔴 graduate apps) over `--all` — the candidate list
 includes already-polished apps and a few feature-specs.
 
-**2. Enable branch protection (operator, one-time).** So per-lane PRs can't self-merge and the
-union build is the gate. This **changes the integrator's ship step** from a direct `git push` to
-merging a single integration PR — pick the model that fits (see
-[Decision 3](#decision-3--who-pushes-master)):
+**2. Branch protection (active — hard gate).** `master` requires the `verify` CI check
+(`.github/workflows/ci.yml` runs `npm test` + `npm run build`) and `enforce_admins=true`, so
+**direct pushes to `master` are rejected for everyone, including the integrator and the owner.**
+All changes land via a PR whose `verify` check is green. This is why the integrator's ship step is
+"open an integration PR → wait for green → `gh pr merge`", not a direct push (see
+[Decision 3](#decision-3--who-pushes-master) and `.claude/roles/integrator.md`). The protection was
+set with:
 
 ```bash
-# Require a green CI check before any merge to master, block direct pushes:
-gh api -X PUT repos/billye2/xpbbs/branches/master/protection \
-  -f 'required_status_checks[strict]=true' -f 'required_status_checks[contexts][]=build' \
-  -f 'enforce_admins=false' -f 'required_pull_request_reviews[required_approving_review_count]=0' \
-  -f 'restrictions=null'
+gh api -X PUT repos/billye2/xpbbs/branches/master/protection --input - <<'JSON'
+{ "required_status_checks": { "strict": true, "contexts": ["verify"] },
+  "enforce_admins": true,
+  "required_pull_request_reviews": { "required_approving_review_count": 0 },
+  "restrictions": null }
+JSON
 ```
 
-(`enforce_admins=false` lets the owner still land the integration PR; flip to `true` for a hard
-gate. Adjust `contexts` to your actual CI check name, or add a GitHub Actions workflow that runs
-`npm test` + `npm run build`.)
+> Recovery: if the `verify` check is ever broken such that nothing can merge, an owner can
+> temporarily `PUT` `enforce_admins=false` (or delete the rule) to unblock, fix CI, then re-enable.
 
 **3. Run the build pass (automated, opt-in Workflow).** The dispatch → build → integrate pipeline:
 
