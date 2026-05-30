@@ -6,7 +6,9 @@ import {
   addBookAction,
   deleteBookAction,
   rateBookAction,
+  updateDatesAction,
   updateNotesAction,
+  updateProgressAction,
   updateStatusAction,
 } from "./actions";
 
@@ -16,6 +18,22 @@ const TABS: { id: BookStatus; label: string }[] = [
   { id: "completed", label: "Completed" },
   { id: "dropped", label: "Dropped" },
 ];
+
+function fmtDate(d: string | null): string | null {
+  if (!d) return null;
+  const dt = new Date(d + "T00:00:00");
+  if (Number.isNaN(dt.getTime())) return null;
+  return dt.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+function daysBetween(a: string | null, b: string | null): number | null {
+  if (!a || !b) return null;
+  const da = new Date(a + "T00:00:00").getTime();
+  const db = new Date(b + "T00:00:00").getTime();
+  if (Number.isNaN(da) || Number.isNaN(db)) return null;
+  const days = Math.round((db - da) / 86_400_000);
+  return days >= 0 ? days : null;
+}
 
 export function ReadingView({ books }: { books: BookRow[] }) {
   const [tab, setTab] = useState<BookStatus>("reading");
@@ -151,6 +169,35 @@ function BookCard({ book }: { book: BookRow }) {
   const [notesOpen, setNotesOpen] = useState(false);
   const [notesDraft, setNotesDraft] = useState(book.notes || "");
   const [editingNotes, setEditingNotes] = useState(false);
+  const [editingProgress, setEditingProgress] = useState(false);
+  const [curDraft, setCurDraft] = useState(
+    book.current_page != null ? String(book.current_page) : ""
+  );
+  const [totDraft, setTotDraft] = useState(
+    book.total_pages != null ? String(book.total_pages) : ""
+  );
+  const [editingDates, setEditingDates] = useState(false);
+  const [startDraft, setStartDraft] = useState(book.started_at || "");
+  const [finishDraft, setFinishDraft] = useState(book.finished_at || "");
+
+  function saveProgress() {
+    const cur = curDraft.trim() === "" ? null : Number(curDraft);
+    const tot = totDraft.trim() === "" ? null : Number(totDraft);
+    start(async () => {
+      await updateProgressAction(book.id, cur, tot);
+      setEditingProgress(false);
+    });
+  }
+  function saveDates() {
+    start(async () => {
+      await updateDatesAction(
+        book.id,
+        startDraft.trim() || null,
+        finishDraft.trim() || null
+      );
+      setEditingDates(false);
+    });
+  }
 
   function changeStatus(status: BookStatus) {
     setStatusOpen(false);
@@ -179,6 +226,15 @@ function BookCard({ book }: { book: BookRow }) {
     book.notes && book.notes.length > 140
       ? book.notes.slice(0, 140) + "…"
       : book.notes;
+
+  const pct =
+    book.total_pages && book.total_pages > 0 && book.current_page != null
+      ? Math.min(100, Math.round((book.current_page / book.total_pages) * 100))
+      : null;
+
+  const startedFmt = fmtDate(book.started_at);
+  const finishedFmt = fmtDate(book.finished_at);
+  const span = daysBetween(book.started_at, book.finished_at);
 
   return (
     <li
@@ -231,6 +287,159 @@ function BookCard({ book }: { book: BookRow }) {
         >
           <span className="text-lg leading-none">×</span>
         </button>
+      </div>
+
+      {book.status === "reading" && (
+        <div className="mt-3">
+          {editingProgress ? (
+            <div className="space-y-2 rounded-xl bg-zinc-900/60 p-2.5 ring-1 ring-zinc-800">
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={curDraft}
+                  onChange={(e) => setCurDraft(e.target.value)}
+                  placeholder="Page"
+                  aria-label="Current page"
+                  className="w-20 rounded-lg bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+                />
+                <span className="text-sm text-zinc-500">of</span>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={totDraft}
+                  onChange={(e) => setTotDraft(e.target.value)}
+                  placeholder="Total"
+                  aria-label="Total pages"
+                  className="w-20 rounded-lg bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+                />
+                <span className="text-xs text-zinc-500">pages</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurDraft(
+                      book.current_page != null ? String(book.current_page) : ""
+                    );
+                    setTotDraft(
+                      book.total_pages != null ? String(book.total_pages) : ""
+                    );
+                    setEditingProgress(false);
+                  }}
+                  className="flex-1 rounded-lg bg-zinc-800 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveProgress}
+                  disabled={pending}
+                  className="flex-1 rounded-lg bg-cyan-500 px-3 py-2 text-xs font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          ) : pct != null ? (
+            <button
+              type="button"
+              onClick={() => setEditingProgress(true)}
+              className="block w-full text-left"
+            >
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-zinc-400">
+                  p.{book.current_page} / {book.total_pages}
+                </span>
+                <span className="font-semibold text-cyan-300">{pct}%</span>
+              </div>
+              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
+                <div
+                  className="h-full rounded-full bg-cyan-500 transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditingProgress(true)}
+              className="text-xs font-semibold text-zinc-500 hover:text-zinc-300"
+            >
+              + Track progress
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="mt-3">
+        {editingDates ? (
+          <div className="space-y-2 rounded-xl bg-zinc-900/60 p-2.5 ring-1 ring-zinc-800">
+            <label className="flex items-center justify-between gap-2 text-xs text-zinc-400">
+              <span className="uppercase tracking-wider">Started</span>
+              <input
+                type="date"
+                value={startDraft}
+                onChange={(e) => setStartDraft(e.target.value)}
+                className="rounded-lg bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+              />
+            </label>
+            <label className="flex items-center justify-between gap-2 text-xs text-zinc-400">
+              <span className="uppercase tracking-wider">Finished</span>
+              <input
+                type="date"
+                value={finishDraft}
+                onChange={(e) => setFinishDraft(e.target.value)}
+                className="rounded-lg bg-zinc-900 px-2.5 py-1.5 text-sm text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+              />
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setStartDraft(book.started_at || "");
+                  setFinishDraft(book.finished_at || "");
+                  setEditingDates(false);
+                }}
+                className="flex-1 rounded-lg bg-zinc-800 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveDates}
+                disabled={pending}
+                className="flex-1 rounded-lg bg-cyan-500 px-3 py-2 text-xs font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditingDates(true)}
+            className="text-xs text-zinc-500 hover:text-zinc-300"
+          >
+            {startedFmt || finishedFmt ? (
+              <span>
+                {startedFmt && <>Started {startedFmt}</>}
+                {startedFmt && finishedFmt && " · "}
+                {finishedFmt && <>Finished {finishedFmt}</>}
+                {span != null && (
+                  <span className="text-zinc-600">
+                    {" "}
+                    ({span} day{span === 1 ? "" : "s"})
+                  </span>
+                )}
+              </span>
+            ) : (
+              <span className="font-semibold">+ Add dates</span>
+            )}
+          </button>
+        )}
       </div>
 
       {book.status === "completed" && (

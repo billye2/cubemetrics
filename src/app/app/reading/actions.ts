@@ -79,3 +79,54 @@ export async function updateNotesAction(id: number, notes: string) {
     .eq("user_id", userId);
   revalidatePath("/app/reading");
 }
+
+function cleanPage(v: number | null): number | null {
+  if (v === null || Number.isNaN(v)) return null;
+  const n = Math.max(0, Math.round(v));
+  return n === 0 ? null : n;
+}
+
+export async function updateProgressAction(
+  id: number,
+  currentPage: number | null,
+  totalPages: number | null
+) {
+  const { supabase, userId } = await requireUser();
+  await supabase
+    .from("reading_list")
+    .update({
+      current_page: cleanPage(currentPage),
+      total_pages: cleanPage(totalPages),
+    })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath("/app/reading");
+}
+
+// Validate a "YYYY-MM-DD" date string; returns null to clear, undefined if invalid.
+function cleanDate(v: string | null): string | null | undefined {
+  if (v === null) return null;
+  const s = v.trim();
+  if (!s) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return undefined;
+  const d = new Date(s + "T00:00:00Z");
+  if (Number.isNaN(d.getTime())) return undefined;
+  return s;
+}
+
+export async function updateDatesAction(
+  id: number,
+  startedAt: string | null,
+  finishedAt: string | null
+) {
+  const started = cleanDate(startedAt);
+  const finished = cleanDate(finishedAt);
+  if (started === undefined || finished === undefined) return;
+  const { supabase, userId } = await requireUser();
+  await supabase
+    .from("reading_list")
+    .update({ started_at: started, finished_at: finished })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath("/app/reading");
+}

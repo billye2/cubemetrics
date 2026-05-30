@@ -9,8 +9,8 @@
 **Plan**
 
 **P1 — makes it complete**
-- **Progress for "reading" books** — current page / total pages (or a percent), shown as a thin progress bar on the card. Gives in-progress books the momentum the hero/visualization bar calls for. Needs `current_page` + `total_pages` (see Data).
-- **Surface the dates** — display "Started May 3 · Finished May 28 (25 days)" on cards, and let the user edit `started_at`/`finished_at` (already-stored columns) so back-filled books read correctly.
+- [x] **Progress for "reading" books** — current page / total pages, shown as a thin cyan progress bar with `p.X / Y` + percent on the card; tap to edit. Added `current_page` + `total_pages` columns (migration `20260530T0502_reading_progress.sql`, applied to remote).
+- [x] **Surface the dates** — every card shows "Started May 3 · Finished May 28 (25 days)" (whichever exist) and tapping opens `<input type="date">` editors that write `started_at`/`finished_at`, so back-filled books read correctly.
 
 **P2 — enhancements**
 - **Stats strip + yearly goal ring** — books finished this year, total pages, average rating; a progress ring against a user-set yearly goal (e.g. 24 books). This is the missing hero/stats layer.
@@ -24,5 +24,13 @@
 - **Re-read support** — allow rating + a fresh start/finish cycle on an already-completed book.
 
 **Data** — `reading_list` already has `started_at` / `finished_at` (wire into UI + make editable) and `rating` / `notes`. Add `current_page int`, `total_pages int` (nullable) for progress, and optionally `cover_url text`, `genre text`. A yearly goal is one value per user — store in a small `user_settings`/`reading_goals` row or keep client-side first. All additions nullable; no row migration needed.
+
+**Schema delta shipped (P1)** — `20260530T0502_reading_progress.sql`:
+```sql
+ALTER TABLE public.reading_list
+  ADD COLUMN IF NOT EXISTS current_page INTEGER,
+  ADD COLUMN IF NOT EXISTS total_pages INTEGER;
+```
+Both nullable; no backfill. Applied to remote project `aennreackkegaqwwbowg`. (Integrator: fold into `docs/database.md`.)
 
 **Verdict** — **M.** A solid CRUD list missing the entire stats/visualization layer. Highest-impact change: **per-book progress tracking + a yearly goal ring, plus surfacing the started/finished dates already in the table.**
