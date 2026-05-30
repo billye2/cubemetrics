@@ -65,7 +65,7 @@ export const APPS: AppEntry[] = [
   {"id":"savings","name":"Savings","category":"finance","icon":"◯","description":"Save toward goals with a deposit log & pace","ui":"modern"},
   {"id":"debtpayoff","name":"Debt","category":"finance","icon":"⊠","description":"Pay off debts with APR, a payment log & payoff projections","ui":"modern"},
   {"id":"challenge","name":"Challenges","category":"goals","icon":"⚑","description":"Time-boxed challenges with a target","ui":"goal","config":{"goalType":"challenge","hasTarget":true}},
-  {"id":"budget","name":"Budget","category":"finance","icon":"⊟","description":"Monthly budget","ui":"finance","config":{"itemType":"budget","hasAmount":true}},
+  {"id":"budget","name":"Budget","category":"finance","icon":"⊟","description":"Monthly budget","ui":"modern"},
   {"id":"bills","name":"Bills","category":"finance","icon":"⌗","description":"Bills due","ui":"finance","config":{"itemType":"bill","hasAmount":true,"hasDueDate":true}},
   {"id":"subscriptions","name":"Subscriptions","category":"finance","icon":"⟳","description":"Recurring charges","ui":"finance","config":{"itemType":"subscription","hasAmount":true}},
   {"id":"invoices","name":"Invoices","category":"work","icon":"⌗","description":"Billing","ui":"finance","config":{"itemType":"invoice","hasAmount":true,"hasDueDate":true}},
