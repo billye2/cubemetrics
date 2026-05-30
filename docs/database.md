@@ -246,6 +246,13 @@ Back the **Debt** app (migration `20260530T0815_debts.sql`). Graduates off the s
 
 Back the **Clients** app (migration `20260530T0830_clients.sql`). Graduates the old `checklists` "client" list into a real mini-CRM pipeline: each client carries a `status` (lead → active → done/lost), contact info, a project `value`, and a `next_action` + `next_action_date` for due/overdue follow-up surfacing — replacing a binary done/not-done checkbox. RLS: owner `FOR ALL` + SysOp `FOR SELECT`. Indexed on `(user_id, status)` for the grouped pipeline view and `(user_id, next_action_date)` for due surfacing.
 
+### client_events
+| Column | Notes |
+|--------|-------|
+| id, user_id, client_id (→ clients.id, ON DELETE CASCADE), kind (TEXT, default 'status'), from_status, to_status, note, created_at | |
+
+Back the **Clients** P3 per-client activity log (migration `20260530T1130_client_events.sql`). Records lifecycle events — chiefly stage changes (lead → active → done/lost) and client creation — so the pipeline can show a simple history and power a won-vs-lost conversion view. Rows cascade away with the parent client (or user). RLS: owner `FOR ALL` + SysOp `FOR SELECT`. Indexed on `(user_id, client_id, created_at DESC)` so a client's timeline reads cheaply.
+
 ### budget_targets
 | Column | Notes |
 |--------|-------|
@@ -256,9 +263,9 @@ Back the **Budget** app (migration `20260530T0900_budget_targets.sql`). Graduate
 ### bookmarks
 | Column | Notes |
 |--------|-------|
-| id, user_id, url, title, tags (TEXT[]), folder, favicon_url, last_opened_at (TIMESTAMPTZ), created_at | |
+| id, user_id, url, title, tags (TEXT[]), folder, favicon_url, last_opened_at (TIMESTAMPTZ), unread (BOOLEAN, default false), created_at | |
 
-Back the **Bookmarks** app (migration `20260530T0808_bookmarks.sql`). Graduates off the shared `checklists` factory into a purpose-built link locker — a checkbox is the wrong model for a link (bookmarks are *opened*, not *completed*), and the URL has no home on a checklist row. Carries free-form `tags`, an optional coarse `folder`, a cached `favicon_url`, and `last_opened_at` for P3 stale-link surfacing. RLS: owner `FOR ALL` + SysOp `FOR SELECT`. Indexed on `(user_id, created_at DESC)`.
+Back the **Bookmarks** app (migration `20260530T0808_bookmarks.sql`; `unread` added by `20260530T1455_bookmarks_unread.sql`). Graduates off the shared `checklists` factory into a purpose-built link locker — a checkbox is the wrong model for a link (bookmarks are *opened*, not *completed*), and the URL has no home on a checklist row. Carries free-form `tags`, an optional coarse `folder`, a cached `favicon_url`, and `last_opened_at` for P3 stale-link surfacing. The `unread` flag (P3 read-it-later) lets a saved link be triaged later via a filter chip + per-row toggle; defaults `false` so existing rows read as already-read, and inherits the base table's RLS. RLS: owner `FOR ALL` + SysOp `FOR SELECT`. Indexed on `(user_id, created_at DESC)`.
 
 ## Factory Tables
 

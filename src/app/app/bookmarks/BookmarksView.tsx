@@ -4,31 +4,54 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import {
   addBookmarkAction,
   deleteBookmarkAction,
+  importBookmarksAction,
   markOpenedAction,
+  setUnreadAction,
   updateBookmarkAction,
 } from "./actions";
-import { type Bookmark, allTags, applyFilters } from "./lib";
+import { type Bookmark, allTags, applyFilters, toExportText } from "./lib";
 
 const INPUT =
   "w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50";
 
 export function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) {
   const [showForm, setShowForm] = useState(false);
+  const [urlSeed, setUrlSeed] = useState("");
   const [query, setQuery] = useState("");
   const [tag, setTag] = useState<string | null>(null);
+  const [unreadOnly, setUnreadOnly] = useState(false);
+  const [showIO, setShowIO] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, start] = useTransition();
 
   const tags = useMemo(() => allTags(bookmarks), [bookmarks]);
+  const unreadCount = useMemo(() => bookmarks.filter((b) => b.unread).length, [bookmarks]);
   const matches = useMemo(
-    () => applyFilters(bookmarks, { query, tag }),
-    [bookmarks, query, tag],
+    () => applyFilters(bookmarks, { query, tag, unreadOnly }),
+    [bookmarks, query, tag, unreadOnly],
   );
+
+  async function openForm() {
+    let seed = "";
+    // "Add current" friendliness: prefill the URL from the clipboard if it
+    // looks like a link. Best-effort — clipboard access can be denied.
+    try {
+      const text = (await navigator.clipboard?.readText())?.trim();
+      if (text && /^(https?:\/\/|www\.)/i.test(text) && !/\s/.test(text)) {
+        seed = text;
+      }
+    } catch {
+      /* clipboard unavailable or denied — open blank */
+    }
+    setUrlSeed(seed);
+    setShowForm(true);
+  }
 
   function submit(formData: FormData) {
     start(async () => {
       await addBookmarkAction(formData);
       formRef.current?.reset();
+      setUrlSeed("");
       setShowForm(false);
     });
   }
@@ -36,13 +59,23 @@ export function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) {
   return (
     <div>
       {!showForm ? (
-        <button
-          type="button"
-          onClick={() => setShowForm(true)}
-          className="flex h-11 w-full items-center justify-center rounded-xl bg-cyan-500 text-sm font-semibold text-zinc-950 hover:bg-cyan-400"
-        >
-          + New bookmark
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={openForm}
+            className="flex h-11 flex-1 items-center justify-center rounded-xl bg-cyan-500 text-sm font-semibold text-zinc-950 hover:bg-cyan-400"
+          >
+            + New bookmark
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowIO((v) => !v)}
+            aria-label="Import or export"
+            className="flex h-11 shrink-0 items-center justify-center rounded-xl bg-zinc-800 px-4 text-sm font-semibold text-zinc-300 hover:bg-zinc-700"
+          >
+            ⇅
+          </button>
+        </div>
       ) : (
         <form
           ref={formRef}
@@ -53,6 +86,7 @@ export function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) {
             name="url"
             required
             autoFocus
+            defaultValue={urlSeed}
             inputMode="url"
             autoComplete="off"
             placeholder="https://example.com"
@@ -61,10 +95,17 @@ export function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) {
           <input name="title" autoComplete="off" placeholder="Title (optional — derived from URL)" className={INPUT} />
           <input name="tags" autoComplete="off" placeholder="Tags, comma separated (optional)" className={INPUT} />
           <input name="folder" autoComplete="off" placeholder="Folder (optional)" className={INPUT} />
+          <label className="flex items-center gap-2 px-1 text-sm text-zinc-300">
+            <input type="checkbox" name="unread" className="h-4 w-4 accent-cyan-500" />
+            Read it later
+          </label>
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setShowForm(false)}
+              onClick={() => {
+                setShowForm(false);
+                setUrlSeed("");
+              }}
               className="flex-1 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-zinc-300 hover:bg-zinc-700"
             >
               Cancel
@@ -80,6 +121,8 @@ export function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) {
         </form>
       )}
 
+      {showIO && <ImportExport bookmarks={bookmarks} onDone={() => setShowIO(false)} />}
+
       {bookmarks.length > 3 && (
         <input
           value={query}
@@ -89,11 +132,16 @@ export function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) {
         />
       )}
 
-      {tags.length > 0 && (
+      {(tags.length > 0 || unreadCount > 0) && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          <Chip active={tag === null} onClick={() => setTag(null)}>
+          <Chip active={tag === null && !unreadOnly} onClick={() => { setTag(null); setUnreadOnly(false); }}>
             All
           </Chip>
+          {unreadCount > 0 && (
+            <Chip active={unreadOnly} onClick={() => setUnreadOnly((v) => !v)}>
+              Unread {unreadCount}
+            </Chip>
+          )}
           {tags.map((t) => (
             <Chip key={t} active={tag === t} onClick={() => setTag(tag === t ? null : t)}>
               #{t}
@@ -116,6 +164,70 @@ export function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+function ImportExport({ bookmarks, onDone }: { bookmarks: Bookmark[]; onDone: () => void }) {
+  const [text, setText] = useState("");
+  const [msg, setMsg] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+
+  function doImport() {
+    if (!text.trim()) return;
+    start(async () => {
+      const n = await importBookmarksAction(text);
+      setMsg(n > 0 ? `Imported ${n} bookmark${n === 1 ? "" : "s"}.` : "No valid URLs found.");
+      if (n > 0) {
+        setText("");
+        onDone();
+      }
+    });
+  }
+
+  async function doExport() {
+    const out = toExportText(bookmarks);
+    try {
+      await navigator.clipboard?.writeText(out);
+      setMsg(`Copied ${bookmarks.length} bookmark${bookmarks.length === 1 ? "" : "s"} to clipboard.`);
+    } catch {
+      // Fallback: drop the export into the textarea so it can be copied manually.
+      setText(out);
+      setMsg("Clipboard unavailable — export shown below; copy it manually.");
+    }
+  }
+
+  return (
+    <div className="mt-3 space-y-2 rounded-2xl border border-zinc-800 bg-zinc-900/60 p-3">
+      <p className="text-xs text-zinc-400">
+        Paste one URL per line (optional title after a space) to import, or export your links.
+      </p>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        rows={4}
+        placeholder={"https://example.com First link\nhttps://news.site"}
+        className="w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+      />
+      {msg && <p className="text-xs text-cyan-400">{msg}</p>}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={doExport}
+          disabled={bookmarks.length === 0}
+          className="flex-1 rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-zinc-300 hover:bg-zinc-700 disabled:opacity-50"
+        >
+          Export
+        </button>
+        <button
+          type="button"
+          onClick={doImport}
+          disabled={pending || !text.trim()}
+          className="flex-1 rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
+        >
+          {pending ? "Importing…" : "Import"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -160,8 +272,15 @@ function BookmarkCard({
 
   function open() {
     window.open(bookmark.url, "_blank", "noopener,noreferrer");
-    // Fire-and-forget; don't block the navigation on the round-trip.
-    start(() => markOpenedAction(bookmark.id));
+    // Fire-and-forget; don't block the navigation on the round-trip. Opening a
+    // read-it-later link clears its unread flag.
+    start(async () => {
+      await markOpenedAction(bookmark.id);
+      if (bookmark.unread) await setUnreadAction(bookmark.id, false);
+    });
+  }
+  function toggleUnread() {
+    start(() => setUnreadAction(bookmark.id, !bookmark.unread));
   }
   function remove() {
     if (!confirm("Delete this bookmark?")) return;
@@ -213,7 +332,7 @@ function BookmarkCard({
   }
 
   return (
-    <li className={`rounded-2xl border border-zinc-800 bg-zinc-900/40 ${pending ? "opacity-50" : ""}`}>
+    <li className={`rounded-2xl border bg-zinc-900/40 ${bookmark.unread ? "border-cyan-500/40" : "border-zinc-800"} ${pending ? "opacity-50" : ""}`}>
       <div className="flex items-stretch">
         <button
           type="button"
@@ -235,7 +354,10 @@ function BookmarkCard({
             </span>
           )}
           <span className="min-w-0">
-            <span className="block truncate text-sm font-semibold text-zinc-100">{bookmark.title}</span>
+            <span className="flex items-center gap-1.5">
+              {bookmark.unread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400" aria-label="unread" />}
+              <span className="block truncate text-sm font-semibold text-zinc-100">{bookmark.title}</span>
+            </span>
             <span className="block truncate text-xs text-zinc-500">{bookmark.host}</span>
             {(bookmark.tags.length > 0 || bookmark.folder) && (
               <span className="mt-1 flex flex-wrap items-center gap-1">
@@ -270,6 +392,15 @@ function BookmarkCard({
           </span>
         </button>
         <div className="flex shrink-0 flex-col justify-center gap-1 pr-2">
+          <button
+            type="button"
+            onClick={toggleUnread}
+            aria-label={bookmark.unread ? "Mark as read" : "Mark as read it later"}
+            title={bookmark.unread ? "Mark as read" : "Read it later"}
+            className={`rounded-lg p-1.5 hover:bg-zinc-800 ${bookmark.unread ? "text-cyan-400" : "text-zinc-600 hover:text-cyan-400"}`}
+          >
+            ◷
+          </button>
           <button
             type="button"
             onClick={openEdit}

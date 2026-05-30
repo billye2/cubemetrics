@@ -2,7 +2,15 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import type { Client } from "./page";
-import { addClient, deleteClient, setStatus, updateClient } from "./actions";
+import {
+  addClient,
+  deleteClient,
+  getClientEvents,
+  linkNextActionToCountdown,
+  setStatus,
+  updateClient,
+  type ClientEvent,
+} from "./actions";
 
 const STATUS_META: Record<
   string,
@@ -71,6 +79,14 @@ export function ClientView({ clients }: { clients: Client[] }) {
       c.next_action_date <= today,
   ).length;
 
+  // Won-vs-lost conversion: of clients that reached a terminal state, what
+  // share were won (done) vs lost? Only closed clients count toward the rate.
+  const wonCount = clients.filter((c) => c.status === "done").length;
+  const lostCount = clients.filter((c) => c.status === "lost").length;
+  const closedCount = wonCount + lostCount;
+  const conversion =
+    closedCount === 0 ? null : Math.round((wonCount / closedCount) * 100);
+
   const groups = STATUS_OPTIONS.map((status) => {
     const items = sorted.filter((c) => c.status === status);
     const value = items.reduce((s, c) => s + c.value, 0);
@@ -86,6 +102,18 @@ export function ClientView({ clients }: { clients: Client[] }) {
         <Stat label="Active" value={String(activeCount)} />
         <Stat label="Overdue" value={String(overdueCount)} highlight={overdueCount > 0} />
       </div>
+
+      {closedCount > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <Stat
+            label="Won rate"
+            value={conversion === null ? "—" : `${conversion}%`}
+            highlight={false}
+          />
+          <Stat label="Won" value={String(wonCount)} />
+          <Stat label="Lost" value={String(lostCount)} />
+        </div>
+      )}
 
       <AddForm />
 
@@ -194,6 +222,10 @@ function StatusSection({
 function ClientRow({ client }: { client: Client }) {
   const [pending, start] = useTransition();
   const [editing, setEditing] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [events, setEvents] = useState<ClientEvent[] | null>(null);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [linkMsg, setLinkMsg] = useState<string | null>(null);
   const meta = STATUS_META[client.status] ?? STATUS_META.lead;
 
   const due = dueState(client.next_action_date);
@@ -202,6 +234,25 @@ function ClientRow({ client }: { client: Client }) {
   function remove() {
     if (!confirm(`Delete ${client.name}?`)) return;
     start(() => deleteClient(client.id));
+  }
+
+  function toggleHistory() {
+    const next = !historyOpen;
+    setHistoryOpen(next);
+    if (next && events === null && !loadingEvents) {
+      setLoadingEvents(true);
+      getClientEvents(client.id)
+        .then((e) => setEvents(e))
+        .finally(() => setLoadingEvents(false));
+    }
+  }
+
+  function linkCountdown() {
+    setLinkMsg(null);
+    start(async () => {
+      const res = await linkNextActionToCountdown(client.id);
+      setLinkMsg(res.ok ? "Added to Countdown" : res.error);
+    });
   }
 
   if (editing) {
@@ -222,12 +273,15 @@ function ClientRow({ client }: { client: Client }) {
     );
   }
 
+  const canLink = client.next_action_date != null && client.status !== "done" && client.status !== "lost";
+
   return (
     <li
-      className={`flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 py-3 pl-3 pr-2 ${
+      className={`rounded-xl border border-zinc-800 bg-zinc-900/40 ${
         pending ? "opacity-50" : ""
       }`}
     >
+    <div className="flex items-start gap-3 py-3 pl-3 pr-2">
       <span className={`mt-0.5 h-9 w-1 shrink-0 rounded-full ${meta.bar}`} aria-hidden />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -303,8 +357,65 @@ function ClientRow({ client }: { client: Client }) {
           </button>
         </div>
       </div>
+    </div>
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-zinc-800/70 px-3 py-2 text-xs">
+        <button
+          type="button"
+          onClick={toggleHistory}
+          className="text-zinc-500 hover:text-zinc-300"
+        >
+          {historyOpen ? "Hide history" : "History"}
+        </button>
+        {canLink && (
+          <button
+            type="button"
+            onClick={linkCountdown}
+            disabled={pending}
+            className="text-zinc-500 hover:text-cyan-400 disabled:opacity-50"
+          >
+            ⏳ Add to Countdown
+          </button>
+        )}
+        {linkMsg && <span className="text-cyan-400">{linkMsg}</span>}
+      </div>
+
+      {historyOpen && (
+        <div className="border-t border-zinc-800/70 px-3 py-2">
+          {loadingEvents ? (
+            <p className="text-xs text-zinc-500">Loading…</p>
+          ) : events && events.length > 0 ? (
+            <ol className="space-y-1">
+              {events.map((e) => (
+                <li key={e.id} className="flex items-baseline gap-2 text-xs">
+                  <span className="shrink-0 text-zinc-600 tabular-nums">
+                    {e.created_at.slice(0, 10)}
+                  </span>
+                  <span className="text-zinc-400">{describeEvent(e)}</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <p className="text-xs text-zinc-500">No activity yet.</p>
+          )}
+        </div>
+      )}
     </li>
   );
+}
+
+function statusLabel(status: string): string {
+  return STATUS_META[status]?.label ?? status;
+}
+
+function describeEvent(e: ClientEvent): string {
+  if (e.kind === "created") {
+    return `Created as ${statusLabel(e.to_status || "lead")}`;
+  }
+  if (e.from_status) {
+    return `${statusLabel(e.from_status)} → ${statusLabel(e.to_status)}`;
+  }
+  return `Set to ${statusLabel(e.to_status)}`;
 }
 
 const inputCls =
