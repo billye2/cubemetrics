@@ -1,17 +1,23 @@
 import { describe, it, expect } from "vitest";
 import {
   type Contact,
+  type ContactLog,
+  type ContactLogRow,
   type ContactRow,
   allTags,
   applyFilters,
   cadenceStatus,
   cleanCadence,
   daysUntilBirthday,
+  draftCheckIn,
+  logAgo,
+  logsByContact,
   matchesQuery,
   overdue,
   parseTags,
   sortContacts,
   toContact,
+  toLog,
   upcomingBirthdays,
 } from "@/app/app/contacts/lib";
 
@@ -194,5 +200,61 @@ describe("birthdays", () => {
       contact({ id: 3, birthday: "1990-05-30" }), // today
     ];
     expect(upcomingBirthdays(list, 30, TODAY).map((b) => b.contact.id)).toEqual([3, 1]);
+  });
+});
+
+describe("interaction history", () => {
+  function logRow(over: Partial<ContactLogRow>): ContactLogRow {
+    return {
+      id: 1,
+      contact_id: 10,
+      note: null,
+      logged_on: "2026-05-20",
+      created_at: "2026-05-20T00:00:00Z",
+      ...over,
+    };
+  }
+  function log(over: Partial<ContactLog>): ContactLog {
+    return { id: 1, contactId: 10, note: "", loggedOn: "2026-05-20", ...over };
+  }
+
+  it("toLog trims the note and falls back to created_at date when logged_on is blank", () => {
+    expect(toLog(logRow({ note: "  coffee  " }))).toEqual({
+      id: 1,
+      contactId: 10,
+      note: "coffee",
+      loggedOn: "2026-05-20",
+    });
+    const fb = toLog(logRow({ logged_on: null, created_at: "2026-04-15T09:30:00Z" }));
+    expect(fb.loggedOn).toBe("2026-04-15");
+    expect(fb.note).toBe("");
+  });
+
+  it("logsByContact groups newest-first and caps per contact", () => {
+    const rows = [
+      log({ id: 1, contactId: 10, loggedOn: "2026-05-01" }),
+      log({ id: 2, contactId: 10, loggedOn: "2026-05-10" }),
+      log({ id: 3, contactId: 10, loggedOn: "2026-05-20" }),
+      log({ id: 4, contactId: 10, loggedOn: "2026-05-25" }),
+      log({ id: 5, contactId: 20, loggedOn: "2026-05-05" }),
+    ];
+    const map = logsByContact(rows, 3);
+    expect(map.get(10)!.map((l) => l.id)).toEqual([4, 3, 2]); // newest 3
+    expect(map.get(20)!.map((l) => l.id)).toEqual([5]);
+  });
+
+  it("logAgo labels today / yesterday / span", () => {
+    expect(logAgo("2026-05-30", TODAY)).toBe("today");
+    expect(logAgo("2026-06-01", TODAY)).toBe("today"); // future clamps to today
+    expect(logAgo("2026-05-29", TODAY)).toBe("yesterday");
+    expect(logAgo("2026-05-23", TODAY)).toBe("7d ago");
+  });
+
+  it("draftCheckIn personalises with the most recent note when present", () => {
+    const c = contact({ name: "Maria Lopez" });
+    expect(draftCheckIn(c, null)).toContain("Hey Maria");
+    expect(draftCheckIn(c, null)).not.toContain("Lopez");
+    const withNote = draftCheckIn(c, log({ note: "Her New Job" }));
+    expect(withNote).toContain("her new job");
   });
 });
