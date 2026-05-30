@@ -25,7 +25,7 @@ export const APPS: AppEntry[] = [
   {"id":"bucketlist","name":"Bucket List","category":"goals","icon":"☑","description":"Life list","ui":"checklist","config":{"listType":"bucket","itemLabel":"Goal"}},
   {"id":"bookmarks","name":"Bookmarks","category":"org","icon":"☖","description":"Saved links","ui":"checklist","config":{"listType":"bookmark","itemLabel":"Bookmark"}},
   {"id":"backlog","name":"Backlog","category":"tasks","icon":"☷","description":"Someday/maybe","ui":"checklist","config":{"listType":"backlog","itemLabel":"Item"}},
-  {"id":"contacts","name":"Contacts","category":"org","icon":"☻","description":"People","ui":"checklist","config":{"listType":"contacts","itemLabel":"Contact"}},
+  {"id":"contacts","name":"Contacts","category":"org","icon":"☻","description":"Your people","ui":"modern"},
   {"id":"inventory","name":"Inventory","category":"org","icon":"▦","description":"Things you own — value, location & photos","ui":"modern"},
   {"id":"fileindex","name":"File Index","category":"org","icon":"☰","description":"Searchable file catalog","ui":"modern"},
   {"id":"homemaint","name":"Home","category":"lifestyle","icon":"⌂","description":"Home maintenance","ui":"checklist","config":{"listType":"homemaint","itemLabel":"Task"}},

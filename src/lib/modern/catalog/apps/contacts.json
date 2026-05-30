@@ -4,10 +4,6 @@
   "name": "Contacts",
   "category": "org",
   "icon": "☻",
-  "description": "People",
-  "ui": "checklist",
-  "config": {
-    "listType": "contacts",
-    "itemLabel": "Contact"
-  }
+  "description": "Your people",
+  "ui": "modern"
 }
