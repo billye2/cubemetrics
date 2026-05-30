@@ -52,7 +52,7 @@ export const APPS: AppEntry[] = [
   {"id":"feedbacklog","name":"Feedback Log","category":"work","icon":"✎","description":"Feedback given/received","ui":"logbook","config":{"logType":"feedbacklog","entryLabel":"Entry","hasTitle":true}},
   {"id":"oneononep","name":"1-on-1s","category":"work","icon":"☷","description":"1:1 notes","ui":"logbook","config":{"logType":"oneonone","entryLabel":"Meeting","hasTitle":true}},
   {"id":"retro","name":"Retro","category":"work","icon":"⟲","description":"Team retros","ui":"logbook","config":{"logType":"retro","entryLabel":"Retro","hasTitle":true}},
-  {"id":"recipes","name":"Recipes","category":"lifestyle","icon":"◍","description":"Recipe collection","ui":"logbook","config":{"logType":"recipe","entryLabel":"Recipe","hasTitle":true}},
+  {"id":"recipes","name":"Recipes","category":"lifestyle","icon":"◍","description":"Cookable recipes: ingredients, steps, scaling & cook mode","ui":"modern"},
   {"id":"brag","name":"Wins","category":"work","icon":"★","description":"Brag doc — log accomplishments","ui":"logbook","config":{"logType":"brag","entryLabel":"Win","hasTitle":true}},
   {"id":"interviews","name":"Interviews","category":"work","icon":"☷","description":"Interview debriefs","ui":"logbook","config":{"logType":"interview","entryLabel":"Interview","hasTitle":true}},
   {"id":"goals","name":"Goals","category":"goals","icon":"◎","description":"Long-term goals","ui":"goal","config":{"goalType":"smart","hasTarget":true}},
