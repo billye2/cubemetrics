@@ -13,14 +13,14 @@
 - [x] **Search** across name/path/tags/description — the core interaction.
 - [x] **Tags** with a filter chip row.
 
-**P2 — organize** — partially shipped
+**P2 — organize** — SHIPPED
 - [x] **Type filter** (doc, photo, video, archive, disk, …) and **sort** by name / date / type (+ recently added).
 - [x] **Size & date** fields, displayed and sortable (sort by file date; size shown in detail).
-- [ ] **Group by location** (which drive/folder/box) with counts.
+- [x] **Group by location** (which drive/folder/box) with counts. Toggle button switches the flat list to collapsible per-location sections, each with a count badge; entries with no location collect under an "Unfiled" bucket that sorts last. `groupByLocation()` in `lib.ts` (sorted count-desc then alpha).
 
-**P3 — delight** — partially shipped
+**P3 — delight** — SHIPPED
 - [x] **Quick-open** for cloud paths that are URLs (open in new tab); copy-to-clipboard for local paths.
-- [ ] **Bulk import** (paste a directory listing → rows) and a "last verified" stamp for physical media.
+- [x] **Bulk import** (paste a directory listing → rows) and a "last verified" stamp for physical media. `parseImport()` in `lib.ts` is a tolerant directory-listing parser (one row/line; tab or 2+-space columns; detects a `YYYY-MM-DD` as the file date and a bare integer as a byte size; splits a path column / path-in-name into location + basename; skips blanks; caps at `IMPORT_ROW_CAP` = 200). `bulkAddFileEntries()` re-parses server-side and array-inserts. Each row carries a `last_verified` date stamped via a "Verify now" button (today) / cleared via "Clear", shown in the row detail as "Verified &lt;date&gt;" / "Never verified".
 
 **Data** — **GRADUATE-ish.** New `file_index` table: `id, user_id, name TEXT NOT NULL, location TEXT, type TEXT, tags TEXT[], size_bytes BIGINT, file_date DATE, description TEXT, created_at`, standard RLS (owner FOR ALL + SysOp SELECT). (Interim: `checklists` + `note`/`tags`, but it's metadata, not a checklist.)
 
@@ -48,3 +48,12 @@ CREATE TABLE public.file_index (
 ```
 
 The catalog entry flipped from `ui: "checklist"` (listType `fileindex`) to `ui: "modern"`. Existing interim rows in the shared `checklists` table are not migrated — this is a fresh catalog. Migration must be applied to remote Supabase by the integrator.
+
+**Schema delta (P3 — shipped)** — migration `src/supabase/migrations/20260530T1900_file_index_last_verified.sql` adds a nullable `last_verified DATE` column for the "last verified" stamp on physical media:
+
+```sql
+ALTER TABLE public.file_index
+  ADD COLUMN IF NOT EXISTS last_verified DATE;
+```
+
+No RLS change — inherits the owner FOR ALL + SysOp SELECT policies from the base `file_index` table. The page `select` now includes `last_verified`. Migration must be applied to remote Supabase by the integrator.

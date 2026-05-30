@@ -15,7 +15,9 @@ export default async function FileIndexPage() {
 
   const { data } = await supabase
     .from("file_index")
-    .select("id, name, location, type, tags, size_bytes, file_date, description, created_at")
+    .select(
+      "id, name, location, type, tags, size_bytes, file_date, description, last_verified, created_at",
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1000);
