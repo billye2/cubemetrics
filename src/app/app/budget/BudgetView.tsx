@@ -1,47 +1,46 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import type { BudgetLine, CategoryRow } from "./page";
-import { setBudgetTargetAction } from "./actions";
-
-function fmt(amount: number): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: "USD",
-      maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
-    }).format(amount);
-  } catch {
-    return `$${amount.toFixed(2)}`;
-  }
-}
-
-function monthLabel(monthISO: string): string {
-  const d = new Date(monthISO + "T00:00:00");
-  return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-}
+import {
+  fmt,
+  isOver,
+  monthLabel,
+  pace,
+  totalsOf,
+  type BudgetLine,
+  type CategoryRow,
+  type Totals,
+} from "./lib";
+import { copyForwardAction, setBudgetTargetAction } from "./actions";
 
 export function BudgetView({
   month,
+  prevMonth,
+  nextMonth,
+  isCurrentMonth,
   categories,
   lines,
+  canCopyForward,
+  prevPlannedCount,
 }: {
   month: string;
+  prevMonth: string;
+  nextMonth: string;
+  isCurrentMonth: boolean;
   categories: CategoryRow[];
   lines: BudgetLine[];
+  canCopyForward: boolean;
+  prevPlannedCount: number;
 }) {
-  const totals = useMemo(() => {
-    let planned = 0;
-    let spent = 0;
-    for (const l of lines) {
-      planned += l.planned;
-      spent += l.spent;
-    }
-    return { planned, spent, remaining: planned - spent };
-  }, [lines]);
+  const totals = useMemo(() => totalsOf(lines), [lines]);
 
   const overall = totals.spent > totals.planned && totals.planned > 0;
   const anyPlanned = totals.planned > 0;
+  const pacing = useMemo(
+    () => pace(totals, isCurrentMonth),
+    [totals, isCurrentMonth],
+  );
 
   // Show budgeted categories first (highest planned), then the rest so the
   // user can quickly find an unbudgeted category to set.
@@ -55,9 +54,29 @@ export function BudgetView({
     [lines],
   );
 
+  // Bar chart (P2): only categories that have a plan or some spend.
+  const chartLines = useMemo(
+    () => sorted.filter((l) => l.planned > 0 || l.spent > 0),
+    [sorted],
+  );
+
   return (
     <div className="space-y-6">
-      <HeroCard month={month} totals={totals} overall={overall} anyPlanned={anyPlanned} />
+      <MonthNav prevMonth={prevMonth} nextMonth={nextMonth} month={month} isCurrentMonth={isCurrentMonth} />
+
+      <HeroCard
+        month={month}
+        totals={totals}
+        overall={overall}
+        anyPlanned={anyPlanned}
+        pacing={pacing}
+      />
+
+      {canCopyForward && (
+        <CopyForwardCard month={month} prevMonth={prevMonth} count={prevPlannedCount} />
+      )}
+
+      {chartLines.length > 1 && <CategoryChart lines={chartLines} />}
 
       {categories.length === 0 ? (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
@@ -86,16 +105,109 @@ export function BudgetView({
   );
 }
 
+function MonthNav({
+  prevMonth,
+  nextMonth,
+  month,
+  isCurrentMonth,
+}: {
+  prevMonth: string;
+  nextMonth: string;
+  month: string;
+  isCurrentMonth: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <Link
+        href={`/app/budget?m=${prevMonth}`}
+        className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900/60 text-zinc-400 ring-1 ring-zinc-800 hover:text-cyan-300"
+        aria-label={`Previous month (${monthLabel(prevMonth)})`}
+      >
+        ‹
+      </Link>
+      <div className="flex flex-col items-center">
+        <span className="text-sm font-semibold text-zinc-200">{monthLabel(month)}</span>
+        {!isCurrentMonth && (
+          <Link href="/app/budget" className="text-[11px] text-cyan-400 hover:text-cyan-300">
+            Jump to this month
+          </Link>
+        )}
+      </div>
+      <Link
+        href={`/app/budget?m=${nextMonth}`}
+        className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900/60 text-zinc-400 ring-1 ring-zinc-800 hover:text-cyan-300"
+        aria-label={`Next month (${monthLabel(nextMonth)})`}
+      >
+        ›
+      </Link>
+    </div>
+  );
+}
+
+function CopyForwardCard({
+  month,
+  prevMonth,
+  count,
+}: {
+  month: string;
+  prevMonth: string;
+  count: number;
+}) {
+  const [pending, start] = useTransition();
+
+  function run(rollover: boolean) {
+    const fd = new FormData();
+    fd.set("month", month);
+    fd.set("rollover", rollover ? "1" : "0");
+    start(async () => {
+      await copyForwardAction(fd);
+    });
+  }
+
+  return (
+    <div className="rounded-2xl border border-cyan-500/30 bg-cyan-500/5 p-4">
+      <p className="text-sm text-zinc-200">
+        No budget set for {monthLabel(month)}.
+      </p>
+      <p className="mt-0.5 text-xs text-zinc-400">
+        Copy your {count} {count === 1 ? "category" : "categories"} from{" "}
+        {monthLabel(prevMonth)}?
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => run(false)}
+          disabled={pending}
+          className="rounded-lg bg-cyan-500 px-3 py-2 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
+        >
+          {pending ? "…" : "Copy amounts"}
+        </button>
+        <button
+          type="button"
+          onClick={() => run(true)}
+          disabled={pending}
+          className="rounded-lg bg-zinc-800 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-700 disabled:opacity-50"
+          title="Carry last month's unspent remainder into this month's allowance"
+        >
+          Copy + roll over unspent
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function HeroCard({
   month,
   totals,
   overall,
   anyPlanned,
+  pacing,
 }: {
   month: string;
-  totals: { planned: number; spent: number; remaining: number };
+  totals: Totals;
   overall: boolean;
   anyPlanned: boolean;
+  pacing: ReturnType<typeof pace>;
 }) {
   const remaining = totals.remaining;
   const pct = totals.planned > 0 ? (totals.spent / totals.planned) * 100 : 0;
@@ -134,6 +246,13 @@ function HeroCard({
               Over budget by {fmt(totals.spent - totals.planned)} this month.
             </div>
           )}
+          {!overall && pacing?.aheadOfPace && (
+            <div className="mt-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
+              You&apos;re {Math.round(pacing.monthFraction * 100)}% through the month
+              and have spent {Math.round(pacing.spendFraction * 100)}% of your budget —
+              slow down to stay on track.
+            </div>
+          )}
         </>
       ) : (
         <>
@@ -150,13 +269,69 @@ function HeroCard({
   );
 }
 
+function CategoryChart({ lines }: { lines: BudgetLine[] }) {
+  // Scale every bar against the largest planned-or-spent value so the longest
+  // bar fills the track.
+  const max = Math.max(...lines.map((l) => Math.max(l.planned, l.spent)), 1);
+
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          Planned vs. spent
+        </span>
+        <span className="flex items-center gap-3 text-[11px] text-zinc-500">
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-sm bg-zinc-600" />
+            Planned
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-sm bg-cyan-500" />
+            Spent
+          </span>
+        </span>
+      </div>
+      <div className="space-y-2.5">
+        {lines.map((l) => {
+          const over = isOver(l);
+          const plannedW = (l.planned / max) * 100;
+          const spentW = (l.spent / max) * 100;
+          return (
+            <div key={l.category}>
+              <div className="mb-0.5 flex items-baseline justify-between text-[11px]">
+                <span className="truncate text-zinc-300">{l.category}</span>
+                <span className={over ? "text-red-400" : "text-zinc-500"}>
+                  {fmt(l.spent)} / {fmt(l.planned)}
+                </span>
+              </div>
+              {/* Planned (ghost) track with the spent bar overlaid. */}
+              <div className="relative h-3 overflow-hidden rounded bg-zinc-800/60">
+                <div
+                  className="absolute inset-y-0 left-0 rounded bg-zinc-700"
+                  style={{ width: `${Math.max(plannedW, l.planned > 0 ? 2 : 0)}%` }}
+                  aria-hidden
+                />
+                <div
+                  className={`absolute inset-y-0 left-0 rounded ${over ? "bg-red-500" : "bg-cyan-500"}`}
+                  style={{ width: `${Math.max(spentW, l.spent > 0 ? 2 : 0)}%` }}
+                  aria-hidden
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function CategoryRowItem({ line, month }: { line: BudgetLine; month: string }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(line.planned > 0 ? String(line.planned) : "");
   const [pending, start] = useTransition();
 
   const remaining = line.planned - line.spent;
-  const over = line.planned > 0 && line.spent > line.planned;
+  const over = isOver(line);
   const pct = line.planned > 0 ? (line.spent / line.planned) * 100 : 0;
   const budgeted = line.planned > 0;
 

@@ -14,13 +14,13 @@
 - [x] **Remaining per category + overall** — each category shows planned / spent / remaining with a progress bar (cyan under budget); a hero "X left of $Y this month" overall number replaces "Outstanding".
 - [x] **Over-budget warning** — categories past their planned amount turn red ("$40 over"), and an overall over-budget banner when total spend exceeds total planned.
 
-**P2 — enhancements**
-- **Category bar chart** (see `_finance-template.md`) — planned-vs-actual bars per category, the at-a-glance budget visualization.
-- **Monthly reset / rollover** — planned amounts carry forward to the next month automatically; optionally roll *unspent* remainder into next month's allowance per category.
-- **Month navigation** — view prior months' planned-vs-actual using the historical `expenses` rows.
+**P2 — enhancements** ✅ shipped
+- [x] **Category bar chart** (see `_finance-template.md`) — planned-vs-actual bars per category, the at-a-glance budget visualization. (`CategoryChart` in `BudgetView.tsx`: ghost planned track with spent bar overlaid, red when over.)
+- [x] **Monthly reset / rollover** — planned amounts carry forward to the next month automatically; optionally roll *unspent* remainder into next month's allowance per category. (`copyForwardAction` + the "Copy amounts / Copy + roll over unspent" card shown when the selected month has no budget but the prior month does. Only fills categories not already set, so it's idempotent.)
+- [x] **Month navigation** — view prior months' planned-vs-actual using the historical `expenses` rows. (`?m=YYYY-MM-01` search param, prev/next chevrons + "Jump to this month".)
 
 **P3 — delight**
-- **Pace indicator** — "you're 60% through the month and have spent 80% of dining" using day-of-month vs. spend ratio.
+- [x] **Pace indicator** — "you're 60% through the month and have spent 80% of dining" using day-of-month vs. spend ratio. (`pace()` in `lib.ts`; amber banner in the hero when spend outruns the month, current-month only. Overall-level, not yet per-category.)
 - **Unified money model** — converge **expenses + budget + bills + subscriptions** on one shared category table so a category's planned (budget), actual (expenses), and committed (bills + subscriptions) all line up. Biggest long-term win; note as cross-cutting.
 
 **Data** — Graduating the view. Budget targets are not payables, so model them in their own table: `budget_targets (id, user_id, category, planned NUMERIC, month DATE, created_at)` with the standard RLS pair — one row per category per month. Actuals come from the existing `expenses` table (read-only join by category + month); a **shared category list** (per-user `categories` table) is what makes the join reliable and unlocks the P3 unification. The `finance_items` `budget` rows are abandoned for this app; `planned` from the shared template migration is unnecessary if using `budget_targets`.
@@ -41,5 +41,7 @@ CREATE TABLE public.budget_targets (
 Actuals are read from the existing `expenses` table (no new column); categories
 are shared with the Expenses app via `expense_categories` (matched by `name`),
 seeded with the legacy defaults the first time a Budget-only user has none.
+
+**P2/P3 notes** — Pure math (month arithmetic, `buildLines`, `totalsOf`, `pace`) extracted to `src/app/app/budget/lib.ts` and unit-tested in `tests/unit/budget-lib.test.ts`; `page.tsx`/`BudgetView.tsx` import from it. No schema change was needed for P2 — month navigation and rollover both run off the existing `budget_targets` + `expenses` tables. Still open from P3: per-category pace (current pace is overall) and the unified money model (cross-cutting, deferred).
 
 **Verdict** — **GRADUATE.** The payables list is the wrong model; planned-vs-actual driven off the Expenses table is the real app, and it's the natural anchor for unifying the money apps. Effort **M/L** (M alone; L if shared-category unification is in scope).
