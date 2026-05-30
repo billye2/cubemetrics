@@ -60,7 +60,7 @@ export const APPS: AppEntry[] = [
   {"id":"milestones","name":"Milestones","category":"goals","icon":"◆","description":"Big wins","ui":"goal","config":{"goalType":"milestone","hasTarget":false}},
   {"id":"streaks","name":"Streaks","category":"goals","icon":"⚡","description":"Consecutive days","ui":"goal","config":{"goalType":"streak","hasTarget":false}},
   {"id":"courses","name":"Courses","category":"learning","icon":"◧","description":"Course tracking","ui":"goal","config":{"goalType":"course","hasTarget":true}},
-  {"id":"skilltree","name":"Skill Tree","category":"learning","icon":"⌬","description":"Skills to build","ui":"goal","config":{"goalType":"skill","hasTarget":false}},
+  {"id":"skilltree","name":"Skill Tree","category":"learning","icon":"⌬","description":"Level up skills with XP","ui":"modern"},
   {"id":"projecttracker","name":"Projects","category":"work","icon":"◧","description":"Status pipeline · tasks · next action","ui":"modern"},
   {"id":"savings","name":"Savings","category":"finance","icon":"◯","description":"Savings goals","ui":"goal","config":{"goalType":"savings","hasTarget":true}},
   {"id":"debtpayoff","name":"Debt","category":"finance","icon":"⊠","description":"Payoff plan","ui":"goal","config":{"goalType":"debt","hasTarget":true}},
