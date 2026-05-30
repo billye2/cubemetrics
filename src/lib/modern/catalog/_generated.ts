@@ -39,7 +39,7 @@ export const APPS: AppEntry[] = [
   {"id":"dailyplanner","name":"Daily Planner","category":"tasks","icon":"☰","description":"Today's plan","ui":"checklist","config":{"listType":"dailyplan","itemLabel":"Item"}},
   {"id":"visionboard","name":"Vision Board","category":"goals","icon":"✧","description":"Where you're heading","ui":"modern"},
   {"id":"flashcards","name":"Flashcards","category":"notes","icon":"◫","description":"Cards to review","ui":"modern"},
-  {"id":"mealplanner","name":"Meals","category":"habits","icon":"◍","description":"Meal planning","ui":"checklist","config":{"listType":"meal","itemLabel":"Meal"}},
+  {"id":"mealplanner","name":"Meals","category":"habits","icon":"◍","description":"Plan the week's meals and turn them into a grocery list","ui":"modern"},
   {"id":"clienttracker","name":"Clients","category":"work","icon":"◉","description":"Client work","ui":"checklist","config":{"listType":"client","itemLabel":"Client"}},
   {"id":"gratitude","name":"Gratitude","category":"habits","icon":"♥","description":"Daily gratitude","ui":"logbook","config":{"logType":"gratitude","entryLabel":"Entry","hasTitle":false}},
   {"id":"meeting","name":"Meetings","category":"notes","icon":"☻","description":"Meeting notes","ui":"logbook","config":{"logType":"meeting","entryLabel":"Meeting","hasTitle":true}},
