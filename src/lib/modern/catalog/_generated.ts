@@ -45,7 +45,7 @@ export const APPS: AppEntry[] = [
   {"id":"meeting","name":"Meetings","category":"notes","icon":"☻","description":"Meeting notes","ui":"logbook","config":{"logType":"meeting","entryLabel":"Meeting","hasTitle":true}},
   {"id":"standup","name":"Standups","category":"notes","icon":"⌂","description":"Daily standups","ui":"logbook","config":{"logType":"standup","entryLabel":"Standup","hasTitle":false}},
   {"id":"brainstorm","name":"Brainstorm","category":"notes","icon":"✺","description":"Idea sessions","ui":"logbook","config":{"logType":"brainstorm","entryLabel":"Session","hasTitle":true}},
-  {"id":"decisionmatrix","name":"Decisions","category":"notes","icon":"◰","description":"Decisions log","ui":"logbook","config":{"logType":"decision","entryLabel":"Decision","hasTitle":true}},
+  {"id":"decisionmatrix","name":"Decisions","category":"notes","icon":"◰","description":"Weighted decision matrix","ui":"modern"},
   {"id":"workout","name":"Workout","category":"habits","icon":"✚","description":"Training log","ui":"modern"},
   {"id":"learninglog","name":"Learning Log","category":"learning","icon":"✦","description":"What you learned","ui":"logbook","config":{"logType":"learning","entryLabel":"Lesson","hasTitle":true}},
   {"id":"weeklyreview","name":"Weekly Review","category":"tasks","icon":"⌗","description":"Reflect each week","ui":"modern"},
