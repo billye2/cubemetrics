@@ -178,6 +178,32 @@ Backs the Recipes app (migration `20260530T0631_recipes.sql`). Graduates off the
 
 Backs the Projects app (migration `20260530T0632_projects.sql`). Graduates the old single-`goals`-row "project" into a status pipeline with a task checklist (% complete derived from tasks done) + a single "next action". Legacy `goals` rows with `goal_type='project'` are left untouched (no auto-migration). RLS: both tables use the standard owner `FOR ALL` ("Users access own rows") + SysOp `FOR SELECT` pair. Indexes: `projects(user_id, status)`, `project_tasks(project_id, sort_order, created_at)`.
 
+### skills + skill_practice + skill_deps
+| skills | skill_practice | skill_deps |
+|--------|----------------|------------|
+| id, user_id, name, category (default 'General'), xp (INT default 0, CHECK ≥ 0), created_at | id, user_id, skill_id→skills ON DELETE CASCADE, xp (INT, CHECK > 0), minutes (INT), note (default ''), created_at | id, user_id, skill_id→skills ON DELETE CASCADE, requires_skill_id→skills ON DELETE CASCADE, min_level (INT default 1, CHECK ≥ 1), created_at; CHECK skill_id≠requires_skill_id; UNIQUE (skill_id, requires_skill_id) |
+
+Backs the Skill Tree app (migration `20260530T0700_skills.sql`). Graduates the old single-`goals`-row "skill" checkbox into a leveling system: each skill accumulates `xp`; level is **derived** from a threshold curve in app code (not stored). `skill_practice` is an append-only log of practice sessions that grant XP; `skill_deps` are edges (a skill requires another at ≥ `min_level`) forming the dependency tree. Child rows cascade on skill delete. RLS: standard owner `FOR ALL` + SysOp `FOR SELECT` pair on all three. Indexes: `skills(user_id, category)`, `skill_practice(skill_id, created_at DESC)`, `skill_deps(skill_id)` + `skill_deps(requires_skill_id)`.
+
+### savings_contributions
+| Column | Type | Notes |
+|--------|------|-------|
+| id, user_id | | PK / owner |
+| goal_id | BIGINT | → `goals` ON DELETE CASCADE |
+| amount | NUMERIC | one deposit |
+| contributed_on | DATE | default `CURRENT_DATE` |
+| note | TEXT | default '' |
+| created_at | TIMESTAMPTZ | |
+
+Backs the Savings app (migration `20260530T0700_savings_contributions.sql`). Graduates the single-value `goals` row into a finance-shaped app: a savings goal stays a `goals` row (`goal_type='savings'`: title / target_value / due_date / status), and each deposit is one `savings_contributions` row. The goal's `current_value` is **derived** as `SUM(amount)`, preserving deposit history and momentum instead of overwriting a running total (generalizes `goal_progress` into amounts). RLS: standard owner `FOR ALL` + SysOp `FOR SELECT` pair. Indexes: `savings_contributions(goal_id, contributed_on)`, `savings_contributions(user_id, contributed_on)`.
+
+### objectives + key_results
+| objectives | key_results |
+|------------|-------------|
+| id, user_id, title, cycle (default '', e.g. "Q2 2026"), confidence (default 'on_track' — on_track/at_risk/off_track), created_at | id, user_id, objective_id→objectives ON DELETE CASCADE, title, current_value (NUMERIC default 0), target_value (NUMERIC default 100), sort_order (INT default 0), created_at |
+
+Backs the OKR app (migration `20260530T0700_okr.sql`). Graduates the old single-`goals`-row OKR (a flat title + one target number) into a real objective→key-result hierarchy. An objective is qualitative (no number of its own), tagged with a `cycle` and a manually-set `confidence`; it owns 2–5 key results, each with its own current/target. The objective's score is the **mean of its KR %s** — computed in app code, not stored. `key_results` cascade on objective delete. RLS: standard owner `FOR ALL` + SysOp `FOR SELECT` pair on both. Indexes: `objectives(user_id, cycle)`, `key_results(objective_id, sort_order, created_at)`.
+
 ## Factory Tables
 
 Five shared tables back the generic template apps. Each row is scoped by `user_id` + a `*_type`
