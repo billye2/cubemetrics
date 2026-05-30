@@ -27,7 +27,7 @@ export const APPS: AppEntry[] = [
   {"id":"backlog","name":"Backlog","category":"tasks","icon":"☷","description":"Someday/maybe","ui":"checklist","config":{"listType":"backlog","itemLabel":"Item"}},
   {"id":"contacts","name":"Contacts","category":"org","icon":"☻","description":"People","ui":"checklist","config":{"listType":"contacts","itemLabel":"Contact"}},
   {"id":"inventory","name":"Inventory","category":"org","icon":"▦","description":"Things you own","ui":"checklist","config":{"listType":"inventory","itemLabel":"Item"}},
-  {"id":"fileindex","name":"File Index","category":"org","icon":"☰","description":"File catalog","ui":"checklist","config":{"listType":"fileindex","itemLabel":"File"}},
+  {"id":"fileindex","name":"File Index","category":"org","icon":"☰","description":"Searchable file catalog","ui":"modern"},
   {"id":"homemaint","name":"Home","category":"lifestyle","icon":"⌂","description":"Home maintenance","ui":"checklist","config":{"listType":"homemaint","itemLabel":"Task"}},
   {"id":"cleaning","name":"Cleaning","category":"lifestyle","icon":"✦","description":"Cleaning schedule","ui":"checklist","config":{"listType":"cleaning","itemLabel":"Task"}},
   {"id":"plantcare","name":"Plants","category":"lifestyle","icon":"✿","description":"Water your houseplants on schedule","ui":"modern"},
