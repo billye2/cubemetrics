@@ -48,7 +48,7 @@ export const APPS: AppEntry[] = [
   {"id":"decisionmatrix","name":"Decisions","category":"notes","icon":"◰","description":"Decisions log","ui":"logbook","config":{"logType":"decision","entryLabel":"Decision","hasTitle":true}},
   {"id":"workout","name":"Workout","category":"habits","icon":"✚","description":"Training log","ui":"modern"},
   {"id":"learninglog","name":"Learning Log","category":"learning","icon":"✦","description":"What you learned","ui":"logbook","config":{"logType":"learning","entryLabel":"Lesson","hasTitle":true}},
-  {"id":"weeklyreview","name":"Weekly Review","category":"tasks","icon":"⌗","description":"Reflect each week","ui":"logbook","config":{"logType":"weekly","entryLabel":"Review","hasTitle":true}},
+  {"id":"weeklyreview","name":"Weekly Review","category":"tasks","icon":"⌗","description":"Reflect each week","ui":"modern"},
   {"id":"feedbacklog","name":"Feedback Log","category":"work","icon":"✎","description":"Feedback given/received","ui":"logbook","config":{"logType":"feedbacklog","entryLabel":"Entry","hasTitle":true}},
   {"id":"oneononep","name":"1-on-1s","category":"work","icon":"☷","description":"1:1 notes","ui":"logbook","config":{"logType":"oneonone","entryLabel":"Meeting","hasTitle":true}},
   {"id":"retro","name":"Retro","category":"work","icon":"⟲","description":"Team retros","ui":"logbook","config":{"logType":"retro","entryLabel":"Retro","hasTitle":true}},
