@@ -5,9 +5,5 @@
   "category": "finance",
   "icon": "⊟",
   "description": "Monthly budget",
-  "ui": "finance",
-  "config": {
-    "itemType": "budget",
-    "hasAmount": true
-  }
+  "ui": "modern"
 }

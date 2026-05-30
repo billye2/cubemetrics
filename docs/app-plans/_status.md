@@ -68,6 +68,9 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 | contacts | 🟢 At bar | graduated from checklist; mini-CRM on shared `contacts` table (address book + tags + birthday strip) — P1+P2+P3 |
 | decisionmatrix | 🟢 At bar | graduated from logbook; weighted options×criteria matrix, computed winner, chosen/rationale/revisit (P1–P3) |
 | debtpayoff | 🟢 At bar | graduated from goal; multi-debt with APR/min-payment, payment log, payoff projection + snowball/avalanche (P1+P2) |
+| clienttracker | 🟢 At bar | graduated from checklist; mini-CRM pipeline (lead→active→done/lost), contact/value/next-action, due surfacing (P1) |
+| budget | 🟢 At bar | graduated from finance; per-category planned-vs-actual on `budget_targets`, actuals read from `expenses` join (P1) |
+| bookmarks | 🟢 At bar | graduated from checklist; link locker with tags/folder/favicon/last-opened on `bookmarks` table (P1+) |
 
 ## Trackers (factory `tracker`)
 
@@ -88,8 +91,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | grocery · wishlist · packing · bucketlist · backlog | 🟡 Partial | per-app fields (quantity, price/priority, sections, achieved, promote-to-todo) |
 | homemaint · cleaning · petcare · routines · dailyplanner · travelplanner | 🟡 Partial | recurrence / daily-reset / date-scoping — candidates to re-point onto the `schedule` family |
-| bookmarks · visionboard · clienttracker | 🔴 Graduate | checklist is the wrong model; each needs a custom app |
-| ~~warranty~~ · ~~vocabulary~~ · ~~plantcare~~ · ~~inventory~~ · ~~fileindex~~ · ~~mealplanner~~ · ~~contacts~~ | ✅ Graduated | now custom apps (see Custom apps table) |
+| visionboard | 🔴 Graduate | checklist is the wrong model; needs a custom app |
+| ~~warranty~~ · ~~vocabulary~~ · ~~plantcare~~ · ~~inventory~~ · ~~fileindex~~ · ~~mealplanner~~ · ~~contacts~~ · ~~bookmarks~~ · ~~clienttracker~~ | ✅ Graduated | now custom apps (see Custom apps table) |
 
 ## Logbooks (factory `logbook`)
 
@@ -114,7 +117,7 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | income | ✅ Done | thin catalog entry — in `finished/` |
 | bills · invoices · subscriptions | 🟡 Partial | paid-date archive, status pipeline, recurring totals |
-| budget | 🔴 Graduate | planned-vs-actual needs an Expenses join |
+| ~~budget~~ | ✅ Graduated | now a custom app (see Custom apps table) |
 
 ## Shared templates & platform
 
