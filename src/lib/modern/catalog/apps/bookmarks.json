@@ -5,9 +5,5 @@
   "category": "org",
   "icon": "☖",
   "description": "Saved links",
-  "ui": "checklist",
-  "config": {
-    "listType": "bookmark",
-    "itemLabel": "Bookmark"
-  }
+  "ui": "modern"
 }

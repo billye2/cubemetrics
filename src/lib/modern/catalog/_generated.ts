@@ -23,7 +23,7 @@ export const APPS: AppEntry[] = [
   {"id":"wishlist","name":"Wishlist","category":"org","icon":"★","description":"Things to buy","ui":"checklist","config":{"listType":"wishlist","itemLabel":"Item"}},
   {"id":"packing","name":"Packing","category":"lifestyle","icon":"☐","description":"Packing lists","ui":"checklist","config":{"listType":"packing","itemLabel":"Item"}},
   {"id":"bucketlist","name":"Bucket List","category":"goals","icon":"☑","description":"Life list","ui":"checklist","config":{"listType":"bucket","itemLabel":"Goal"}},
-  {"id":"bookmarks","name":"Bookmarks","category":"org","icon":"☖","description":"Saved links","ui":"checklist","config":{"listType":"bookmark","itemLabel":"Bookmark"}},
+  {"id":"bookmarks","name":"Bookmarks","category":"org","icon":"☖","description":"Saved links","ui":"modern"},
   {"id":"backlog","name":"Backlog","category":"tasks","icon":"☷","description":"Someday/maybe","ui":"checklist","config":{"listType":"backlog","itemLabel":"Item"}},
   {"id":"contacts","name":"Contacts","category":"org","icon":"☻","description":"Your people","ui":"modern"},
   {"id":"inventory","name":"Inventory","category":"org","icon":"▦","description":"Things you own — value, location & photos","ui":"modern"},
