@@ -239,6 +239,27 @@ Back the **Decisions** app (migration `20260530T0800_decisions.sql`). Graduates 
 
 Back the **Debt** app (migration `20260530T0815_debts.sql`). Graduates off the shared `goal` factory into a finance-shaped app: a debt is a balance paid DOWN toward $0 (not a bar filled toward a target), carries an `apr` and a `min_payment`, and keeps a payment history so progress is preserved instead of overwriting a running number. `current_balance` = `original_balance − SUM(debt_payments)` floored at 0; per-debt payoff projection + snowball/avalanche strategy are computed in `lib.ts`. RLS on both: owner `FOR ALL` + SysOp `FOR SELECT`. Indexed on `debts (user_id, created_at)`, `debt_payments (debt_id, paid_on)` + `(user_id, paid_on)`.
 
+### clients
+| Column | Notes |
+|--------|-------|
+| id, user_id, name, status ('lead'/'active'/'done'/'lost'), email, phone, value (NUMERIC), next_action, next_action_date (DATE), note, created_at | |
+
+Back the **Clients** app (migration `20260530T0830_clients.sql`). Graduates the old `checklists` "client" list into a real mini-CRM pipeline: each client carries a `status` (lead → active → done/lost), contact info, a project `value`, and a `next_action` + `next_action_date` for due/overdue follow-up surfacing — replacing a binary done/not-done checkbox. RLS: owner `FOR ALL` + SysOp `FOR SELECT`. Indexed on `(user_id, status)` for the grouped pipeline view and `(user_id, next_action_date)` for due surfacing.
+
+### budget_targets
+| Column | Notes |
+|--------|-------|
+| id, user_id, category, planned (NUMERIC ≥ 0), month (DATE, first of month), created_at; UNIQUE (user_id, category, month) | |
+
+Back the **Budget** app (migration `20260530T0900_budget_targets.sql`). Graduates off the generic `finance` factory (a flat payables list) into a purpose-built planned-vs-actual model: the user sets a `planned` amount per category per month, while ACTUALS are read live from the existing `expenses` table (grouped by category + month) — no double entry. Categories are shared with the Expenses app via `expense_categories` (matched by name). One row per `(user, category, month)`. RLS: owner `FOR ALL` + SysOp `FOR SELECT`. Indexed on `(user_id, month)`.
+
+### bookmarks
+| Column | Notes |
+|--------|-------|
+| id, user_id, url, title, tags (TEXT[]), folder, favicon_url, last_opened_at (TIMESTAMPTZ), created_at | |
+
+Back the **Bookmarks** app (migration `20260530T0808_bookmarks.sql`). Graduates off the shared `checklists` factory into a purpose-built link locker — a checkbox is the wrong model for a link (bookmarks are *opened*, not *completed*), and the URL has no home on a checklist row. Carries free-form `tags`, an optional coarse `folder`, a cached `favicon_url`, and `last_opened_at` for P3 stale-link surfacing. RLS: owner `FOR ALL` + SysOp `FOR SELECT`. Indexed on `(user_id, created_at DESC)`.
+
 ## Factory Tables
 
 Five shared tables back the generic template apps. Each row is scoped by `user_id` + a `*_type`
