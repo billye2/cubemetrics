@@ -3,7 +3,7 @@
 The at-a-glance tracker for **what's shipped vs. what's open**, so we don't re-audit the whole
 folder every session. Updated as work lands (builder role: tick the plan's own checkboxes too).
 
-**Last synced:** 2026-05-29 (against the code, not memory).
+**Last synced:** 2026-05-30 (against the code, not memory).
 
 ## Legend
 
@@ -62,6 +62,9 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 | skilltree | 🟢 At bar | graduated from goal; XP leveling curve, practice log, skill dependency tree (P1+P2); P3: tree viz polish |
 | savings | 🟢 At bar | graduated from goal; deposit log, currency, pace & projection; P3: multi-currency, chart |
 | okr | 🟢 At bar | graduated from goal; objective→key-result hierarchy, cycle, confidence, mean roll-up (P1) |
+| inventory | 🟢 At bar | graduated from checklist; quantity/value/location/category, total-worth roll-up (P1); P2/P3: photos, filters |
+| mealplanner | 🟢 At bar | graduated from checklist; week grid (date×slot), recipe link, grocery-list generator (P1–P3) |
+| fileindex | 🟢 At bar | graduated from checklist; searchable catalog (name/location/type/tags/desc), filters (P1 + partial P2/P3) |
 
 ## Trackers (factory `tracker`)
 
@@ -82,8 +85,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | grocery · wishlist · packing · bucketlist · backlog | 🟡 Partial | per-app fields (quantity, price/priority, sections, achieved, promote-to-todo) |
 | homemaint · cleaning · petcare · routines · dailyplanner · travelplanner | 🟡 Partial | recurrence / daily-reset / date-scoping — candidates to re-point onto the `schedule` family |
-| bookmarks · contacts · inventory · fileindex · visionboard · mealplanner · clienttracker | 🔴 Graduate | checklist is the wrong model; each needs a custom app |
-| ~~warranty~~ · ~~vocabulary~~ · ~~plantcare~~ | ✅ Graduated | now custom apps (see Custom apps table) |
+| bookmarks · contacts · visionboard · clienttracker | 🔴 Graduate | checklist is the wrong model; each needs a custom app |
+| ~~warranty~~ · ~~vocabulary~~ · ~~plantcare~~ · ~~inventory~~ · ~~fileindex~~ · ~~mealplanner~~ | ✅ Graduated | now custom apps (see Custom apps table) |
 
 ## Logbooks (factory `logbook`)
 

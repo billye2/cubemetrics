@@ -204,6 +204,27 @@ Backs the Savings app (migration `20260530T0700_savings_contributions.sql`). Gra
 
 Backs the OKR app (migration `20260530T0700_okr.sql`). Graduates the old single-`goals`-row OKR (a flat title + one target number) into a real objective→key-result hierarchy. An objective is qualitative (no number of its own), tagged with a `cycle` and a manually-set `confidence`; it owns 2–5 key results, each with its own current/target. The objective's score is the **mean of its KR %s** — computed in app code, not stored. `key_results` cascade on objective delete. RLS: standard owner `FOR ALL` + SysOp `FOR SELECT` pair on both. Indexes: `objectives(user_id, cycle)`, `key_results(objective_id, sort_order, created_at)`.
 
+### inventory_items
+| Column | Type |
+|--------|------|
+| id, user_id, name, quantity (INT default 1), value (NUMERIC), location, category, photo_url, created_at |
+
+Backs the Inventory app (migration `20260530T0745_inventory_items.sql`). Graduates off the shared `checklists` factory (`list_type='inventory'`) into an attribute-driven possessions model: a thing you own has a quantity, a value, a location and a category — not a task to check off. The headline number is **total worth** = `SUM(value × quantity)` (for insurance), computed in app code. RLS: owner `FOR ALL` ("Users can access own inventory items") + SysOp `FOR SELECT`. Indexed on `(user_id, created_at DESC)`.
+
+### meal_plan
+| Column | Type |
+|--------|------|
+| id, user_id, date (DATE), slot (TEXT — breakfast/lunch/dinner), meal (TEXT), recipe_id (BIGINT → `recipes` ON DELETE SET NULL), created_at; UNIQUE (user_id, date, slot) |
+
+Backs the Meals app (migration `20260530T0730_meal_plan.sql`). Graduates off the shared `checklists` factory (was a flat list with `list_type='meal'`) into a real week grid: one row per (date, slot) assignment. A slot holds a free-text meal name and optionally links to a Recipes row so the grocery generator can pull that recipe's ingredients; `recipe_id` is a nullable FK with `ON DELETE SET NULL` so deleting a recipe leaves the planned meal name intact. RLS: owner `FOR ALL` ("Users access own meal plan") + SysOp `FOR SELECT`. Indexed on `(user_id, date)`.
+
+### file_index
+| Column | Type |
+|--------|------|
+| id, user_id, name, location, type, tags (TEXT[] default '{}'), size_bytes (BIGINT), file_date (DATE), description, created_at |
+
+Backs the File Index app (migration `20260530T0720_file_index.sql`). Graduates off the shared `checklists` factory (`list_type='fileindex'`) into a catalog model: an entry is metadata for retrieval (where a file/document/disk lives), not a task to check off. The point is search + filter across name / location / type / tags / description. RLS: owner `FOR ALL` ("Users can access own file_index") + SysOp `FOR SELECT`. Indexed on `(user_id, created_at DESC)`.
+
 ## Factory Tables
 
 Five shared tables back the generic template apps. Each row is scoped by `user_id` + a `*_type`
