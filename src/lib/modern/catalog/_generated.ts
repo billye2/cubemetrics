@@ -61,7 +61,7 @@ export const APPS: AppEntry[] = [
   {"id":"streaks","name":"Streaks","category":"goals","icon":"⚡","description":"Consecutive days","ui":"goal","config":{"goalType":"streak","hasTarget":false}},
   {"id":"courses","name":"Courses","category":"learning","icon":"◧","description":"Course tracking","ui":"goal","config":{"goalType":"course","hasTarget":true}},
   {"id":"skilltree","name":"Skill Tree","category":"learning","icon":"⌬","description":"Skills to build","ui":"goal","config":{"goalType":"skill","hasTarget":false}},
-  {"id":"projecttracker","name":"Projects","category":"work","icon":"◧","description":"Project status","ui":"goal","config":{"goalType":"project","hasTarget":false}},
+  {"id":"projecttracker","name":"Projects","category":"work","icon":"◧","description":"Status pipeline · tasks · next action","ui":"modern"},
   {"id":"savings","name":"Savings","category":"finance","icon":"◯","description":"Savings goals","ui":"goal","config":{"goalType":"savings","hasTarget":true}},
   {"id":"debtpayoff","name":"Debt","category":"finance","icon":"⊠","description":"Payoff plan","ui":"goal","config":{"goalType":"debt","hasTarget":true}},
   {"id":"challenge","name":"Challenges","category":"goals","icon":"⚑","description":"Time-boxed challenges with a target","ui":"goal","config":{"goalType":"challenge","hasTarget":true}},
