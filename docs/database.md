@@ -157,6 +157,27 @@ Backs the Warranty Tracker app (migration `20260530T0527_warranties.sql`). Gradu
 
 Backs the Vocabulary app (migration `20260530T0533_vocab_words.sql`). Graduates off the checklist template; carries SM-2-lite spaced-repetition fields (`ease/interval/due_date/reps`) — `word` = front, `definition` = back, same review engine as flashcards. RLS: owner `FOR ALL` ("Users access own rows"). Indexed on `(user_id, due_date)`.
 
+### plants
+| Column | Type |
+|--------|------|
+| id, user_id, name, frequency_days (INT, default 7), last_watered (DATE, null = never watered/due now), light (TEXT — low/medium/bright), note, photo_url (reserved P3), created_at |
+
+Backs the Plants app (migration `20260530T0600_plants.sql`). Graduates off the `checklists` factory into a recurrence model: next-due is **computed** (`last_watered + frequency_days`), never stored; the "Water" action stamps `last_watered = today` to advance it. RLS: owner `FOR ALL` ("Users can access own plants") + SysOp `FOR SELECT`. Indexed on `(user_id, last_watered)`.
+
+### recipes + recipe_ingredients + recipe_steps
+| recipes | recipe_ingredients | recipe_steps |
+|---------|--------------------|--------------|
+| id, user_id, name, servings (NUMERIC), prep_min (INT), cook_min (INT), tags (TEXT[] default '{}'), photo_path (reserved P3), notes, created_at | id, recipe_id→recipes ON DELETE CASCADE, qty (NUMERIC), unit (default ''), item, sort (INT) | id, recipe_id→recipes ON DELETE CASCADE, step_no (INT), text |
+
+Backs the Recipes app (migration `20260530T0631_recipes.sql`). Graduates off the `logs` (logbook) factory into a structured model so servings-scaling and cook mode have ingredients/steps as first-class rows. RLS: `recipes` is owner-scoped (`auth.uid() = user_id`) + SysOp `FOR SELECT`; the two child tables are scoped **through** the parent (`EXISTS (SELECT 1 FROM recipes r WHERE r.id = recipe_id AND r.user_id = auth.uid())` for both USING and WITH CHECK), so a user only touches children of recipes they own. Children are rewritten wholesale on save (delete-all + re-insert under `recipe_id`). Indexes: `recipes(user_id, created_at DESC)`, `recipe_ingredients(recipe_id, sort)`, `recipe_steps(recipe_id, step_no)`.
+
+### projects + project_tasks
+| projects | project_tasks |
+|----------|---------------|
+| id, user_id, title, status (default 'planning' — planning/active/blocked/done), next_action (default ''), due_date (DATE), note (default '', reserved P3), created_at | id, user_id, project_id→projects ON DELETE CASCADE, title, completed (BOOL default false), sort_order (INT default 0), created_at |
+
+Backs the Projects app (migration `20260530T0632_projects.sql`). Graduates the old single-`goals`-row "project" into a status pipeline with a task checklist (% complete derived from tasks done) + a single "next action". Legacy `goals` rows with `goal_type='project'` are left untouched (no auto-migration). RLS: both tables use the standard owner `FOR ALL` ("Users access own rows") + SysOp `FOR SELECT` pair. Indexes: `projects(user_id, status)`, `project_tasks(project_id, sort_order, created_at)`.
+
 ## Factory Tables
 
 Five shared tables back the generic template apps. Each row is scoped by `user_id` + a `*_type`
