@@ -70,7 +70,7 @@ const built = await parallel(
   claims.map((c) => () =>
     agent(
       `You are a BUILDER lane in an isolated git worktree (.claude/roles/builder.md). Build the "${c.app}" app for XP Boost.
-       - Follow docs/app-plans/${c.app}.md; do P1 first.
+       - Follow docs/app-plans/${c.app}.md and the issue body. Build the NEXT UNBUILT P-level: if P1 is not yet shipped, do P1 first; if P1 is already done (its boxes are ticked [x] / a custom page exists / the issue is a P2/P3 follow-up), do NOT redo it — build P2, then P3 if scoped. Never re-implement work that already shipped.
        - Own ONLY this app's island: src/app/app/${c.app}/ (if a custom page), src/lib/modern/catalog/apps/${c.app}.json, docs/app-plans/${c.app}.md. Never touch another app's files.
        - Catalog: edit ONLY catalog/apps/${c.app}.json, then run \`npm run build:catalog\`. NEVER edit catalog/_generated.ts.
        - New migrations use a timestamp name: YYYYMMDDTHHMM_<slug>.sql. Put any schema delta in your plan file, not database.md.
