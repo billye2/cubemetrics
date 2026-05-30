@@ -1,7 +1,7 @@
 # App Improvement Plans
 
 This folder holds a per-app improvement plan — one markdown file per catalog entry
-(`src/lib/modern/catalog.ts`). Each plan describes how to take that app from its current
+(`src/lib/modern/catalog/apps/<id>.json`). Each plan describes how to take that app from its current
 state to a **complete, standalone, genuinely useful** experience.
 
 ## Why this exists
@@ -45,8 +45,9 @@ Derived from `focus/`, `timetracker/`, and `countdown/`. A "complete" app genera
   `actions.ts`; `revalidatePath()` after writes. All routes `export const dynamic = "force-dynamic"`.
 - **RLS everywhere** — every table scopes rows to `auth.uid()`. New tables need the standard
   policy pair (owner FOR ALL + SysOp SELECT).
-- **Catalog is the source of truth.** Graduating a factory app to a custom app means: change its
-  `ui` to `modern`, add `src/app/app/<id>/page.tsx` + `actions.ts`, keep the catalog entry.
+- **Catalog is the source of truth.** Graduating a factory app to a custom app means: change `ui`
+  to `modern` in its `catalog/apps/<id>.json` (then `npm run build:catalog`), add
+  `src/app/app/<id>/page.tsx` + `actions.ts`, keep the entry.
 
 ## Backing tables (factory apps)
 

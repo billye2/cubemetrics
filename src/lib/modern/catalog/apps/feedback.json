@@ -1,0 +1,9 @@
+{
+  "id": "feedback",
+  "order": 2,
+  "name": "Feedback",
+  "category": "work",
+  "icon": "✦",
+  "description": "Suggestions for the product",
+  "ui": "modern"
+}

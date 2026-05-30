@@ -1,0 +1,13 @@
+{
+  "id": "petcare",
+  "order": 27,
+  "name": "Pets",
+  "category": "lifestyle",
+  "icon": "♥",
+  "description": "Pet care",
+  "ui": "checklist",
+  "config": {
+    "listType": "petcare",
+    "itemLabel": "Task"
+  }
+}

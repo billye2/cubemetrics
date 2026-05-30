@@ -1,0 +1,24 @@
+{
+  "id": "mood",
+  "order": 4,
+  "name": "Mood",
+  "category": "habits",
+  "icon": "☺",
+  "description": "How you feel",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "mood",
+    "labels": [
+      "Awful",
+      "Bad",
+      "Meh",
+      "Okay",
+      "Good",
+      "Great"
+    ],
+    "min": 0,
+    "max": 5,
+    "aggregate": "average",
+    "chartStyle": "line"
+  }
+}

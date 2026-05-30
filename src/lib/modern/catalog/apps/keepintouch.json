@@ -1,0 +1,9 @@
+{
+  "id": "keepintouch",
+  "order": 67,
+  "name": "Keep in Touch",
+  "category": "org",
+  "icon": "❥",
+  "description": "Stay in touch on a cadence",
+  "ui": "modern"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "meeting",
+  "order": 38,
+  "name": "Meetings",
+  "category": "notes",
+  "icon": "☻",
+  "description": "Meeting notes",
+  "ui": "logbook",
+  "config": {
+    "logType": "meeting",
+    "entryLabel": "Meeting",
+    "hasTitle": true
+  }
+}

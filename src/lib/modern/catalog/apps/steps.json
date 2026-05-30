@@ -1,0 +1,22 @@
+{
+  "id": "steps",
+  "order": 11,
+  "name": "Steps",
+  "category": "habits",
+  "icon": "➤",
+  "description": "Daily step count",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "steps",
+    "unit": "steps",
+    "min": 0,
+    "max": 100000,
+    "aggregate": "sum",
+    "dailyGoal": 8000,
+    "quickAdd": [
+      1000,
+      2500,
+      5000
+    ]
+  }
+}

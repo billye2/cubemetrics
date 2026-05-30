@@ -1,0 +1,13 @@
+{
+  "id": "bookmarks",
+  "order": 19,
+  "name": "Bookmarks",
+  "category": "org",
+  "icon": "☖",
+  "description": "Saved links",
+  "ui": "checklist",
+  "config": {
+    "listType": "bookmark",
+    "itemLabel": "Bookmark"
+  }
+}

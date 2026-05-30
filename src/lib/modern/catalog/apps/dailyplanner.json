@@ -1,0 +1,13 @@
+{
+  "id": "dailyplanner",
+  "order": 32,
+  "name": "Daily Planner",
+  "category": "tasks",
+  "icon": "☰",
+  "description": "Today's plan",
+  "ui": "checklist",
+  "config": {
+    "listType": "dailyplan",
+    "itemLabel": "Item"
+  }
+}

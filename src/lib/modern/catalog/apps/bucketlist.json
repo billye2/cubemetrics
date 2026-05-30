@@ -1,0 +1,13 @@
+{
+  "id": "bucketlist",
+  "order": 18,
+  "name": "Bucket List",
+  "category": "goals",
+  "icon": "☑",
+  "description": "Life list",
+  "ui": "checklist",
+  "config": {
+    "listType": "bucket",
+    "itemLabel": "Goal"
+  }
+}

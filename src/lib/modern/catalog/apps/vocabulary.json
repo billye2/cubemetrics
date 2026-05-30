@@ -1,0 +1,13 @@
+{
+  "id": "vocabulary",
+  "order": 30,
+  "name": "Vocabulary",
+  "category": "learning",
+  "icon": "✦",
+  "description": "Words to learn",
+  "ui": "checklist",
+  "config": {
+    "listType": "vocab",
+    "itemLabel": "Word"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "id": "meditation",
+  "order": 73,
+  "name": "Meditation",
+  "category": "time",
+  "icon": "☯",
+  "description": "Minutes meditated",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "meditation",
+    "unit": "minutes",
+    "min": 0,
+    "max": 240,
+    "aggregate": "sum",
+    "dailyGoal": 20,
+    "quickAdd": [
+      5,
+      10,
+      20
+    ]
+  }
+}

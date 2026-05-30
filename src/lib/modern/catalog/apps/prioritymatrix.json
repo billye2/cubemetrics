@@ -1,0 +1,9 @@
+{
+  "id": "prioritymatrix",
+  "order": 82,
+  "name": "Priorities",
+  "category": "tasks",
+  "icon": "⊞",
+  "description": "Urgent × important quadrants",
+  "ui": "modern"
+}

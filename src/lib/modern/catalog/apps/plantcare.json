@@ -1,0 +1,13 @@
+{
+  "id": "plantcare",
+  "order": 26,
+  "name": "Plants",
+  "category": "lifestyle",
+  "icon": "✿",
+  "description": "Plant care",
+  "ui": "checklist",
+  "config": {
+    "listType": "plantcare",
+    "itemLabel": "Plant"
+  }
+}

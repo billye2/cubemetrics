@@ -1,0 +1,14 @@
+{
+  "id": "feedbacklog",
+  "order": 45,
+  "name": "Feedback Log",
+  "category": "work",
+  "icon": "✎",
+  "description": "Feedback given/received",
+  "ui": "logbook",
+  "config": {
+    "logType": "feedbacklog",
+    "entryLabel": "Entry",
+    "hasTitle": true
+  }
+}

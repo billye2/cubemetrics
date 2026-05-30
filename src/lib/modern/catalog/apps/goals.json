@@ -1,0 +1,13 @@
+{
+  "id": "goals",
+  "order": 51,
+  "name": "Goals",
+  "category": "goals",
+  "icon": "◎",
+  "description": "Long-term goals",
+  "ui": "goal",
+  "config": {
+    "goalType": "smart",
+    "hasTarget": true
+  }
+}

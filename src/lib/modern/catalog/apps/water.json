@@ -1,0 +1,21 @@
+{
+  "id": "water",
+  "order": 5,
+  "name": "Water",
+  "category": "habits",
+  "icon": "◐",
+  "description": "Glasses of water",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "water",
+    "unit": "glasses",
+    "min": 0,
+    "max": 16,
+    "aggregate": "sum",
+    "dailyGoal": 8,
+    "quickAdd": [
+      1,
+      2
+    ]
+  }
+}

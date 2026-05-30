@@ -1,0 +1,13 @@
+{
+  "id": "contacts",
+  "order": 21,
+  "name": "Contacts",
+  "category": "org",
+  "icon": "☻",
+  "description": "People",
+  "ui": "checklist",
+  "config": {
+    "listType": "contacts",
+    "itemLabel": "Contact"
+  }
+}

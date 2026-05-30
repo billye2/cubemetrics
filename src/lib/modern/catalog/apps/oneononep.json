@@ -1,0 +1,14 @@
+{
+  "id": "oneononep",
+  "order": 46,
+  "name": "1-on-1s",
+  "category": "work",
+  "icon": "☷",
+  "description": "1:1 notes",
+  "ui": "logbook",
+  "config": {
+    "logType": "oneonone",
+    "entryLabel": "Meeting",
+    "hasTitle": true
+  }
+}

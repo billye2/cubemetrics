@@ -1,0 +1,9 @@
+{
+  "id": "networth",
+  "order": 66,
+  "name": "Net Worth",
+  "category": "finance",
+  "icon": "❖",
+  "description": "Assets − liabilities over time",
+  "ui": "modern"
+}

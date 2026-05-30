@@ -1,0 +1,13 @@
+{
+  "id": "streaks",
+  "order": 54,
+  "name": "Streaks",
+  "category": "goals",
+  "icon": "⚡",
+  "description": "Consecutive days",
+  "ui": "goal",
+  "config": {
+    "goalType": "streak",
+    "hasTarget": false
+  }
+}

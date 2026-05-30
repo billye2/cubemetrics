@@ -1,0 +1,9 @@
+{
+  "id": "expenses",
+  "order": 77,
+  "name": "Expenses",
+  "category": "finance",
+  "icon": "⟢",
+  "description": "Track spending",
+  "ui": "modern"
+}

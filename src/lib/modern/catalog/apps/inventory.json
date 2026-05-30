@@ -1,0 +1,13 @@
+{
+  "id": "inventory",
+  "order": 22,
+  "name": "Inventory",
+  "category": "org",
+  "icon": "▦",
+  "description": "Things you own",
+  "ui": "checklist",
+  "config": {
+    "listType": "inventory",
+    "itemLabel": "Item"
+  }
+}

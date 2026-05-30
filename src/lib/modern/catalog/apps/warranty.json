@@ -1,0 +1,13 @@
+{
+  "id": "warranty",
+  "order": 28,
+  "name": "Warranties",
+  "category": "lifestyle",
+  "icon": "☖",
+  "description": "Warranty tracking",
+  "ui": "checklist",
+  "config": {
+    "listType": "warranty",
+    "itemLabel": "Warranty"
+  }
+}

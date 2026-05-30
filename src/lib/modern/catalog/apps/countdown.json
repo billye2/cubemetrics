@@ -1,0 +1,9 @@
+{
+  "id": "countdown",
+  "order": 72,
+  "name": "Countdown",
+  "category": "time",
+  "icon": "⏳",
+  "description": "Live countdown to upcoming dates",
+  "ui": "modern"
+}

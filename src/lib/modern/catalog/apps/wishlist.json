@@ -1,0 +1,13 @@
+{
+  "id": "wishlist",
+  "order": 16,
+  "name": "Wishlist",
+  "category": "org",
+  "icon": "★",
+  "description": "Things to buy",
+  "ui": "checklist",
+  "config": {
+    "listType": "wishlist",
+    "itemLabel": "Item"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "milestones",
+  "order": 53,
+  "name": "Milestones",
+  "category": "goals",
+  "icon": "◆",
+  "description": "Big wins",
+  "ui": "goal",
+  "config": {
+    "goalType": "milestone",
+    "hasTarget": false
+  }
+}

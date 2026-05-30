@@ -1,0 +1,17 @@
+{
+  "id": "weight",
+  "order": 8,
+  "name": "Weight",
+  "category": "habits",
+  "icon": "⚖",
+  "description": "Weight log",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "weight",
+    "unit": "lbs",
+    "min": 0,
+    "max": 500,
+    "aggregate": "latest",
+    "chartStyle": "line"
+  }
+}

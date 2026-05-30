@@ -1,0 +1,22 @@
+{
+  "id": "writingtracker",
+  "order": 10,
+  "name": "Writing",
+  "category": "notes",
+  "icon": "✑",
+  "description": "Words written today",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "writing",
+    "unit": "words",
+    "min": 0,
+    "max": 100000,
+    "aggregate": "sum",
+    "dailyGoal": 500,
+    "quickAdd": [
+      100,
+      250,
+      500
+    ]
+  }
+}

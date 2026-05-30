@@ -1,0 +1,9 @@
+{
+  "id": "todo",
+  "order": 0,
+  "name": "Todo",
+  "category": "tasks",
+  "icon": "✓",
+  "description": "Tasks and priorities",
+  "ui": "modern"
+}

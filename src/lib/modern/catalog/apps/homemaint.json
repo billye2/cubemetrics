@@ -1,0 +1,13 @@
+{
+  "id": "homemaint",
+  "order": 24,
+  "name": "Home",
+  "category": "lifestyle",
+  "icon": "⌂",
+  "description": "Home maintenance",
+  "ui": "checklist",
+  "config": {
+    "listType": "homemaint",
+    "itemLabel": "Task"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "debtpayoff",
+  "order": 59,
+  "name": "Debt",
+  "category": "finance",
+  "icon": "⊠",
+  "description": "Payoff plan",
+  "ui": "goal",
+  "config": {
+    "goalType": "debt",
+    "hasTarget": true
+  }
+}

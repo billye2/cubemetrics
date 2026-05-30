@@ -1,0 +1,13 @@
+{
+  "id": "skilltree",
+  "order": 56,
+  "name": "Skill Tree",
+  "category": "learning",
+  "icon": "⌬",
+  "description": "Skills to build",
+  "ui": "goal",
+  "config": {
+    "goalType": "skill",
+    "hasTarget": false
+  }
+}

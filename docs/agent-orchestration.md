@@ -40,7 +40,7 @@ These are the only files where independent agents actually contend:
 
 | Seam | Why it collides | Severity |
 |------|-----------------|----------|
-| `src/lib/modern/catalog.ts` | Single ~99-entry `APPS` array. Every new app appends here → guaranteed merge conflict, and the array is the app's "front door." | **High** |
+| `src/lib/modern/catalog.ts` | *(was)* a single ~90-entry `APPS` array every new app appended to → guaranteed merge conflict. **Resolved in Phase 2:** now generated from one-JSON-per-app under `catalog/apps/` (see [Decision 2](#decision-2--catalog-de-confliction)). | ~~High~~ resolved |
 | `src/supabase/migrations/NNN_*.sql` | Sequential integer naming (next is `031_`). Two agents both grab `031` → filename clash + ambiguous apply order. | **High** |
 | `docs/database.md` | Shared schema doc; every table-adding app edits it. | Medium |
 | `docs/app-plans/_*-template.md` | Shared factory-template plans; one edit affects every app on that family. | Medium |
@@ -107,7 +107,8 @@ Baked into the [builder role](../.claude/roles/builder.md):
 
 > **One agent = one app = its own `src/app/app/<id>/` dir + its own migration + its own
 > `docs/app-plans/<id>.md`. Never edit another app's directory. Never hand-edit the seam files
-> (`catalog.ts`, `database.md`, `_*-template.md`) directly — emit a delta instead (pillar 4).**
+> (`catalog/_generated.ts`, `database.md`, `_*-template.md`) directly — drop a `catalog/apps/<id>.json`
+> and emit doc deltas instead (pillar 4).**
 
 This single rule removes essentially all conflicts that aren't a seam file.
 
@@ -122,12 +123,14 @@ applies to *new* migrations only. (Document in [database.md](database.md) + [com
 **✅ Decision — agents stop hand-appending; a codegen step assembles the catalog (B1).**
 See [Decision 2](#decision-2--catalog-de-confliction).
 
-- **B1 — Deferred entry + codegen (chosen).** A building agent does *not* touch `catalog.ts`. It
-  drops a `catalog.entry.ts` inside its own app dir and a script (`scripts/build-catalog.ts`, wired
-  into `prebuild` and runnable by the integrator) assembles them into the `APPS` array. The
-  generated array is integrator-owned → zero contention; each agent only writes inside its own
-  island. Chosen because it is the only mechanism that gives *true* zero-collision even when two
-  agents build apps in the same category.
+- **B1 — Deferred entry + codegen (chosen, shipped in Phase 2).** A building agent does *not* touch
+  the catalog array. It drops one `src/lib/modern/catalog/apps/<id>.json` and runs
+  `npm run build:catalog` (`scripts/build-catalog.mjs`, wired into `prebuild` + `pretest`), which
+  validates and assembles every entry into the generated `catalog/_generated.ts` (`APPS`). The
+  generated array is integrator-owned → zero contention; each agent only writes its own JSON file.
+  Chosen because it is the only mechanism that gives *true* zero-collision even when two agents
+  build apps in the same category. *(Entries live in `catalog/apps/`, not in each app's page dir —
+  template apps have no page dir, and a dedicated folder keeps custom and template apps uniform.)*
 - **B2 — Split by category (rejected; interim-only).** Break `catalog.ts` into
   `src/lib/modern/catalog/<category>.ts` re-exported by an index. Lighter to adopt, but two new
   apps in the *same* category still collide — so it is only an acceptable stopgap if codegen (B1)
@@ -150,14 +153,14 @@ builds add two coordinating roles and amend the builder.
 |------|-------------|------|---------------------|
 | **dispatcher** | 1 | Picking N unclaimed apps from the ledger, flipping claims / assigning issues | No |
 | **builder** *(amended)* | N (parallel, isolated) | One app island, end to end | **No** — emits deltas |
-| **integrator** *(new)* | 1 (serial) | Merging branches, assembling `catalog.ts`, folding `database.md`/templates, full-suite verify, push | **Yes — exclusively** |
+| **integrator** *(new)* | 1 (serial) | Merging branches, regenerating `catalog/_generated.ts` (`npm run build:catalog`), folding `database.md`/templates, full-suite verify, push | **Yes — exclusively** |
 
 **Builder amendments** (add to `.claude/roles/builder.md`):
 - Work in an isolated worktree on a `claude/<app-id>-<shortid>` branch.
 - Honor the [ownership rule](#3-ownership-rule-the-real-anti-duplication-rule).
 - New migrations use the timestamp convention.
-- Do **not** edit `catalog.ts` / `database.md` / `_*-template.md`; emit the deferred entry +
-  schema delta instead.
+- Do **not** edit `catalog/_generated.ts` / `database.md` / `_*-template.md`; drop a
+  `catalog/apps/<id>.json` and emit the schema delta to your plan instead.
 - Merge or abandon the branch the same session (no orphans).
 
 **New `integrator` role** (`.claude/roles/integrator.md`): owns every seam file, runs the fan-in,
@@ -185,7 +188,7 @@ Phase 2 — Build (N agents, parallel, worktree-isolated)   ← the fan-out
 
 Phase 3 — Integrate (1 agent, serial)                     ← the fan-in barrier
   merge each green branch
-  assemble catalog.ts (codegen or apply entries) — resolve any ordering
+  npm run build:catalog → regenerate catalog/_generated.ts from all lanes' apps/*.json
   fold schema deltas into database.md; apply template observations
   run FULL npm test + npm run build across the union (catches cross-app breakage)
   audit combined diff for secrets → commit → push master (auto-deploys)
@@ -246,10 +249,12 @@ that slips — exactly how `5929e7e` was recovered.
   `commands.md`; `_status.md` has an **Active claims** block as the *attended-only* interim claim
   ([Decision 1](#decision-1--claim-mechanism) fallback). *Enables careful, watched 2-agent
   parallelism today.*
-- **Phase 2 — kill the seam collisions:** add `integrator.md` (the only role that pushes `master`,
-  [Decision 3](#decision-3--who-pushes-master)); adopt catalog codegen (B1,
-  [Decision 2](#decision-2--catalog-de-confliction)) — `scripts/build-catalog.ts` + per-app
-  `catalog.entry.ts`; make builders emit schema deltas instead of editing shared docs.
+- **Phase 2 — done (2026-05-29).** Seam collisions killed: `integrator.md` added (the only role
+  that pushes `master`, [Decision 3](#decision-3--who-pushes-master)); catalog codegen shipped
+  ([Decision 2](#decision-2--catalog-de-confliction)) — `scripts/build-catalog.mjs` assembles
+  `catalog/apps/*.json` → `catalog/_generated.ts`, wired into `prebuild`/`pretest`; `builder.md`
+  now has builders drop a JSON entry and emit schema deltas to their plan instead of editing shared
+  docs. The 86 existing apps were migrated to per-app JSON with grid order preserved exactly.
 - **Phase 3 — scale the queue (canonical):** seed GitHub issues from the backlog (Option B,
   [Decision 1](#decision-1--claim-mechanism)) with branch protection on `master` so PRs can't
   self-merge, and wire the dispatch → build → integrate Workflow script under `.claude/workflows/`.
@@ -276,13 +281,13 @@ for *attended* runs of ≤2 agents only.**
   builders self-assign atomically.
 
 ### Decision 2 — Catalog de-confliction
-**Deferred entry + codegen (B1).** Agents drop a `catalog.entry.ts` in their own app dir;
-`scripts/build-catalog.ts` (wired into `prebuild`) assembles `APPS`. Category split (B2) is
-rejected except as a stopgap if codegen can't land in Phase 2.
+**Deferred entry + codegen (B1) — shipped.** Agents drop `catalog/apps/<id>.json`;
+`scripts/build-catalog.mjs` (wired into `prebuild` + `pretest`, also `npm run build:catalog`)
+validates and assembles `APPS` into `catalog/_generated.ts`. Category split (B2) is rejected.
 - *Why:* B1 is the only option that holds when two agents build apps in the *same* category — i.e.
   true zero-collision. B2 still collides there, so it doesn't actually solve the problem at scale.
-- *Implication:* `src/lib/modern/catalog.ts` becomes generated output (integrator-owned); hand-edits
-  to it are disallowed for builders.
+- *Implication:* `src/lib/modern/catalog/_generated.ts` is generated output (integrator-owned);
+  hand-edits to it are disallowed for builders, who only add `catalog/apps/<id>.json`.
 
 ### Decision 3 — Who pushes `master`
 **Integrator-only, after a union build. Per-lane PRs are the queue/review surface but are never

@@ -1,0 +1,14 @@
+{
+  "id": "brainstorm",
+  "order": 40,
+  "name": "Brainstorm",
+  "category": "notes",
+  "icon": "✺",
+  "description": "Idea sessions",
+  "ui": "logbook",
+  "config": {
+    "logType": "brainstorm",
+    "entryLabel": "Session",
+    "hasTitle": true
+  }
+}

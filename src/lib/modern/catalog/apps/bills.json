@@ -1,0 +1,14 @@
+{
+  "id": "bills",
+  "order": 62,
+  "name": "Bills",
+  "category": "finance",
+  "icon": "⌗",
+  "description": "Bills due",
+  "ui": "finance",
+  "config": {
+    "itemType": "bill",
+    "hasAmount": true,
+    "hasDueDate": true
+  }
+}

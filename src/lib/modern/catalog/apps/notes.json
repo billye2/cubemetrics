@@ -1,0 +1,9 @@
+{
+  "id": "notes",
+  "order": 3,
+  "name": "Notes",
+  "category": "notes",
+  "icon": "✐",
+  "description": "Quick notes",
+  "ui": "modern"
+}

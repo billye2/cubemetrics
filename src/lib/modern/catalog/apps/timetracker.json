@@ -1,0 +1,9 @@
+{
+  "id": "timetracker",
+  "order": 71,
+  "name": "Time Tracker",
+  "category": "time",
+  "icon": "⌚",
+  "description": "Log where your day went, by category",
+  "ui": "modern"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "backlog",
+  "order": 20,
+  "name": "Backlog",
+  "category": "tasks",
+  "icon": "☷",
+  "description": "Someday/maybe",
+  "ui": "checklist",
+  "config": {
+    "listType": "backlog",
+    "itemLabel": "Item"
+  }
+}

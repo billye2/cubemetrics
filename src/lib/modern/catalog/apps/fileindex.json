@@ -1,0 +1,13 @@
+{
+  "id": "fileindex",
+  "order": 23,
+  "name": "File Index",
+  "category": "org",
+  "icon": "☰",
+  "description": "File catalog",
+  "ui": "checklist",
+  "config": {
+    "listType": "fileindex",
+    "itemLabel": "File"
+  }
+}

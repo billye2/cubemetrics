@@ -1,0 +1,14 @@
+{
+  "id": "interviews",
+  "order": 50,
+  "name": "Interviews",
+  "category": "work",
+  "icon": "☷",
+  "description": "Interview debriefs",
+  "ui": "logbook",
+  "config": {
+    "logType": "interview",
+    "entryLabel": "Interview",
+    "hasTitle": true
+  }
+}

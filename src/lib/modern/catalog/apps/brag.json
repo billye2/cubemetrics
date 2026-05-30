@@ -1,0 +1,14 @@
+{
+  "id": "brag",
+  "order": 49,
+  "name": "Wins",
+  "category": "work",
+  "icon": "★",
+  "description": "Brag doc — log accomplishments",
+  "ui": "logbook",
+  "config": {
+    "logType": "brag",
+    "entryLabel": "Win",
+    "hasTitle": true
+  }
+}

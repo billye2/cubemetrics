@@ -1,0 +1,9 @@
+{
+  "id": "kanban",
+  "order": 83,
+  "name": "Kanban",
+  "category": "work",
+  "icon": "▥",
+  "description": "To do · Doing · Done board",
+  "ui": "modern"
+}
