@@ -4,10 +4,6 @@
   "name": "Clients",
   "category": "work",
   "icon": "◉",
-  "description": "Client work",
-  "ui": "checklist",
-  "config": {
-    "listType": "client",
-    "itemLabel": "Client"
-  }
+  "description": "Client pipeline & follow-ups",
+  "ui": "modern"
 }
