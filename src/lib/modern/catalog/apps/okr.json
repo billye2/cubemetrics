@@ -5,9 +5,5 @@
   "category": "goals",
   "icon": "◈",
   "description": "Objectives & key results",
-  "ui": "goal",
-  "config": {
-    "goalType": "okr",
-    "hasTarget": true
-  }
+  "ui": "modern"
 }

@@ -56,7 +56,7 @@ export const APPS: AppEntry[] = [
   {"id":"brag","name":"Wins","category":"work","icon":"★","description":"Brag doc — log accomplishments","ui":"logbook","config":{"logType":"brag","entryLabel":"Win","hasTitle":true}},
   {"id":"interviews","name":"Interviews","category":"work","icon":"☷","description":"Interview debriefs","ui":"logbook","config":{"logType":"interview","entryLabel":"Interview","hasTitle":true}},
   {"id":"goals","name":"Goals","category":"goals","icon":"◎","description":"Long-term goals","ui":"goal","config":{"goalType":"smart","hasTarget":true}},
-  {"id":"okr","name":"OKRs","category":"goals","icon":"◈","description":"Objectives & key results","ui":"goal","config":{"goalType":"okr","hasTarget":true}},
+  {"id":"okr","name":"OKRs","category":"goals","icon":"◈","description":"Objectives & key results","ui":"modern"},
   {"id":"milestones","name":"Milestones","category":"goals","icon":"◆","description":"Big wins","ui":"goal","config":{"goalType":"milestone","hasTarget":false}},
   {"id":"streaks","name":"Streaks","category":"goals","icon":"⚡","description":"Consecutive days","ui":"goal","config":{"goalType":"streak","hasTarget":false}},
   {"id":"courses","name":"Courses","category":"learning","icon":"◧","description":"Course tracking","ui":"goal","config":{"goalType":"course","hasTarget":true}},
