@@ -5,10 +5,5 @@
   "category": "tasks",
   "icon": "⌗",
   "description": "Reflect each week",
-  "ui": "logbook",
-  "config": {
-    "logType": "weekly",
-    "entryLabel": "Review",
-    "hasTitle": true
-  }
+  "ui": "modern"
 }
