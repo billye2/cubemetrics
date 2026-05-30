@@ -30,7 +30,7 @@ export const APPS: AppEntry[] = [
   {"id":"fileindex","name":"File Index","category":"org","icon":"☰","description":"File catalog","ui":"checklist","config":{"listType":"fileindex","itemLabel":"File"}},
   {"id":"homemaint","name":"Home","category":"lifestyle","icon":"⌂","description":"Home maintenance","ui":"checklist","config":{"listType":"homemaint","itemLabel":"Task"}},
   {"id":"cleaning","name":"Cleaning","category":"lifestyle","icon":"✦","description":"Cleaning schedule","ui":"checklist","config":{"listType":"cleaning","itemLabel":"Task"}},
-  {"id":"plantcare","name":"Plants","category":"lifestyle","icon":"✿","description":"Plant care","ui":"checklist","config":{"listType":"plantcare","itemLabel":"Plant"}},
+  {"id":"plantcare","name":"Plants","category":"lifestyle","icon":"✿","description":"Water your houseplants on schedule","ui":"modern"},
   {"id":"petcare","name":"Pets","category":"lifestyle","icon":"♥","description":"Pet care","ui":"checklist","config":{"listType":"petcare","itemLabel":"Task"}},
   {"id":"warranty","name":"Warranties","category":"lifestyle","icon":"☖","description":"Track warranties before they expire","ui":"modern"},
   {"id":"travelplanner","name":"Travel","category":"lifestyle","icon":"✈","description":"Trip planning","ui":"checklist","config":{"listType":"travel","itemLabel":"Item"}},
