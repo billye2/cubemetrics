@@ -61,6 +61,7 @@ export function FocusView({ entries }: { entries: Entry[] }) {
 
   return (
     <div>
+      <Intro />
       <Stats entries={entries} />
       {active ? (
         <ActiveTimer
@@ -81,6 +82,18 @@ export function FocusView({ entries }: { entries: Entry[] }) {
         />
       )}
       <History entries={entries} />
+    </div>
+  );
+}
+
+function Intro() {
+  return (
+    <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-3 text-xs text-zinc-400">
+      <span className="font-semibold text-zinc-300">Stay on one thing</span>{" "}
+      — set an intent, pick a duration, and let the timer keep you honest. Jot
+      down distractions as they hit instead of chasing them. Reach for{" "}
+      <span className="font-semibold text-cyan-400">Time Tracker</span> when you
+      want to see where all your hours actually went.
     </div>
   );
 }

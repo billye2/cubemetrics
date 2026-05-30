@@ -55,6 +55,7 @@ export function CountdownsView({ rows }: { rows: Countdown[] }) {
 
   return (
     <div>
+      <Intro />
       <AddForm recentCategories={recentCategories} />
 
       <Section title="Upcoming" empty="Nothing on the horizon yet.">
@@ -70,6 +71,18 @@ export function CountdownsView({ rows }: { rows: Countdown[] }) {
           ))}
         </Section>
       )}
+    </div>
+  );
+}
+
+function Intro() {
+  return (
+    <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-3 text-xs text-zinc-400">
+      <span className="font-semibold text-zinc-300">Count down to what matters</span>{" "}
+      — add the dates you&apos;re waiting on and watch the days tick away. Flag
+      one as{" "}
+      <span className="font-semibold text-cyan-400">recurring</span> and it rolls
+      to next year the moment it passes.
     </div>
   );
 }
