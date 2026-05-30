@@ -32,7 +32,7 @@ export const APPS: AppEntry[] = [
   {"id":"cleaning","name":"Cleaning","category":"lifestyle","icon":"✦","description":"Cleaning schedule","ui":"checklist","config":{"listType":"cleaning","itemLabel":"Task"}},
   {"id":"plantcare","name":"Plants","category":"lifestyle","icon":"✿","description":"Plant care","ui":"checklist","config":{"listType":"plantcare","itemLabel":"Plant"}},
   {"id":"petcare","name":"Pets","category":"lifestyle","icon":"♥","description":"Pet care","ui":"checklist","config":{"listType":"petcare","itemLabel":"Task"}},
-  {"id":"warranty","name":"Warranties","category":"lifestyle","icon":"☖","description":"Warranty tracking","ui":"checklist","config":{"listType":"warranty","itemLabel":"Warranty"}},
+  {"id":"warranty","name":"Warranties","category":"lifestyle","icon":"☖","description":"Track warranties before they expire","ui":"modern"},
   {"id":"travelplanner","name":"Travel","category":"lifestyle","icon":"✈","description":"Trip planning","ui":"checklist","config":{"listType":"travel","itemLabel":"Item"}},
   {"id":"vocabulary","name":"Vocabulary","category":"learning","icon":"✦","description":"Words to learn","ui":"checklist","config":{"listType":"vocab","itemLabel":"Word"}},
   {"id":"routines","name":"Routines","category":"tasks","icon":"⟳","description":"Recurring sequences","ui":"checklist","config":{"listType":"routine","itemLabel":"Routine"}},
