@@ -30,6 +30,7 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 
 | App | Branch | Claimed (UTC) | Notes |
 |-----|--------|---------------|-------|
+| bookmarks | claude/bookmarks-build | 2026-05-30T14:55 | P2/P3 follow-up (#82): read-it-later, import/export, clipboard autofill |
 
 ## Custom apps
 

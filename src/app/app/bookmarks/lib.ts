@@ -9,6 +9,7 @@ export interface BookmarkRow {
   folder: string | null;
   favicon_url: string | null;
   last_opened_at: string | null;
+  unread: boolean | null;
   created_at: string;
 }
 
@@ -20,6 +21,7 @@ export interface Bookmark {
   folder: string | null;
   faviconUrl: string | null;
   lastOpenedAt: string | null;
+  unread: boolean;
   createdAt: string;
   host: string;
 }
@@ -110,6 +112,7 @@ export function toBookmark(row: BookmarkRow): Bookmark {
     folder: cleanStr(row.folder),
     faviconUrl: cleanStr(row.favicon_url),
     lastOpenedAt: cleanStr(row.last_opened_at),
+    unread: row.unread === true,
     createdAt: row.created_at,
     host: hostOf(row.url),
   };
@@ -126,10 +129,12 @@ export function matchesQuery(b: Bookmark, query: string): boolean {
 export interface Filters {
   query: string;
   tag: string | null;
+  unreadOnly?: boolean;
 }
 
 export function applyFilters(list: Bookmark[], f: Filters): Bookmark[] {
   return list.filter((b) => {
+    if (f.unreadOnly && !b.unread) return false;
     if (f.tag && !b.tags.includes(f.tag)) return false;
     if (!matchesQuery(b, f.query)) return false;
     return true;
@@ -159,4 +164,40 @@ export function allTags(list: Bookmark[]): string[] {
     const cb = counts.get(b) ?? 0;
     return cb - ca || a.localeCompare(b);
   });
+}
+
+export interface ImportEntry {
+  url: string;
+  title: string;
+}
+
+/**
+ * Parse a pasted blob into importable bookmark entries. One per line; each line
+ * is `<url>` or `<url> <title…>` (whitespace-separated, title optional). Lines
+ * that don't yield a valid http(s) URL are skipped, and duplicate URLs within
+ * the paste are collapsed (first wins). A bare host gets https:// prepended.
+ */
+export function parseImport(input: string): ImportEntry[] {
+  const out: ImportEntry[] = [];
+  const seen = new Set<string>();
+  for (const line of input.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    const ws = trimmed.search(/\s/);
+    const head = ws === -1 ? trimmed : trimmed.slice(0, ws);
+    const rest = ws === -1 ? "" : trimmed.slice(ws).trim();
+    const url = normalizeUrl(head);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    out.push({ url, title: rest || deriveTitle(url) });
+  }
+  return out;
+}
+
+/**
+ * Render bookmarks as a plain-text export, one `<url>\t<title>` per line. Pairs
+ * with parseImport for a round-trip (paste the export back to re-add).
+ */
+export function toExportText(list: Bookmark[]): string {
+  return list.map((b) => `${b.url}\t${b.title}`).join("\n");
 }

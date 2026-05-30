@@ -13,7 +13,7 @@ export default async function BookmarksPage() {
 
   const { data } = await supabase
     .from("bookmarks")
-    .select("id, url, title, tags, folder, favicon_url, last_opened_at, created_at")
+    .select("id, url, title, tags, folder, favicon_url, last_opened_at, unread, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(500);
