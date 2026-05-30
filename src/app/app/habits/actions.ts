@@ -20,11 +20,15 @@ export async function addHabit(name: string) {
   revalidatePath("/app/habits");
 }
 
+/**
+ * Toggle today's check-in: inserts a row if none exists, deletes it if it does.
+ * Tapping an already-checked tile undoes a mis-tap (the row is removed) instead
+ * of being a no-op.
+ */
 export async function checkInAction(habitId: number) {
   const { supabase, userId } = await requireUser();
   const today = new Date().toISOString().split("T")[0];
 
-  // Guard against double check-in
   const { data: existing } = await supabase
     .from("habit_checkins")
     .select("id")
@@ -34,6 +38,12 @@ export async function checkInAction(habitId: number) {
     .limit(1);
 
   if (existing && existing.length > 0) {
+    // Already checked today → undo.
+    await supabase
+      .from("habit_checkins")
+      .delete()
+      .eq("id", existing[0].id)
+      .eq("user_id", userId);
     revalidatePath("/app/habits");
     return;
   }

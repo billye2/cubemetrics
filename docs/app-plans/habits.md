@@ -9,13 +9,13 @@
 **Plan**
 
 **P1 — makes it complete**
-- **Per-habit calendar heatmap** — a GitHub-style last-~8-weeks grid per habit (or an expandable section) showing check-in density. This is the missing visualization and the most motivating addition.
-- **Undo today's check-in** — tapping an already-checked tile removes today's check-in (delete the row), so mis-taps are fixable.
-- **Edit habit name** — inline rename (new `updateHabitAction`).
+- [x] **Per-habit calendar heatmap** — a GitHub-style last-~8-weeks grid per habit (expandable section via the ▾ toggle on each row) showing check-in density. Built in `lib.ts::buildHeatmap` (pure, unit-tested) + `Heatmap` in `HabitsView.tsx`.
+- [x] **Undo today's check-in** — `checkInAction` now *toggles*: tapping an already-checked tile deletes today's row, so mis-taps are fixable. The Today tile is no longer disabled once checked.
+- [x] **Edit habit name** — inline rename via the shared `InlineEdit` component + `renameHabitAction`. (Already in place; verified.)
 
 **P2 — enhancements**
 - **Frequency targets using the `frequency` column** — let a habit be "Nx per week"; show progress against *its* target (e.g. "2/3 this week") and base the streak on weekly target met, not raw consecutive days. Fixes the daily-only assumption.
-- **Completion-rate %** — over the last 30/90 days, per habit.
+- **Completion-rate %** — over the last 30/90 days, per habit. (`lib.ts::completionRate` already implemented + tested; not yet surfaced in the UI.)
 - **Archive / restore UX** — surface the existing `active` flag: an "Archived" section to restore or hard-delete, instead of soft-deletes vanishing silently.
 - **Reorder** habits (drag or up/down) with a `sort_order`.
 

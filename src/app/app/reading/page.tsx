@@ -16,6 +16,8 @@ export interface BookRow {
   notes: string;
   started_at: string | null;
   finished_at: string | null;
+  current_page: number | null;
+  total_pages: number | null;
   created_at: string;
 }
 
@@ -29,7 +31,7 @@ export default async function ReadingPage() {
   const { data } = await supabase
     .from("reading_list")
     .select(
-      "id, title, author, status, rating, notes, started_at, finished_at, created_at"
+      "id, title, author, status, rating, notes, started_at, finished_at, current_page, total_pages, created_at"
     )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
