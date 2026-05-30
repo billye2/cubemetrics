@@ -11,6 +11,7 @@ Supabase PostgreSQL (via Vercel Marketplace)
 - Table names: short, plural nouns (`todos`, `habits`, `expenses`)
 - Timestamps: `TIMESTAMPTZ`, defaulting to `now()`
 - IDs: `BIGINT GENERATED ALWAYS AS IDENTITY` for app data, `UUID` for user references
+- Migration filenames: **new** migrations use a UTC timestamp — `YYYYMMDDTHHMM_<slug>.sql` (e.g. `20260529T1430_recipes.sql`) — so parallel build agents never collide on a sequence number. They sort *after* the legacy `001`–`030` numbered migrations (since `2…` > `0…`), so apply order stays deterministic. The existing `NNN_` files stay as-is; the convention applies going forward. See [agent-orchestration.md](agent-orchestration.md#decision-2--catalog-de-confliction).
 
 ## Core Tables
 

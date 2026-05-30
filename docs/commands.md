@@ -19,6 +19,11 @@ npx supabase db push                 # Apply migrations to remote DB
 npx supabase gen types typescript    # Generate TypeScript types from DB schema
 ```
 
+New migrations use a **UTC timestamp** filename — `YYYYMMDDTHHMM_<slug>.sql` (e.g.
+`20260529T1430_recipes.sql`), not the legacy `NNN_` sequence — so parallel build agents never
+collide on a number. They sort after the existing `001`–`030` files, keeping apply order
+deterministic. See [database.md](database.md) and [agent-orchestration.md](agent-orchestration.md).
+
 ## Vercel
 
 ### Automatic

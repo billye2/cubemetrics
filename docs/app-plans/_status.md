@@ -17,6 +17,21 @@ folder every session. Updated as work lands (builder role: tick the plan's own c
 > Conservative archive rule: a plan only moves to `finished/` when **no app-specific work remains**.
 > "At bar" apps with their own open P2/P3 stay here on purpose, so nothing gets hidden.
 
+## Active claims
+
+The interim claim ledger for **parallel builds** (Phase 1 of
+[agent-orchestration.md](../agent-orchestration.md)). Before a builder writes any code for an app,
+it adds a row here in a tiny commit — that's the tie-break so two lanes never build the same app.
+Remove the row when the branch merges or is abandoned. **Empty = nothing claimed.**
+
+> Scope: this ledger is sanctioned only for *attended* runs of ≤2 agents (the claim race is
+> resolved at push time, not atomically). Unattended or larger fan-outs use GitHub issues — see
+> [Decision 1](../agent-orchestration.md#decision-1--claim-mechanism).
+
+| App | Branch | Claimed (UTC) | Notes |
+|-----|--------|---------------|-------|
+| _(none)_ | | | |
+
 ## Custom apps
 
 | App | Status | Open (own) work |

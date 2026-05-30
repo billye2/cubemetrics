@@ -32,6 +32,24 @@ lands** so the plan always reflects what's actually shipped.
 - You've audited the diff for leaked secrets (public repo).
 - Co-author the commit and keep the message honest about what shipped and what's still P2/P3.
 
+**Parallel runs (multi-agent).** When more than one builder runs at once, follow
+[docs/agent-orchestration.md](../../docs/agent-orchestration.md) so lanes don't overwrite or
+duplicate each other. The Phase-1 rules in force today:
+- **Claim before you build.** Add your target to the **Active claims** table in
+  `docs/app-plans/_status.md` (app · branch · UTC) in a tiny commit *before* writing code; remove
+  the row when you merge or abandon. The ledger is the tie-break if two lanes want the same app.
+  (Attended, ≤2 agents only — unattended/N-agent runs claim via GitHub issues; see the spec.)
+- **One agent = one app.** Own exactly your app's island — `src/app/app/<id>/`, your own migration,
+  and `docs/app-plans/<id>.md`. **Never edit another app's directory.**
+- **Migrations use timestamp names** — `YYYYMMDDTHHMM_<slug>.sql` (UTC), not the legacy `NNN_`
+  sequence — so two lanes never grab the same number (see [database.md](../../docs/database.md)).
+- **`catalog.ts` is the one shared seam until codegen lands (Phase 2).** Add your single entry
+  **last**, right before committing, to shrink the conflict window; if it conflicts on merge,
+  re-add your one line — never clobber another lane's entries.
+- **Merge or abandon your branch the same session.** No branch outlives its run unmerged — that's
+  exactly the leak that stranded the Journal/Notes search box (`5929e7e`). On drop: remove your
+  claim row and delete the branch.
+
 **You DON'T:**
 - Push a failing or unverified build, or skip the secret audit, to "ship faster."
 - Hide a problem: if a step failed or was skipped, say so in the report rather than papering over it.

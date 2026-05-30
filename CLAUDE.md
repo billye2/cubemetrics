@@ -11,6 +11,7 @@ Live at **https://cubemetrics.com**
 - [Database](docs/database.md) — Schema, RLS policies, table conventions
 - [Commands](docs/commands.md) — Dev, build, deploy, Supabase CLI commands
 - [Environment](docs/environment.md) — Required env vars, Supabase Auth config
+- [Agent Orchestration](docs/agent-orchestration.md) — running parallel build agents without overwrites or duplicate work
 
 ## Quick Start
 ```bash
