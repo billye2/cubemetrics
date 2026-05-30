@@ -57,6 +57,9 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 | notes | 🟡 Partial | ✓ edit (inline, fixes updated_at) + Markdown + search; P2: tags surface, sort |
 | expenses | 🟡 Partial | P1: category breakdown, edit; P2: trend, filter, budget link |
 | feedback | 🟡 Partial | P1: edit/withdraw while new; P2: changelog, upvote |
+| weeklyreview | 🟢 At bar | graduated from logbook; structured wins/misses/lessons/next_focus, one per week |
+| warranty | 🟢 At bar | graduated from checklist; computed expiry, archive, expiry warnings |
+| vocabulary | 🟢 At bar | graduated from checklist; SM-2-lite spaced repetition, shares flashcards engine |
 
 ## Trackers (factory `tracker`)
 
@@ -77,7 +80,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | grocery · wishlist · packing · bucketlist · backlog | 🟡 Partial | per-app fields (quantity, price/priority, sections, achieved, promote-to-todo) |
 | homemaint · cleaning · petcare · routines · dailyplanner · travelplanner | 🟡 Partial | recurrence / daily-reset / date-scoping — candidates to re-point onto the `schedule` family |
-| bookmarks · contacts · inventory · fileindex · plantcare · warranty · vocabulary · visionboard · mealplanner · clienttracker | 🔴 Graduate | checklist is the wrong model; each needs a custom app |
+| bookmarks · contacts · inventory · fileindex · plantcare · visionboard · mealplanner · clienttracker | 🔴 Graduate | checklist is the wrong model; each needs a custom app |
+| ~~warranty~~ · ~~vocabulary~~ | ✅ Graduated | now custom apps (see Custom apps table) |
 
 ## Logbooks (factory `logbook`)
 
@@ -85,7 +89,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | brag · interviews | ✅ Done | thin catalog entries — in `finished/` |
 | gratitude · meeting · standup · brainstorm · learninglog · feedbacklog · oneononep · retro | 🟡 Partial | per-app structure (streak, attendees, person grouping, action items) |
-| decisionmatrix · recipes · weeklyreview | 🔴 Graduate | structured models the logbook can't express |
+| decisionmatrix · recipes | 🔴 Graduate | structured models the logbook can't express |
+| ~~weeklyreview~~ | ✅ Graduated | now a custom app (see Custom apps table) |
 
 ## Goals (factory `goal`)
 

@@ -5,9 +5,5 @@
   "category": "learning",
   "icon": "✦",
   "description": "Words to learn",
-  "ui": "checklist",
-  "config": {
-    "listType": "vocab",
-    "itemLabel": "Word"
-  }
+  "ui": "modern"
 }

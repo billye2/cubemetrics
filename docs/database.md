@@ -136,6 +136,27 @@ Backs the Kanban board app. Created ad-hoc earlier (like the factory tables); mi
 
 Backs the Quick Capture / Inbox app (migration `024_inbox.sql`, **applied to the remote**). Append-only capture; **process-to-zero** — an item exists iff it's still un-triaged. Triaging inserts a row into the destination (`todos`, `notes`, or `checklists` with `list_type='backlog'`) then deletes the inbox row. No status column. Indexed on `(user_id, created_at)`.
 
+### weekly_reviews
+| Column | Type |
+|--------|------|
+| id, user_id, week_start (DATE, Monday of reviewed week), wins, misses, lessons, next_focus, created_at |
+
+Backs the Weekly Review app (migration `20260530T0529_weekly_reviews.sql`). Graduates off the generic `logs` table into a dedicated structured-section model. One review per week per user — `UNIQUE (user_id, week_start)` backs the upsert. RLS: owner `FOR ALL`, plus `SysOp read access` SELECT for `profiles.role = 'sysop'`. Indexed on `(user_id, week_start DESC)`.
+
+### warranties
+| Column | Type |
+|--------|------|
+| id, user_id, name, purchase_date (DATE), warranty_months (INT, default 12), store, note, receipt_url, archived (BOOL), created_at |
+
+Backs the Warranty Tracker app (migration `20260530T0527_warranties.sql`). Graduates off the shared `checklists` table. Expiry is **computed at read time** from `purchase_date + warranty_months`, never stored. RLS: owner `FOR ALL`, plus `SysOp read access` SELECT for `profiles.role = 'sysop'`. Indexed on `(user_id, archived, purchase_date)`.
+
+### vocab_words
+| Column | Type |
+|--------|------|
+| id, user_id, word, definition, example, ease (REAL, default 2.5), interval (INT), reps (INT), due_date (DATE), created_at |
+
+Backs the Vocabulary app (migration `20260530T0533_vocab_words.sql`). Graduates off the checklist template; carries SM-2-lite spaced-repetition fields (`ease/interval/due_date/reps`) — `word` = front, `definition` = back, same review engine as flashcards. RLS: owner `FOR ALL` ("Users access own rows"). Indexed on `(user_id, due_date)`.
+
 ## Factory Tables
 
 Five shared tables back the generic template apps. Each row is scoped by `user_id` + a `*_type`
