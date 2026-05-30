@@ -1,0 +1,13 @@
+{
+  "id": "income",
+  "order": 65,
+  "name": "Income",
+  "category": "finance",
+  "icon": "↑",
+  "description": "Money in, by source",
+  "ui": "finance",
+  "config": {
+    "itemType": "income",
+    "hasAmount": true
+  }
+}

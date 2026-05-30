@@ -1,0 +1,13 @@
+{
+  "id": "courses",
+  "order": 55,
+  "name": "Courses",
+  "category": "learning",
+  "icon": "◧",
+  "description": "Course tracking",
+  "ui": "goal",
+  "config": {
+    "goalType": "course",
+    "hasTarget": true
+  }
+}

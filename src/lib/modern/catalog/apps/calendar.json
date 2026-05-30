@@ -1,0 +1,9 @@
+{
+  "id": "calendar",
+  "order": 75,
+  "name": "Calendar",
+  "category": "org",
+  "icon": "◰",
+  "description": "Events",
+  "ui": "modern"
+}

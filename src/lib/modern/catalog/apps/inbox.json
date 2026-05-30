@@ -1,0 +1,9 @@
+{
+  "id": "inbox",
+  "order": 81,
+  "name": "Inbox",
+  "category": "tasks",
+  "icon": "⊕",
+  "description": "Capture now, sort later",
+  "ui": "modern"
+}

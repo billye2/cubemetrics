@@ -1,0 +1,24 @@
+{
+  "id": "stress",
+  "order": 13,
+  "name": "Stress",
+  "category": "habits",
+  "icon": "◭",
+  "description": "Stress level",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "stress",
+    "labels": [
+      "None",
+      "Low",
+      "Mild",
+      "Moderate",
+      "High",
+      "Severe"
+    ],
+    "min": 0,
+    "max": 5,
+    "aggregate": "average",
+    "chartStyle": "line"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "travelplanner",
+  "order": 29,
+  "name": "Travel",
+  "category": "lifestyle",
+  "icon": "✈",
+  "description": "Trip planning",
+  "ui": "checklist",
+  "config": {
+    "listType": "travel",
+    "itemLabel": "Item"
+  }
+}

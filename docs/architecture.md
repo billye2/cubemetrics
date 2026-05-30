@@ -38,7 +38,12 @@ Styling is Tailwind utility classes inline. The base palette is zinc + cyan, dar
 
 ## App catalog & templates
 
-`src/lib/modern/catalog.ts` is the single source of truth for the app grid. Each `AppEntry` has a `ui` type:
+`src/lib/modern/catalog/` is the single source of truth for the app grid. It is **generated**: one
+JSON file per app under `catalog/apps/<id>.json` is assembled by `scripts/build-catalog.mjs` into
+`catalog/_generated.ts` (the `APPS` array); `catalog/index.ts` holds the types, `CATEGORIES`, and
+the `getApp`/`getAppsByCategory` helpers and re-exports `APPS`. Consumers still import from
+`@/lib/modern/catalog` unchanged. One-file-per-app means parallel build agents never collide on a
+shared array — see [agent-orchestration.md](agent-orchestration.md). Each `AppEntry` has a `ui` type:
 
 | `ui`        | Rendered by                                  |
 |-------------|----------------------------------------------|
@@ -52,10 +57,14 @@ Styling is Tailwind utility classes inline. The base palette is zinc + cyan, dar
 Template apps share a config (`FactoryConfig`) and a backing table (`daily_trackers`, `checklists`, `logs`, `goals`, `finance_items`).
 
 ### Adding a new app
-1. Add an `AppEntry` to `src/lib/modern/catalog.ts` (id, name, category, icon, `ui`).
-2. For a template app, supply `config` — no new code needed.
+1. Add `src/lib/modern/catalog/apps/<id>.json` (id matching the filename, plus `order`, name,
+   category, icon, description, `ui`), then run `npm run build:catalog` to regenerate `APPS`.
+   **Never hand-edit `_generated.ts`.** (`order` controls grid position; it's stripped from the
+   emitted `AppEntry`.)
+2. For a template app, supply `config` in the JSON — no new code needed.
 3. For a custom app, create `src/app/app/<id>/page.tsx` (Server Component) + `actions.ts` (Server Actions) and any colocated client components.
-4. Add a SQL migration in `src/supabase/migrations/` if it needs its own table.
+4. Add a SQL migration in `src/supabase/migrations/` if it needs its own table — use the
+   timestamp filename convention (`YYYYMMDDTHHMM_<slug>.sql`, see [database.md](database.md)).
 
 ---
 

@@ -1,0 +1,13 @@
+{
+  "id": "challenge",
+  "order": 60,
+  "name": "Challenges",
+  "category": "goals",
+  "icon": "⚑",
+  "description": "Time-boxed challenges with a target",
+  "ui": "goal",
+  "config": {
+    "goalType": "challenge",
+    "hasTarget": true
+  }
+}

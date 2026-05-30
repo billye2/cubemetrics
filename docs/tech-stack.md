@@ -30,6 +30,6 @@
 - **Vitest** — unit tests under `tests/`.
 
 ## Architecture principles
-- The catalog (`src/lib/modern/catalog.ts`) is the single source of truth for the app grid.
+- The catalog (`src/lib/modern/catalog/`, generated from `apps/*.json` by `scripts/build-catalog.mjs`) is the single source of truth for the app grid.
 - RLS does the authorization, not application code.
 - Phone-first; desktop is responsive but secondary. Dark mode only.

@@ -45,7 +45,7 @@ src/app/
   api/auth/                 — Google OAuth login, logout, callback
 src/components/modern/      — Shared UI primitives (Shell, HeaderFeedback, AppSearch, Card, SignOutButton)
 src/lib/
-  modern/                   — App catalog (catalog.ts) + admin gate (admin.ts)
+  modern/                   — App catalog (catalog/, generated from apps/*.json) + admin gate (admin.ts)
   github/                   — GitHub issue creation for the feedback workflow
   supabase/                 — Supabase server client + service-role admin client
 src/supabase/migrations/    — SQL migrations
@@ -57,7 +57,7 @@ tests/                      — Unit tests (Vitest)
 - All routes use `export const dynamic = "force-dynamic"` — auth-aware, no CDN caching.
 - Tailwind utility classes inline. Dark mode is the only mode. Cyan accent (`cyan-500`).
 - Phone-first layout. Safe-area insets respected. 44px+ tap targets.
-- The app catalog lives in `src/lib/modern/catalog.ts` — the single source of truth for the grid. Add new apps there; template apps (`tracker`/`checklist`/`logbook`/`goal`/`finance`/`schedule`) need only a catalog entry, custom apps add a page + `actions.ts`.
+- The app catalog lives in `src/lib/modern/catalog/` — the single source of truth for the grid. It's **generated**: add an app by dropping `catalog/apps/<id>.json` and running `npm run build:catalog` (never hand-edit `_generated.ts`). Template apps (`tracker`/`checklist`/`logbook`/`goal`/`finance`/`schedule`) need only the JSON entry; custom apps also add a page + `actions.ts`. One-file-per-app keeps parallel build agents from colliding — see [Agent Orchestration](docs/agent-orchestration.md).
 - Press the **Feedback** button in any app's header to send feedback tagged with that app. Admins (`ADMIN_EMAIL`) review it under `/app/feedback` and approve → opens a GitHub issue mentioning `@claude`.
 - Auth: Google OAuth only via Supabase, full-page nav, lands at `/api/auth/callback`.
 - Never commit `.env*` files — secrets stay local.

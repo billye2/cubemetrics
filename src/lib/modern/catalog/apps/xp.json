@@ -1,0 +1,9 @@
+{
+  "id": "xp",
+  "order": 85,
+  "name": "Level",
+  "category": "goals",
+  "icon": "✦",
+  "description": "Your XP, level, streak, and achievements",
+  "ui": "modern"
+}

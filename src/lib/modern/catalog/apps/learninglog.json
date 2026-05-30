@@ -1,0 +1,14 @@
+{
+  "id": "learninglog",
+  "order": 43,
+  "name": "Learning Log",
+  "category": "learning",
+  "icon": "✦",
+  "description": "What you learned",
+  "ui": "logbook",
+  "config": {
+    "logType": "learning",
+    "entryLabel": "Lesson",
+    "hasTitle": true
+  }
+}

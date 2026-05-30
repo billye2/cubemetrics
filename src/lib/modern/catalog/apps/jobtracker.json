@@ -1,0 +1,9 @@
+{
+  "id": "jobtracker",
+  "order": 84,
+  "name": "Job Hunt",
+  "category": "work",
+  "icon": "❏",
+  "description": "Track applications & stages",
+  "ui": "modern"
+}

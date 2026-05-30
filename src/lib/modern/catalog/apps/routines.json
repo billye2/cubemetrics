@@ -1,0 +1,13 @@
+{
+  "id": "routines",
+  "order": 31,
+  "name": "Routines",
+  "category": "tasks",
+  "icon": "⟳",
+  "description": "Recurring sequences",
+  "ui": "checklist",
+  "config": {
+    "listType": "routine",
+    "itemLabel": "Routine"
+  }
+}

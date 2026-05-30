@@ -1,0 +1,13 @@
+{
+  "id": "visionboard",
+  "order": 33,
+  "name": "Vision Board",
+  "category": "goals",
+  "icon": "✧",
+  "description": "Where you're heading",
+  "ui": "checklist",
+  "config": {
+    "listType": "vision",
+    "itemLabel": "Vision"
+  }
+}

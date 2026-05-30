@@ -1,0 +1,13 @@
+{
+  "id": "mealplanner",
+  "order": 35,
+  "name": "Meals",
+  "category": "habits",
+  "icon": "◍",
+  "description": "Meal planning",
+  "ui": "checklist",
+  "config": {
+    "listType": "meal",
+    "itemLabel": "Meal"
+  }
+}

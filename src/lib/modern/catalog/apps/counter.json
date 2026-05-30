@@ -1,0 +1,9 @@
+{
+  "id": "counter",
+  "order": 80,
+  "name": "Counter",
+  "category": "org",
+  "icon": "#",
+  "description": "Tally anything — reps, counts, scores",
+  "ui": "modern"
+}

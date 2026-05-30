@@ -1,0 +1,21 @@
+{
+  "id": "sleep",
+  "order": 6,
+  "name": "Sleep",
+  "category": "habits",
+  "icon": "☾",
+  "description": "Hours of sleep",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "sleep",
+    "unit": "hours",
+    "min": 0,
+    "max": 14,
+    "aggregate": "latest",
+    "dailyGoal": 8,
+    "idealRange": [
+      7,
+      9
+    ]
+  }
+}

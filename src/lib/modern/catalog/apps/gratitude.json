@@ -1,0 +1,14 @@
+{
+  "id": "gratitude",
+  "order": 37,
+  "name": "Gratitude",
+  "category": "habits",
+  "icon": "♥",
+  "description": "Daily gratitude",
+  "ui": "logbook",
+  "config": {
+    "logType": "gratitude",
+    "entryLabel": "Entry",
+    "hasTitle": false
+  }
+}

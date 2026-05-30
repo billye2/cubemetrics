@@ -1,0 +1,9 @@
+{
+  "id": "habits",
+  "order": 79,
+  "name": "Habits",
+  "category": "habits",
+  "icon": "⊙",
+  "description": "Daily habits",
+  "ui": "modern"
+}

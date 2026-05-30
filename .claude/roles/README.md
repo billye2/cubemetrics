@@ -23,6 +23,7 @@ direct explicit instruction can still override the active role for a single acti
 | [spec-writer](spec-writer.md) | research, plans, and specs written to `docs/` — no code, no git. **(default mental mode for this repo)** |
 | [builder](builder.md) | the next task from `docs/app-plans/` implemented, verified, and shipped — commits/pushes to `master` (auto-deploys) and applies migrations once tests + build are green. |
 | [reviewer](reviewer.md) | a critical read / punch-list of a diff or spec — no edits. |
+| [integrator](integrator.md) | parallel-build fan-in: merge green builder lanes, own the seam files (catalog codegen, `database.md`, templates, `_status.md`), verify the **union**, and ship. The only role that pushes `master` in a multi-agent run. |
 
 ## Adding a role
 

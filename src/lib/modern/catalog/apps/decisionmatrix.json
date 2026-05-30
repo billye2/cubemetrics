@@ -1,0 +1,14 @@
+{
+  "id": "decisionmatrix",
+  "order": 41,
+  "name": "Decisions",
+  "category": "notes",
+  "icon": "◰",
+  "description": "Decisions log",
+  "ui": "logbook",
+  "config": {
+    "logType": "decision",
+    "entryLabel": "Decision",
+    "hasTitle": true
+  }
+}

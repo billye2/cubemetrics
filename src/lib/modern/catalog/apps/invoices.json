@@ -1,0 +1,14 @@
+{
+  "id": "invoices",
+  "order": 64,
+  "name": "Invoices",
+  "category": "work",
+  "icon": "⌗",
+  "description": "Billing",
+  "ui": "finance",
+  "config": {
+    "itemType": "invoice",
+    "hasAmount": true,
+    "hasDueDate": true
+  }
+}

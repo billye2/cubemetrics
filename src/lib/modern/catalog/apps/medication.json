@@ -1,0 +1,13 @@
+{
+  "id": "medication",
+  "order": 69,
+  "name": "Meds",
+  "category": "habits",
+  "icon": "✛",
+  "description": "Medications & refills on a cadence",
+  "ui": "schedule",
+  "config": {
+    "scheduleType": "medication",
+    "itemLabel": "Med"
+  }
+}

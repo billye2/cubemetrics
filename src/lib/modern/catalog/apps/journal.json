@@ -1,0 +1,9 @@
+{
+  "id": "journal",
+  "order": 1,
+  "name": "Journal",
+  "category": "notes",
+  "icon": "✎",
+  "description": "Daily entries",
+  "ui": "modern"
+}

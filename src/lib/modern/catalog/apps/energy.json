@@ -1,0 +1,23 @@
+{
+  "id": "energy",
+  "order": 7,
+  "name": "Energy",
+  "category": "habits",
+  "icon": "✸",
+  "description": "Energy level",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "energy",
+    "labels": [
+      "Drained",
+      "Low",
+      "Okay",
+      "Good",
+      "High"
+    ],
+    "min": 0,
+    "max": 4,
+    "aggregate": "average",
+    "chartStyle": "line"
+  }
+}

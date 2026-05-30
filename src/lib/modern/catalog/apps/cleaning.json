@@ -1,0 +1,13 @@
+{
+  "id": "cleaning",
+  "order": 25,
+  "name": "Cleaning",
+  "category": "lifestyle",
+  "icon": "✦",
+  "description": "Cleaning schedule",
+  "ui": "checklist",
+  "config": {
+    "listType": "cleaning",
+    "itemLabel": "Task"
+  }
+}

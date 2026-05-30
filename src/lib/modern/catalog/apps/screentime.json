@@ -1,0 +1,22 @@
+{
+  "id": "screentime",
+  "order": 9,
+  "name": "Screen Time",
+  "category": "habits",
+  "icon": "▢",
+  "description": "Hours on screens",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "screentime",
+    "unit": "hours",
+    "min": 0,
+    "max": 24,
+    "aggregate": "sum",
+    "dailyGoal": 2,
+    "goalDirection": "at-most",
+    "quickAdd": [
+      0.5,
+      1
+    ]
+  }
+}

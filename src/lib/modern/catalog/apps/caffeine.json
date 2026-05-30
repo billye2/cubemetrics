@@ -1,0 +1,22 @@
+{
+  "id": "caffeine",
+  "order": 12,
+  "name": "Caffeine",
+  "category": "habits",
+  "icon": "◉",
+  "description": "Caffeine intake",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "caffeine",
+    "unit": "mg",
+    "min": 0,
+    "max": 2000,
+    "aggregate": "sum",
+    "dailyGoal": 400,
+    "goalDirection": "at-most",
+    "quickAdd": [
+      95,
+      150
+    ]
+  }
+}

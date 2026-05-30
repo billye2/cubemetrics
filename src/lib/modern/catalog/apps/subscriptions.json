@@ -1,0 +1,13 @@
+{
+  "id": "subscriptions",
+  "order": 63,
+  "name": "Subscriptions",
+  "category": "finance",
+  "icon": "⟳",
+  "description": "Recurring charges",
+  "ui": "finance",
+  "config": {
+    "itemType": "subscription",
+    "hasAmount": true
+  }
+}

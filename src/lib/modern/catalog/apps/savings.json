@@ -1,0 +1,13 @@
+{
+  "id": "savings",
+  "order": 58,
+  "name": "Savings",
+  "category": "finance",
+  "icon": "◯",
+  "description": "Savings goals",
+  "ui": "goal",
+  "config": {
+    "goalType": "savings",
+    "hasTarget": true
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "productivity",
+  "order": 14,
+  "name": "Productivity",
+  "category": "tasks",
+  "icon": "▲",
+  "description": "Rate your day",
+  "ui": "tracker",
+  "config": {
+    "trackerType": "productivity",
+    "labels": [
+      "Wasted",
+      "Poor",
+      "Okay",
+      "Good",
+      "Great",
+      "Peak"
+    ],
+    "min": 0,
+    "max": 5,
+    "aggregate": "average",
+    "chartStyle": "line"
+  }
+}

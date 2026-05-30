@@ -1,0 +1,14 @@
+{
+  "id": "stopwatch",
+  "order": 74,
+  "name": "Stopwatch",
+  "category": "time",
+  "icon": "⏲",
+  "description": "Time anything live",
+  "ui": "modern",
+  "config": {
+    "trackerType": "stopwatch",
+    "unit": "minutes",
+    "aggregate": "sum"
+  }
+}

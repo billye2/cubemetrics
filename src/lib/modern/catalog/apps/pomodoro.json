@@ -1,0 +1,9 @@
+{
+  "id": "pomodoro",
+  "order": 76,
+  "name": "Pomodoro",
+  "category": "time",
+  "icon": "⏱",
+  "description": "Focus timer",
+  "ui": "modern"
+}

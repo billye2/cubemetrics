@@ -1,0 +1,14 @@
+{
+  "id": "retro",
+  "order": 47,
+  "name": "Retro",
+  "category": "work",
+  "icon": "⟲",
+  "description": "Team retros",
+  "ui": "logbook",
+  "config": {
+    "logType": "retro",
+    "entryLabel": "Retro",
+    "hasTitle": true
+  }
+}

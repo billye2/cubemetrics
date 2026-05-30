@@ -1,0 +1,14 @@
+{
+  "id": "recipes",
+  "order": 48,
+  "name": "Recipes",
+  "category": "lifestyle",
+  "icon": "◍",
+  "description": "Recipe collection",
+  "ui": "logbook",
+  "config": {
+    "logType": "recipe",
+    "entryLabel": "Recipe",
+    "hasTitle": true
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "id": "focus",
+  "order": 70,
+  "name": "Focus",
+  "category": "time",
+  "icon": "◉",
+  "description": "Timer for one deep-work session",
+  "ui": "modern"
+}

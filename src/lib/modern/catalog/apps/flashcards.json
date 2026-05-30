@@ -1,0 +1,9 @@
+{
+  "id": "flashcards",
+  "order": 34,
+  "name": "Flashcards",
+  "category": "notes",
+  "icon": "◫",
+  "description": "Cards to review",
+  "ui": "modern"
+}

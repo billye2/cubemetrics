@@ -1,0 +1,14 @@
+{
+  "id": "standup",
+  "order": 39,
+  "name": "Standups",
+  "category": "notes",
+  "icon": "⌂",
+  "description": "Daily standups",
+  "ui": "logbook",
+  "config": {
+    "logType": "standup",
+    "entryLabel": "Standup",
+    "hasTitle": false
+  }
+}

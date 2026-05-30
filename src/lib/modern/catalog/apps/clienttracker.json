@@ -1,0 +1,13 @@
+{
+  "id": "clienttracker",
+  "order": 36,
+  "name": "Clients",
+  "category": "work",
+  "icon": "◉",
+  "description": "Client work",
+  "ui": "checklist",
+  "config": {
+    "listType": "client",
+    "itemLabel": "Client"
+  }
+}

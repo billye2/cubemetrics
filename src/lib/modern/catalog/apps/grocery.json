@@ -1,0 +1,13 @@
+{
+  "id": "grocery",
+  "order": 15,
+  "name": "Grocery",
+  "category": "org",
+  "icon": "◍",
+  "description": "Shopping list",
+  "ui": "checklist",
+  "config": {
+    "listType": "grocery",
+    "itemLabel": "Item"
+  }
+}

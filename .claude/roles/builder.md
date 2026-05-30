@@ -43,9 +43,14 @@ duplicate each other. The Phase-1 rules in force today:
   and `docs/app-plans/<id>.md`. **Never edit another app's directory.**
 - **Migrations use timestamp names** — `YYYYMMDDTHHMM_<slug>.sql` (UTC), not the legacy `NNN_`
   sequence — so two lanes never grab the same number (see [database.md](../../docs/database.md)).
-- **`catalog.ts` is the one shared seam until codegen lands (Phase 2).** Add your single entry
-  **last**, right before committing, to shrink the conflict window; if it conflicts on merge,
-  re-add your one line — never clobber another lane's entries.
+- **Catalog: drop a JSON entry, never hand-edit the array.** Add your app as
+  `src/lib/modern/catalog/apps/<id>.json` (id = filename, plus `order`) and run
+  `npm run build:catalog`. **Never edit `src/lib/modern/catalog/_generated.ts`** — it's generated,
+  and editing it is the collision the codegen exists to prevent. One file per app = no contention.
+- **Don't hand-edit other shared docs (`database.md`, `_*-template.md`).** Write your schema delta
+  and any factory-template observation into your own `docs/app-plans/<id>.md`; the integrator folds
+  those into the shared docs during fan-in. (`_status.md` is the one shared file you do update —
+  its merges are trivial.)
 - **Merge or abandon your branch the same session.** No branch outlives its run unmerged — that's
   exactly the leak that stranded the Journal/Notes search box (`5929e7e`). On drop: remove your
   claim row and delete the branch.

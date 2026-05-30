@@ -1,0 +1,9 @@
+{
+  "id": "reading",
+  "order": 78,
+  "name": "Reading",
+  "category": "learning",
+  "icon": "☐",
+  "description": "Books and articles",
+  "ui": "modern"
+}

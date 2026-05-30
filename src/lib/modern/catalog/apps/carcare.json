@@ -1,0 +1,13 @@
+{
+  "id": "carcare",
+  "order": 68,
+  "name": "Car",
+  "category": "lifestyle",
+  "icon": "⛀",
+  "description": "Vehicle service on a schedule",
+  "ui": "schedule",
+  "config": {
+    "scheduleType": "carcare",
+    "itemLabel": "Service"
+  }
+}

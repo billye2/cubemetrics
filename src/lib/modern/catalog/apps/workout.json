@@ -1,0 +1,9 @@
+{
+  "id": "workout",
+  "order": 42,
+  "name": "Workout",
+  "category": "habits",
+  "icon": "✚",
+  "description": "Training log",
+  "ui": "modern"
+}

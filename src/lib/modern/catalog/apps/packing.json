@@ -1,0 +1,13 @@
+{
+  "id": "packing",
+  "order": 17,
+  "name": "Packing",
+  "category": "lifestyle",
+  "icon": "☐",
+  "description": "Packing lists",
+  "ui": "checklist",
+  "config": {
+    "listType": "packing",
+    "itemLabel": "Item"
+  }
+}
