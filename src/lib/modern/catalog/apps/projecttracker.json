@@ -4,10 +4,6 @@
   "name": "Projects",
   "category": "work",
   "icon": "◧",
-  "description": "Project status",
-  "ui": "goal",
-  "config": {
-    "goalType": "project",
-    "hasTarget": false
-  }
+  "description": "Status pipeline · tasks · next action",
+  "ui": "modern"
 }
