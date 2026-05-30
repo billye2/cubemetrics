@@ -2,11 +2,18 @@ import { describe, it, expect } from "vitest";
 import {
   addMonths,
   balanceRemaining,
+  debtTimeline,
+  monthKey,
+  monthKeyLabel,
   monthLabel,
   orderByStrategy,
   paidFraction,
+  paidOffInfo,
+  portfolioTimeline,
+  portfolioProjectionTimeline,
   portfolioTotals,
   projectPayoff,
+  projectionTimeline,
   statsFor,
   totalPaid,
   type DebtRow,
@@ -203,5 +210,133 @@ describe("portfolioTotals", () => {
     ];
     const t = portfolioTotals(debts, new Map(), NOW);
     expect(t.debtFreeMonth).toBeNull();
+  });
+});
+
+describe("monthKey / monthKeyLabel", () => {
+  it("extracts YYYY-MM", () => {
+    expect(monthKey("2026-05-17")).toBe("2026-05");
+    expect(monthKey("2026-12-01")).toBe("2026-12");
+  });
+  it("labels a YYYY-MM key", () => {
+    expect(monthKeyLabel("2027-03")).toMatch(/2027/);
+  });
+});
+
+describe("debtTimeline (historical burn-down)", () => {
+  it("is empty with no payments", () => {
+    expect(debtTimeline(1000, [])).toEqual([]);
+  });
+  it("subtracts each month's payments cumulatively", () => {
+    const pays = [
+      payment({ id: 1, amount: 200, paid_on: "2026-01-15" }),
+      payment({ id: 2, amount: 300, paid_on: "2026-02-10" }),
+    ];
+    const t = debtTimeline(1000, pays);
+    expect(t).toEqual([
+      { month: "2026-01", balance: 800 },
+      { month: "2026-02", balance: 500 },
+    ]);
+  });
+  it("combines multiple payments in the same month", () => {
+    const pays = [
+      payment({ id: 1, amount: 100, paid_on: "2026-03-01" }),
+      payment({ id: 2, amount: 150, paid_on: "2026-03-20" }),
+    ];
+    const t = debtTimeline(1000, pays);
+    expect(t).toEqual([{ month: "2026-03", balance: 750 }]);
+  });
+  it("fills gap months carrying the balance forward", () => {
+    const pays = [
+      payment({ id: 1, amount: 100, paid_on: "2026-01-05" }),
+      payment({ id: 2, amount: 100, paid_on: "2026-03-05" }), // skips Feb
+    ];
+    const t = debtTimeline(1000, pays);
+    expect(t.map((p) => p.month)).toEqual(["2026-01", "2026-02", "2026-03"]);
+    expect(t.map((p) => p.balance)).toEqual([900, 900, 800]);
+  });
+  it("floors at zero when overpaid", () => {
+    const t = debtTimeline(500, [payment({ amount: 600, paid_on: "2026-04-01" })]);
+    expect(t).toEqual([{ month: "2026-04", balance: 0 }]);
+  });
+});
+
+describe("portfolioTimeline", () => {
+  it("is empty with no payments anywhere", () => {
+    const debts = [debt({ id: 1, original_balance: 1000 })];
+    expect(portfolioTimeline(debts, new Map())).toEqual([]);
+  });
+  it("sums total owed across debts over a shared month range", () => {
+    const debts = [
+      debt({ id: 1, original_balance: 1000 }),
+      debt({ id: 2, original_balance: 2000 }),
+    ];
+    const byDebt = new Map<number, PaymentRow[]>([
+      [1, [payment({ id: 1, debt_id: 1, amount: 200, paid_on: "2026-01-10" })]],
+      [2, [payment({ id: 2, debt_id: 2, amount: 500, paid_on: "2026-02-10" })]],
+    ]);
+    const t = portfolioTimeline(debts, byDebt);
+    // Jan: 3000 - 200 = 2800; Feb: -500 = 2300
+    expect(t).toEqual([
+      { month: "2026-01", balance: 2800 },
+      { month: "2026-02", balance: 2300 },
+    ]);
+  });
+});
+
+describe("projectionTimeline (forward)", () => {
+  it("is empty for a zero balance or no payment", () => {
+    expect(projectionTimeline(0, 10, 100, true, NOW)).toEqual([]);
+    expect(projectionTimeline(1000, 10, 0, true, NOW)).toEqual([]);
+  });
+  it("no-interest burn-down reaches zero", () => {
+    const t = projectionTimeline(1000, 20, 250, false, NOW);
+    // first point is the starting balance, last is 0
+    expect(t[0].balance).toBe(1000);
+    expect(t[t.length - 1].balance).toBe(0);
+    expect(t.length).toBe(5); // start + 4 monthly steps
+  });
+  it("accruing interest stretches the payoff longer", () => {
+    const noInt = projectionTimeline(1000, 24, 100, false, NOW);
+    const withInt = projectionTimeline(1000, 24, 100, true, NOW);
+    expect(withInt.length).toBeGreaterThan(noInt.length);
+  });
+  it("returns empty when payment can't cover interest", () => {
+    expect(projectionTimeline(1000, 24, 15, true, NOW)).toEqual([]);
+  });
+});
+
+describe("portfolioProjectionTimeline", () => {
+  it("is empty when nothing is payable", () => {
+    const debts = [debt({ id: 1, original_balance: 1000, min_payment: 0 })];
+    expect(portfolioProjectionTimeline(debts, new Map(), false, NOW)).toEqual([]);
+  });
+  it("burns the whole portfolio to zero without interest", () => {
+    const debts = [
+      debt({ id: 1, original_balance: 1000, apr: 0, min_payment: 250 }),
+      debt({ id: 2, original_balance: 500, apr: 0, min_payment: 250 }),
+    ];
+    const t = portfolioProjectionTimeline(debts, new Map(), false, NOW);
+    expect(t[0].balance).toBe(1500);
+    expect(t[t.length - 1].balance).toBe(0);
+  });
+});
+
+describe("paidOffInfo", () => {
+  it("reports last payment date, total paid, and cleared amount", () => {
+    const d = debt({ id: 1, original_balance: 800 });
+    const pays = [
+      payment({ id: 1, amount: 500, paid_on: "2026-02-01" }),
+      payment({ id: 2, amount: 300, paid_on: "2026-04-15" }),
+    ];
+    const info = paidOffInfo(d, pays);
+    expect(info.paidOn).toBe("2026-04-15");
+    expect(info.totalPaid).toBe(800);
+    expect(info.cleared).toBe(800);
+  });
+  it("handles no payments", () => {
+    const info = paidOffInfo(debt({ original_balance: 100 }), []);
+    expect(info.paidOn).toBeNull();
+    expect(info.totalPaid).toBe(0);
   });
 });

@@ -17,13 +17,13 @@
 - [x] **Snowball vs avalanche** — order debts smallest-balance-first vs highest-APR-first; recommend where to send the "extra" payment beyond minimums (focus debt highlighted), and show the projected portfolio debt-free date.
 - [x] **Portfolio hero** — total balance across all debts, total paid to date, combined minimums, active/paid counts, projected debt-free date.
 
-**P3** (not yet built)
-- [ ] **Payoff chart** — total-balance-over-time line; per-debt burn-down.
-- [ ] **Interest accrual** — optionally accrue monthly interest so balances track realistically.
-- [ ] **Celebration** when a debt hits $0 + "paid off" archive with the date and total interest. (Partial: paid debts show a "paid off" badge and sort to the bottom.)
+**P3** ✅ shipped
+- [x] **Payoff chart** — portfolio total-owed-over-time line (solid real history + dashed forward projection), plus a per-debt burn-down chart on each card. Pure `portfolioTimeline` / `debtTimeline` / `projectionTimeline` / `portfolioProjectionTimeline` in `lib.ts`, rendered as a non-scaling SVG `BalanceChart`.
+- [x] **Interest accrual** — an "interest: on/off" toggle on the portfolio chart; when on, the forward projection compounds APR/12 each month so the dashed burn-down tracks realistically (off = principal-only straight line). Stored balances are never mutated — accrual is projection-only.
+- [x] **Celebration** — a 🎉 "You're debt-free!" banner when every debt is cleared, plus a dedicated **Paid off** archive section: each archived debt shows the amount cleared, the payoff date, and its payment log (`paidOffInfo` + `PaidOffArchive`/`ArchiveCard`). Active debts no longer mix with paid ones.
 
 **Data** — Graduate from `goals` (new dedicated tables). `debts (id, user_id, name, original_balance, current_balance, apr, min_payment, status)` + `debt_payments (id, debt_id, amount, paid_on DATE, note, created_at)`. Standard RLS pair (own-rows + sysop read) on both; `current_balance` kept in sync = `original_balance − SUM(payments)` floored at 0; projections/strategy/totals computed in `lib.ts` (pure, unit-tested) and rendered in `DebtView`.
 
 **Schema delta** — migration `src/supabase/migrations/20260530T0815_debts.sql` creates both tables above with RLS + indexes. No change to `goals`.
 
-**Verdict** — **GRADUATE — DONE (P1+P2)** — graduated to a custom finance app at `src/app/app/debtpayoff/` (`page.tsx` + `DebtView.tsx` + `actions.ts` + pure `lib.ts`). Paid-down bar (correct direction), APR + minimum payment, payment log, per-debt payoff projection (months + total interest + debt-free month), snowball/avalanche ordering with a highlighted focus debt, and a portfolio hero. P3 (charts, interest accrual on stored balances, full celebration/archive) remains.
+**Verdict** — **GRADUATE — DONE (P1+P2+P3)** — graduated to a custom finance app at `src/app/app/debtpayoff/` (`page.tsx` + `DebtView.tsx` + `actions.ts` + pure `lib.ts`). Paid-down bar (correct direction), APR + minimum payment, payment log, per-debt payoff projection (months + total interest + debt-free month), snowball/avalanche ordering with a highlighted focus debt, and a portfolio hero. **P3 shipped**: portfolio + per-debt balance-over-time charts (solid history + dashed projection), an interest-accrual toggle on the projection (projection-only — stored balances untouched), and a debt-free celebration banner + a "Paid off" archive (cleared amount, payoff date, payment log). No schema changes for P3 — all P3 features compute from existing `debts`/`debt_payments` rows in `lib.ts` (pure, unit-tested).
