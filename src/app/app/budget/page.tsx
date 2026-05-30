@@ -2,24 +2,21 @@ import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Shell } from "@/components/modern/Shell";
 import { BudgetView } from "./BudgetView";
+import {
+  buildLines,
+  isMonthISO,
+  monthStartISO,
+  nextMonthStartISO,
+  prevMonthStartISO,
+  sumByCategory,
+  type BudgetLine,
+  type CategoryRow,
+} from "./lib";
 
 export const dynamic = "force-dynamic";
 
-export interface CategoryRow {
-  id: number;
-  name: string;
-  color: string;
-  sort_order: number;
-}
-
-export interface BudgetLine {
-  category: string;
-  color: string;
-  /** Planned monthly budget for this category (0 when unset). */
-  planned: number;
-  /** Actual spend this month, summed from the expenses table. */
-  spent: number;
-}
+// Re-export the shared types so existing imports (./page) keep working.
+export type { BudgetLine, CategoryRow };
 
 // Mirror of the Expenses app's legacy defaults so a first-time Budget user
 // (who hasn't opened Expenses yet) gets the same shared category vocabulary.
@@ -34,25 +31,24 @@ const DEFAULT_CATEGORIES: { name: string; color: string }[] = [
   { name: "Other", color: "#71717a" },
 ];
 
-function monthStartISO(d = new Date()): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
-function nextMonthStartISO(monthStart: string): string {
-  const [y, m] = monthStart.split("-").map(Number);
-  const d = new Date(y, m, 1); // m is 1-based, so this is the next month
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
-}
-
-export default async function BudgetPage() {
+export default async function BudgetPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ m?: string }>;
+}) {
   const supabase = await createServerSupabase();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
 
-  const month = monthStartISO();
+  const currentMonth = monthStartISO();
+  const sp = await searchParams;
+  // Month navigation (P2): ?m=YYYY-MM-01 picks a month; default is current.
+  const month = sp?.m && isMonthISO(sp.m) ? sp.m : currentMonth;
+  const isCurrentMonth = month === currentMonth;
   const nextMonth = nextMonthStartISO(month);
+  const prevMonth = prevMonthStartISO(month);
 
   // Shared category vocabulary (same table the Expenses app owns). Seed the
   // legacy defaults the first time a user has none so the join works.
@@ -82,64 +78,57 @@ export default async function BudgetPage() {
   }
   const categories = (catData || []) as CategoryRow[];
 
-  const [{ data: targetData }, { data: expenseData }] = await Promise.all([
-    supabase
-      .from("budget_targets")
-      .select("category, planned")
-      .eq("user_id", user.id)
-      .eq("month", month),
-    supabase
-      .from("expenses")
-      .select("amount, category, expense_date")
-      .eq("user_id", user.id)
-      .gte("expense_date", month)
-      .lt("expense_date", nextMonth),
-  ]);
+  const [{ data: targetData }, { data: expenseData }, { data: prevTargetData }] =
+    await Promise.all([
+      supabase
+        .from("budget_targets")
+        .select("category, planned")
+        .eq("user_id", user.id)
+        .eq("month", month),
+      supabase
+        .from("expenses")
+        .select("amount, category, expense_date")
+        .eq("user_id", user.id)
+        .gte("expense_date", month)
+        .lt("expense_date", nextMonth),
+      // Previous month's targets power the "copy forward" prompt when the
+      // selected month has no budget set yet.
+      supabase
+        .from("budget_targets")
+        .select("category, planned")
+        .eq("user_id", user.id)
+        .eq("month", prevMonth),
+    ]);
 
   const plannedByCat = new Map<string, number>();
   for (const t of targetData || []) {
     plannedByCat.set(t.category as string, Number(t.planned) || 0);
   }
 
-  const spentByCat = new Map<string, number>();
-  for (const e of expenseData || []) {
-    const cat = e.category as string;
-    spentByCat.set(cat, (spentByCat.get(cat) || 0) + (Number(e.amount) || 0));
-  }
+  const spentByCat = sumByCategory(
+    (expenseData || []).map((e) => ({
+      category: e.category as string,
+      amount: e.amount as number,
+    })),
+  );
 
-  // Build one line per known category, plus any orphan categories that only
-  // appear in planned targets or in expenses (e.g. a deleted category that
-  // still tags old rows). Order: known categories first (by sort_order),
-  // then orphans.
-  const colorOf = new Map(categories.map((c) => [c.name, c.color]));
-  const seen = new Set<string>();
-  const lines: BudgetLine[] = [];
+  const lines = buildLines(categories, plannedByCat, spentByCat);
 
-  for (const c of categories) {
-    seen.add(c.name);
-    lines.push({
-      category: c.name,
-      color: c.color,
-      planned: plannedByCat.get(c.name) || 0,
-      spent: spentByCat.get(c.name) || 0,
-    });
-  }
-  // Orphans (planned or spent but no matching category row).
-  const orphans = new Set<string>();
-  for (const k of plannedByCat.keys()) if (!seen.has(k)) orphans.add(k);
-  for (const k of spentByCat.keys()) if (!seen.has(k)) orphans.add(k);
-  for (const name of orphans) {
-    lines.push({
-      category: name,
-      color: colorOf.get(name) || "#71717a",
-      planned: plannedByCat.get(name) || 0,
-      spent: spentByCat.get(name) || 0,
-    });
-  }
+  const prevPlannedCount = (prevTargetData || []).length;
+  const hasPlan = (targetData || []).length > 0;
 
   return (
     <Shell back={{ href: "/", label: "Apps" }} title="Budget">
-      <BudgetView month={month} categories={categories} lines={lines} />
+      <BudgetView
+        month={month}
+        prevMonth={prevMonth}
+        nextMonth={nextMonth}
+        isCurrentMonth={isCurrentMonth}
+        categories={categories}
+        lines={lines}
+        canCopyForward={!hasPlan && prevPlannedCount > 0}
+        prevPlannedCount={prevPlannedCount}
+      />
     </Shell>
   );
 }

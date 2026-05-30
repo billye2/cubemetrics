@@ -9,8 +9,10 @@ import {
   hostOf,
   matchesQuery,
   normalizeUrl,
+  parseImport,
   parseTags,
   toBookmark,
+  toExportText,
 } from "@/app/app/bookmarks/lib";
 
 function row(over: Partial<BookmarkRow>): BookmarkRow {
@@ -22,6 +24,7 @@ function row(over: Partial<BookmarkRow>): BookmarkRow {
     folder: null,
     favicon_url: null,
     last_opened_at: null,
+    unread: null,
     created_at: "2026-01-01T00:00:00Z",
     ...over,
   };
@@ -36,6 +39,7 @@ function bm(over: Partial<Bookmark>): Bookmark {
     folder: null,
     faviconUrl: null,
     lastOpenedAt: null,
+    unread: false,
     createdAt: "2026-01-01T00:00:00Z",
     host: "example.com",
     ...over,
@@ -118,6 +122,11 @@ describe("toBookmark", () => {
   it("computes the host", () => {
     expect(toBookmark(row({ url: "https://www.example.com" })).host).toBe("example.com");
   });
+  it("coerces unread null/false to false and true to true", () => {
+    expect(toBookmark(row({ unread: null })).unread).toBe(false);
+    expect(toBookmark(row({ unread: false })).unread).toBe(false);
+    expect(toBookmark(row({ unread: true })).unread).toBe(true);
+  });
 });
 
 describe("matchesQuery", () => {
@@ -154,6 +163,54 @@ describe("applyFilters", () => {
   });
   it("no filters returns all", () => {
     expect(applyFilters(list, { query: "", tag: null })).toHaveLength(3);
+  });
+  it("filters to unread only", () => {
+    const u = [
+      bm({ id: 1, unread: true }),
+      bm({ id: 2, unread: false }),
+      bm({ id: 3, unread: true }),
+    ];
+    expect(applyFilters(u, { query: "", tag: null, unreadOnly: true }).map((b) => b.id)).toEqual([1, 3]);
+  });
+});
+
+describe("parseImport", () => {
+  it("parses one url per line and derives titles", () => {
+    const r = parseImport("https://a.test/the-page\nb.test");
+    expect(r).toEqual([
+      { url: "https://a.test/the-page", title: "the page" },
+      { url: "https://b.test/", title: "b.test" },
+    ]);
+  });
+  it("takes a title after the first whitespace", () => {
+    expect(parseImport("https://a.test My Cool Site")).toEqual([
+      { url: "https://a.test/", title: "My Cool Site" },
+    ]);
+  });
+  it("skips blank lines and invalid urls", () => {
+    expect(parseImport("\n  \nnot a url\nlocalhost\nhttps://ok.test")).toEqual([
+      { url: "https://ok.test/", title: "ok.test" },
+    ]);
+  });
+  it("de-dupes repeated urls (first wins)", () => {
+    expect(parseImport("https://a.test First\nhttps://a.test Second")).toEqual([
+      { url: "https://a.test/", title: "First" },
+    ]);
+  });
+});
+
+describe("toExportText", () => {
+  it("renders url<tab>title lines", () => {
+    const out = toExportText([
+      bm({ url: "https://a.test/", title: "Alpha" }),
+      bm({ url: "https://b.test/", title: "Bravo" }),
+    ]);
+    expect(out).toBe("https://a.test/\tAlpha\nhttps://b.test/\tBravo");
+  });
+  it("round-trips through parseImport", () => {
+    const list = [bm({ url: "https://a.test/", title: "Alpha One" })];
+    const parsed = parseImport(toExportText(list));
+    expect(parsed).toEqual([{ url: "https://a.test/", title: "Alpha One" }]);
   });
 });
 
