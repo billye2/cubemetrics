@@ -59,6 +59,9 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 | weeklyreview | 🟢 At bar | graduated from logbook; structured wins/misses/lessons/next_focus, one per week |
 | warranty | 🟢 At bar | graduated from checklist; computed expiry, archive, expiry warnings |
 | vocabulary | 🟢 At bar | graduated from checklist; SM-2-lite spaced repetition, shares flashcards engine |
+| skilltree | 🟢 At bar | graduated from goal; XP leveling curve, practice log, skill dependency tree (P1+P2); P3: tree viz polish |
+| savings | 🟢 At bar | graduated from goal; deposit log, currency, pace & projection; P3: multi-currency, chart |
+| okr | 🟢 At bar | graduated from goal; objective→key-result hierarchy, cycle, confidence, mean roll-up (P1) |
 
 ## Trackers (factory `tracker`)
 
@@ -97,8 +100,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | challenge | ✅ Done | thin catalog entry — in `finished/` |
 | goals · milestones · courses | 🟡 Partial | categories, timeline, lesson checklist |
-| okr · streaks · skilltree · savings · debtpayoff | 🔴 Graduate | a single progress bar is the wrong shape (streaks → merge with Habits) |
-| ~~projecttracker~~ | ✅ Graduated | now a custom app (see Custom apps table) |
+| streaks · debtpayoff | 🔴 Graduate | a single progress bar is the wrong shape (streaks → merge with Habits) |
+| ~~projecttracker~~ · ~~skilltree~~ · ~~savings~~ · ~~okr~~ | ✅ Graduated | now custom apps (see Custom apps table) |
 
 ## Finance (factory `finance`)
 
