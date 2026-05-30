@@ -4,10 +4,6 @@
   "name": "Warranties",
   "category": "lifestyle",
   "icon": "☖",
-  "description": "Warranty tracking",
-  "ui": "checklist",
-  "config": {
-    "listType": "warranty",
-    "itemLabel": "Warranty"
-  }
+  "description": "Track warranties before they expire",
+  "ui": "modern"
 }
