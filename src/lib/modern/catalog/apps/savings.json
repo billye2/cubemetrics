@@ -4,10 +4,6 @@
   "name": "Savings",
   "category": "finance",
   "icon": "◯",
-  "description": "Savings goals",
-  "ui": "goal",
-  "config": {
-    "goalType": "savings",
-    "hasTarget": true
-  }
+  "description": "Save toward goals with a deposit log & pace",
+  "ui": "modern"
 }
