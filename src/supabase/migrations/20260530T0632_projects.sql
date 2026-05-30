@@ -26,6 +26,15 @@ CREATE POLICY "SysOp read access" ON public.projects FOR SELECT
 
 CREATE INDEX IF NOT EXISTS projects_user_idx ON public.projects (user_id, status);
 
+-- Reconcile a pre-existing factory-era `projects` table. On a fresh database the
+-- CREATE above already has these columns/default, so these are no-ops; but where
+-- `projects` was created by an earlier (factory-era) migration with a different
+-- shape (status DEFAULT 'active', no next_action/note), CREATE TABLE IF NOT EXISTS
+-- is a silent no-op and the app would 500 at runtime without these. Idempotent.
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS next_action TEXT DEFAULT '';
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS note TEXT DEFAULT '';
+ALTER TABLE public.projects ALTER COLUMN status SET DEFAULT 'planning';
+
 
 CREATE TABLE IF NOT EXISTS public.project_tasks (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
