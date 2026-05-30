@@ -306,15 +306,14 @@ that slips — exactly how `5929e7e` was recovered.
   `catalog/apps/*.json` → `catalog/_generated.ts`, wired into `prebuild`/`pretest`; `builder.md`
   now has builders drop a JSON entry and emit schema deltas to their plan instead of editing shared
   docs. The 86 existing apps were migrated to per-app JSON with grid order preserved exactly.
-- **Phase 3 — tooling shipped (2026-05-29); activation is operator-driven.** The canonical queue
-  machinery is in place: the `app-build` / `agent:available` / `agent:in-progress` labels exist,
-  `scripts/seed-backlog-issues.mjs` seeds one issue per open backlog app (idempotent, dry-run by
-  default), and `.claude/workflows/parallel-build.js` is the dispatch → build → integrate Workflow
-  script. Two activation steps are intentionally left to a human because they're outward-facing /
-  hard to reverse — see [Running a parallel build](#running-a-parallel-build):
-  1. **Seed the queue** for the scope you want (usually a subset like the 🔴 graduates, not all 78).
-  2. **Enable branch protection** on `master` (and accept that it changes the integrator's ship
-     step from a direct push to merging an integration PR).
+- **Phase 3 — done (2026-05-29).** The canonical queue is live: the `app-build` /
+  `agent:available` / `agent:in-progress` labels exist, `scripts/seed-backlog-issues.mjs` seeds one
+  issue per open backlog app (idempotent, dry-run by default), and `.claude/workflows/parallel-build.js`
+  is the dispatch → build → integrate Workflow script. Activation is complete:
+  1. **Hard branch protection** is enabled on `master` (`enforce_admins=true`, required `verify`
+     check from `.github/workflows/ci.yml`) — direct pushes are rejected; everything lands via a PR.
+  2. **The queue is seeded** with a starter batch (`expenses`, `habits`, `reading`). Add more with
+     the seed script. See [Running a parallel build](#running-a-parallel-build).
 
 Each phase is independently shippable and useful; stop at the concurrency level you actually need.
 
