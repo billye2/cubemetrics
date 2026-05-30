@@ -5,9 +5,5 @@
   "category": "goals",
   "icon": "✧",
   "description": "Where you're heading",
-  "ui": "checklist",
-  "config": {
-    "listType": "vision",
-    "itemLabel": "Vision"
-  }
+  "ui": "modern"
 }
