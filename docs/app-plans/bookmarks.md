@@ -16,12 +16,13 @@
 **P2 — enhancements** (partial)
 - [x] **Favicon.** Show the site favicon (`https://www.google.com/s2/favicons?domain=`) cached in `favicon_url`. (OpenGraph title/image preview not done.)
 - [x] **Folders/collections** as a coarser grouping above tags — stored in `folder`, shown as a row badge. (No dedicated folder navigation yet.)
-- [ ] **"Add current" friendliness** — paste a URL, auto-fill title and favicon. (Title is derived from the URL on add today; no clipboard auto-fill.)
+- [x] **"Add current" friendliness** — opening the add form now best-effort prefills the URL from the clipboard when it looks like a link (`navigator.clipboard.readText`, gracefully blank if denied). Title still derives from the URL on save. (OpenGraph fetch-on-paste not done.)
 
 **P3 — delight**
 - [x] **"last opened" tracking** — `last_opened_at` is stamped on open (groundwork for surfacing stale bookmarks; no dead-link check / stale UI yet).
-- [ ] **Dead-link check** to surface stale bookmarks.
-- [ ] **Import/export** (paste a list of URLs) and a read-it-later flag.
+- [ ] **Dead-link check** to surface stale bookmarks. (Needs server-side fetching — deferred.)
+- [x] **Import/export** — an ⇅ panel: paste one URL per line (optional title after a space) to bulk-add (imported rows land as *unread*), or Export copies all links as `url\ttitle` lines to the clipboard. Round-trips through `parseImport`/`toExportText`.
+- [x] **Read-it-later flag** — `unread BOOLEAN` (migration `20260530T1455_bookmarks_unread.sql`). Checkbox on the add form, a per-row ◷ toggle, an "Unread N" filter chip, a cyan dot + border on unread rows, and opening an unread link auto-clears the flag.
 
 **Schema delta (shipped)** — migration `src/supabase/migrations/20260530T0808_bookmarks.sql`:
 ```sql
@@ -39,6 +40,13 @@ CREATE TABLE public.bookmarks (
 -- RLS: owner FOR ALL (auth.uid() = user_id) + SysOp SELECT. Index on (user_id, created_at DESC).
 ```
 Catalog flipped `bookmarks.json` from `ui: "checklist"` to `ui: "modern"` (custom page now owns the route). The old `checklists` rows with `list_type = 'bookmark'` are left untouched — this is a clean break, not a data migration.
+
+**Schema delta — read-it-later (P3)** — migration `src/supabase/migrations/20260530T1455_bookmarks_unread.sql`:
+```sql
+ALTER TABLE public.bookmarks
+  ADD COLUMN IF NOT EXISTS unread BOOLEAN NOT NULL DEFAULT false;
+```
+No RLS change — inherits the base table's owner FOR ALL + SysOp SELECT policies. Existing rows default to read (`false`); imported rows are inserted `unread = true`.
 
 **Data** — **GRADUATE.** New `bookmarks` table: `id, user_id, url TEXT NOT NULL, title TEXT, tags TEXT[], folder TEXT, favicon_url TEXT, last_opened_at, created_at`, standard RLS (owner FOR ALL + SysOp SELECT). (Interim: could extend `checklists` with `url`/`tags`, but the checkbox semantics make a clean break worthwhile.)
 
