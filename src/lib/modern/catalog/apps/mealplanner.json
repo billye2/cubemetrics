@@ -4,10 +4,6 @@
   "name": "Meals",
   "category": "habits",
   "icon": "◍",
-  "description": "Meal planning",
-  "ui": "checklist",
-  "config": {
-    "listType": "meal",
-    "itemLabel": "Meal"
-  }
+  "description": "Plan the week's meals and turn them into a grocery list",
+  "ui": "modern"
 }
