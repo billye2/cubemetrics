@@ -30,7 +30,7 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 
 | App | Branch | Claimed (UTC) | Notes |
 |-----|--------|---------------|-------|
-| _(none)_ | | | |
+| recipes | claude/recipes-build | 2026-05-30T06:31 | graduate logbook → custom (P1/P2) |
 
 ## Custom apps
 
