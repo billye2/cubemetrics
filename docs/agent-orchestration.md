@@ -200,6 +200,54 @@ together to assemble the catalog and run one authoritative build. Phases 1→2 a
 
 ---
 
+## Running a parallel build
+
+The Phase 3 tooling. Two of these steps are deliberately operator-driven (outward-facing /
+hard-to-reverse); the rest is automated.
+
+**1. Seed the queue (operator).** Create one `app-build` issue per app you want built, labeled
+`agent:available`. Safe by default — dry run unless `--create`, and idempotent:
+
+```bash
+node scripts/seed-backlog-issues.mjs                       # dry run — list candidates
+node scripts/seed-backlog-issues.mjs --create recipes okr  # seed a chosen subset (recommended)
+node scripts/seed-backlog-issues.mjs --create --all        # seed every open candidate (78)
+```
+
+Prefer seeding a focused subset (e.g. the 🔴 graduate apps) over `--all` — the candidate list
+includes already-polished apps and a few feature-specs.
+
+**2. Enable branch protection (operator, one-time).** So per-lane PRs can't self-merge and the
+union build is the gate. This **changes the integrator's ship step** from a direct `git push` to
+merging a single integration PR — pick the model that fits (see
+[Decision 3](#decision-3--who-pushes-master)):
+
+```bash
+# Require a green CI check before any merge to master, block direct pushes:
+gh api -X PUT repos/billye2/xpbbs/branches/master/protection \
+  -f 'required_status_checks[strict]=true' -f 'required_status_checks[contexts][]=build' \
+  -f 'enforce_admins=false' -f 'required_pull_request_reviews[required_approving_review_count]=0' \
+  -f 'restrictions=null'
+```
+
+(`enforce_admins=false` lets the owner still land the integration PR; flip to `true` for a hard
+gate. Adjust `contexts` to your actual CI check name, or add a GitHub Actions workflow that runs
+`npm test` + `npm run build`.)
+
+**3. Run the build pass (automated, opt-in Workflow).** The dispatch → build → integrate pipeline:
+
+```
+Workflow { name: "parallel-build" }                       # claim up to 3 from the queue
+Workflow { name: "parallel-build", args: { count: 5 } }   # claim up to 5
+Workflow { name: "parallel-build", args: { apps: ["recipes","okr"] } }  # build these, skip the queue
+```
+
+Running a Workflow is itself an explicit opt-in (it can spawn many agents). The script claims work,
+fans out one worktree-isolated builder per app, then runs the serial integrator. Watch it with
+`/workflows`.
+
+---
+
 ## Verification gates (non-negotiable)
 
 Inherited from the builder role, applied at two levels:
@@ -255,10 +303,15 @@ that slips — exactly how `5929e7e` was recovered.
   `catalog/apps/*.json` → `catalog/_generated.ts`, wired into `prebuild`/`pretest`; `builder.md`
   now has builders drop a JSON entry and emit schema deltas to their plan instead of editing shared
   docs. The 86 existing apps were migrated to per-app JSON with grid order preserved exactly.
-- **Phase 3 — scale the queue (canonical):** seed GitHub issues from the backlog (Option B,
-  [Decision 1](#decision-1--claim-mechanism)) with branch protection on `master` so PRs can't
-  self-merge, and wire the dispatch → build → integrate Workflow script under `.claude/workflows/`.
-  *Enables unattended N-agent runs.*
+- **Phase 3 — tooling shipped (2026-05-29); activation is operator-driven.** The canonical queue
+  machinery is in place: the `app-build` / `agent:available` / `agent:in-progress` labels exist,
+  `scripts/seed-backlog-issues.mjs` seeds one issue per open backlog app (idempotent, dry-run by
+  default), and `.claude/workflows/parallel-build.js` is the dispatch → build → integrate Workflow
+  script. Two activation steps are intentionally left to a human because they're outward-facing /
+  hard to reverse — see [Running a parallel build](#running-a-parallel-build):
+  1. **Seed the queue** for the scope you want (usually a subset like the 🔴 graduates, not all 78).
+  2. **Enable branch protection** on `master` (and accept that it changes the integrator's ship
+     step from a direct push to merging an integration PR).
 
 Each phase is independently shippable and useful; stop at the concurrency level you actually need.
 

@@ -3,14 +3,23 @@
 ## Development
 ```bash
 npm run dev          # Start Next.js dev server (http://localhost:3000)
-npm run build        # Production build (Turbopack)
+npm run build        # Production build (Turbopack); prebuild regenerates the catalog
+npm run build:catalog # Regenerate src/lib/modern/catalog/_generated.ts from apps/*.json
 npm run start        # Start production server locally
 npm run lint         # ESLint check
-npm test             # Run unit tests (Vitest)
+npm test             # Run unit tests (Vitest); pretest regenerates the catalog
 npm run test:watch
 ```
 
 The dev server serves the app at `http://localhost:3000/`.
+
+## Parallel builds (agent orchestration)
+```bash
+node scripts/seed-backlog-issues.mjs                 # dry run: list backlog apps to queue
+node scripts/seed-backlog-issues.mjs --create a b c  # seed app-build issues for apps a,b,c
+# then, via the Workflow tool (opt-in): Workflow { name: "parallel-build" }
+```
+Full guide: [agent-orchestration.md](agent-orchestration.md#running-a-parallel-build).
 
 ## Supabase
 ```bash
