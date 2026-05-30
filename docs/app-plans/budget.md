@@ -8,11 +8,11 @@
 
 **Plan** — **Graduate.** Own view (`ui: "modern"`, `page.tsx` + `actions.ts`) and a purpose-built model. The headline is planned-vs-actual; actual should be *read from the Expenses app*, not re-entered.
 
-**P1 — makes it complete**
-- **Per-category planned amounts** — the user sets a monthly `planned` budget per category (groceries $400, dining $150). This is the only thing the user enters; it's the budget itself.
-- **Actual pulled from Expenses** — for the current month, sum the `expenses` table grouped by category and match it against the planned amounts. No double entry: Budget consumes Expenses' data. (Requires sharing a category vocabulary — see Data.)
-- **Remaining per category + overall** — each category shows planned / spent / remaining with a progress bar (cyan under budget); a hero "X left of $Y this month" overall number replaces "Outstanding".
-- **Over-budget warning** — categories past their planned amount turn red ("$40 over"), and an overall over-budget banner when total spend exceeds total planned.
+**P1 — makes it complete** ✅ shipped (custom `ui: "modern"` view; `src/app/app/budget/`)
+- [x] **Per-category planned amounts** — the user sets a monthly `planned` budget per category (groceries $400, dining $150). This is the only thing the user enters; it's the budget itself.
+- [x] **Actual pulled from Expenses** — for the current month, sum the `expenses` table grouped by category and match it against the planned amounts. No double entry: Budget consumes Expenses' data. (Requires sharing a category vocabulary — see Data.)
+- [x] **Remaining per category + overall** — each category shows planned / spent / remaining with a progress bar (cyan under budget); a hero "X left of $Y this month" overall number replaces "Outstanding".
+- [x] **Over-budget warning** — categories past their planned amount turn red ("$40 over"), and an overall over-budget banner when total spend exceeds total planned.
 
 **P2 — enhancements**
 - **Category bar chart** (see `_finance-template.md`) — planned-vs-actual bars per category, the at-a-glance budget visualization.
@@ -24,5 +24,22 @@
 - **Unified money model** — converge **expenses + budget + bills + subscriptions** on one shared category table so a category's planned (budget), actual (expenses), and committed (bills + subscriptions) all line up. Biggest long-term win; note as cross-cutting.
 
 **Data** — Graduating the view. Budget targets are not payables, so model them in their own table: `budget_targets (id, user_id, category, planned NUMERIC, month DATE, created_at)` with the standard RLS pair — one row per category per month. Actuals come from the existing `expenses` table (read-only join by category + month); a **shared category list** (per-user `categories` table) is what makes the join reliable and unlocks the P3 unification. The `finance_items` `budget` rows are abandoned for this app; `planned` from the shared template migration is unnecessary if using `budget_targets`.
+
+**Schema delta (shipped P1)** — `src/supabase/migrations/20260530T0900_budget_targets.sql`:
+```sql
+CREATE TABLE public.budget_targets (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  category TEXT NOT NULL,
+  planned NUMERIC NOT NULL DEFAULT 0 CHECK (planned >= 0),
+  month DATE NOT NULL,            -- first day of the month
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (user_id, category, month)
+);
+-- standard RLS pair: owner FOR ALL + SysOp read; index (user_id, month)
+```
+Actuals are read from the existing `expenses` table (no new column); categories
+are shared with the Expenses app via `expense_categories` (matched by `name`),
+seeded with the legacy defaults the first time a Budget-only user has none.
 
 **Verdict** — **GRADUATE.** The payables list is the wrong model; planned-vs-actual driven off the Expenses table is the real app, and it's the natural anchor for unifying the money apps. Effort **M/L** (M alone; L if shared-category unification is in scope).
