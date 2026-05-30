@@ -30,7 +30,6 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 
 | App | Branch | Claimed (UTC) | Notes |
 |-----|--------|---------------|-------|
-| _(none)_ | | | |
 
 ## Custom apps
 
@@ -80,8 +79,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | grocery · wishlist · packing · bucketlist · backlog | 🟡 Partial | per-app fields (quantity, price/priority, sections, achieved, promote-to-todo) |
 | homemaint · cleaning · petcare · routines · dailyplanner · travelplanner | 🟡 Partial | recurrence / daily-reset / date-scoping — candidates to re-point onto the `schedule` family |
-| bookmarks · contacts · inventory · fileindex · plantcare · visionboard · mealplanner · clienttracker | 🔴 Graduate | checklist is the wrong model; each needs a custom app |
-| ~~warranty~~ · ~~vocabulary~~ | ✅ Graduated | now custom apps (see Custom apps table) |
+| bookmarks · contacts · inventory · fileindex · visionboard · mealplanner · clienttracker | 🔴 Graduate | checklist is the wrong model; each needs a custom app |
+| ~~warranty~~ · ~~vocabulary~~ · ~~plantcare~~ | ✅ Graduated | now custom apps (see Custom apps table) |
 
 ## Logbooks (factory `logbook`)
 
@@ -89,8 +88,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | brag · interviews | ✅ Done | thin catalog entries — in `finished/` |
 | gratitude · meeting · standup · brainstorm · learninglog · feedbacklog · oneononep · retro | 🟡 Partial | per-app structure (streak, attendees, person grouping, action items) |
-| decisionmatrix · recipes | 🔴 Graduate | structured models the logbook can't express |
-| ~~weeklyreview~~ | ✅ Graduated | now a custom app (see Custom apps table) |
+| decisionmatrix | 🔴 Graduate | structured models the logbook can't express |
+| ~~weeklyreview~~ · ~~recipes~~ | ✅ Graduated | now custom apps (see Custom apps table) |
 
 ## Goals (factory `goal`)
 
@@ -98,7 +97,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 |-----|--------|------|
 | challenge | ✅ Done | thin catalog entry — in `finished/` |
 | goals · milestones · courses | 🟡 Partial | categories, timeline, lesson checklist |
-| okr · streaks · skilltree · projecttracker · savings · debtpayoff | 🔴 Graduate | a single progress bar is the wrong shape (streaks → merge with Habits) |
+| okr · streaks · skilltree · savings · debtpayoff | 🔴 Graduate | a single progress bar is the wrong shape (streaks → merge with Habits) |
+| ~~projecttracker~~ | ✅ Graduated | now a custom app (see Custom apps table) |
 
 ## Finance (factory `finance`)
 

@@ -4,10 +4,6 @@
   "name": "Plants",
   "category": "lifestyle",
   "icon": "✿",
-  "description": "Plant care",
-  "ui": "checklist",
-  "config": {
-    "listType": "plantcare",
-    "itemLabel": "Plant"
-  }
+  "description": "Water your houseplants on schedule",
+  "ui": "modern"
 }
