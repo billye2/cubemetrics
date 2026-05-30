@@ -4,10 +4,6 @@
   "name": "File Index",
   "category": "org",
   "icon": "☰",
-  "description": "File catalog",
-  "ui": "checklist",
-  "config": {
-    "listType": "fileindex",
-    "itemLabel": "File"
-  }
+  "description": "Searchable file catalog",
+  "ui": "modern"
 }
