@@ -34,7 +34,7 @@ export const APPS: AppEntry[] = [
   {"id":"petcare","name":"Pets","category":"lifestyle","icon":"♥","description":"Pet care","ui":"checklist","config":{"listType":"petcare","itemLabel":"Task"}},
   {"id":"warranty","name":"Warranties","category":"lifestyle","icon":"☖","description":"Warranty tracking","ui":"checklist","config":{"listType":"warranty","itemLabel":"Warranty"}},
   {"id":"travelplanner","name":"Travel","category":"lifestyle","icon":"✈","description":"Trip planning","ui":"checklist","config":{"listType":"travel","itemLabel":"Item"}},
-  {"id":"vocabulary","name":"Vocabulary","category":"learning","icon":"✦","description":"Words to learn","ui":"checklist","config":{"listType":"vocab","itemLabel":"Word"}},
+  {"id":"vocabulary","name":"Vocabulary","category":"learning","icon":"✦","description":"Words to learn","ui":"modern"},
   {"id":"routines","name":"Routines","category":"tasks","icon":"⟳","description":"Recurring sequences","ui":"checklist","config":{"listType":"routine","itemLabel":"Routine"}},
   {"id":"dailyplanner","name":"Daily Planner","category":"tasks","icon":"☰","description":"Today's plan","ui":"checklist","config":{"listType":"dailyplan","itemLabel":"Item"}},
   {"id":"visionboard","name":"Vision Board","category":"goals","icon":"✧","description":"Where you're heading","ui":"checklist","config":{"listType":"vision","itemLabel":"Vision"}},
