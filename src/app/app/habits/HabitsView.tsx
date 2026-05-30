@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import type { HabitWithStats } from "./page";
 import { addHabit, checkInAction, deleteHabitAction, renameHabitAction } from "./actions";
+import { buildHeatmap } from "./lib";
 import { InlineEdit } from "@/components/modern/InlineEdit";
 
 export function HabitsView({ habits }: { habits: HabitWithStats[] }) {
@@ -34,17 +35,18 @@ function TodayRow({ habits }: { habits: HabitWithStats[] }) {
 function CheckInButton({ habit }: { habit: HabitWithStats }) {
   const [pending, start] = useTransition();
   function onClick() {
-    if (habit.checkedToday) return;
+    // Toggling: a checked tile undoes today's check-in, an unchecked one checks in.
     start(() => checkInAction(habit.id));
   }
   return (
     <button
       type="button"
       onClick={onClick}
-      disabled={pending || habit.checkedToday}
+      disabled={pending}
+      aria-pressed={habit.checkedToday}
       aria-label={
         habit.checkedToday
-          ? `${habit.name} checked in for today`
+          ? `${habit.name} checked in for today — tap to undo`
           : `Check in ${habit.name}`
       }
       className={`group relative flex min-h-[88px] min-w-[88px] flex-col items-center justify-center gap-1 rounded-2xl border-2 px-3 py-2 text-center transition ${
@@ -136,42 +138,99 @@ function HabitList({ habits }: { habits: HabitWithStats[] }) {
 
 function HabitRow({ habit }: { habit: HabitWithStats }) {
   const [pending, start] = useTransition();
+  const [open, setOpen] = useState(false);
   function remove() {
     if (!confirm("Delete this habit?")) return;
     start(() => deleteHabitAction(habit.id));
   }
   return (
     <li
-      className={`flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 ${
+      className={`rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 ${
         pending ? "opacity-50" : ""
       }`}
     >
-      <div className="min-w-0 flex-1">
-        <InlineEdit
-          value={habit.name}
-          ariaLabel="Rename habit"
-          onSave={(next) => renameHabitAction(habit.id, next)}
-        >
-          <div className="break-words text-sm font-medium text-zinc-100">
-            {habit.name}
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <InlineEdit
+            value={habit.name}
+            ariaLabel="Rename habit"
+            onSave={(next) => renameHabitAction(habit.id, next)}
+          >
+            <div className="break-words text-sm font-medium text-zinc-100">
+              {habit.name}
+            </div>
+          </InlineEdit>
+          <div className="mt-1 flex flex-wrap gap-3 text-xs text-zinc-400">
+            <span className="inline-flex items-center gap-1">
+              <span className="text-amber-400">⚡</span>
+              {habit.streak} day streak
+            </span>
+            <span>{habit.weekCount}/7 this week</span>
           </div>
-        </InlineEdit>
-        <div className="mt-1 flex flex-wrap gap-3 text-xs text-zinc-400">
-          <span className="inline-flex items-center gap-1">
-            <span className="text-amber-400">⚡</span>
-            {habit.streak} day streak
-          </span>
-          <span>{habit.weekCount}/7 this week</span>
         </div>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-label={open ? "Hide history" : "Show history"}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-cyan-400"
+        >
+          <span className="text-sm leading-none">{open ? "▴" : "▾"}</span>
+        </button>
+        <button
+          type="button"
+          onClick={remove}
+          aria-label="Delete habit"
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
+        >
+          <span className="text-lg leading-none">×</span>
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={remove}
-        aria-label="Delete habit"
-        className="ml-1 flex h-9 w-9 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
-      >
-        <span className="text-lg leading-none">×</span>
-      </button>
+      {open && <Heatmap dates={habit.checkinDates} />}
     </li>
+  );
+}
+
+const WEEKDAY_LABELS = ["", "M", "", "W", "", "F", ""];
+
+function Heatmap({ dates }: { dates: string[] }) {
+  const columns = useMemo(() => buildHeatmap(new Set(dates), 8), [dates]);
+  return (
+    <div className="mt-3 border-t border-zinc-800 pt-3">
+      <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-600">
+        Last 8 weeks
+      </div>
+      <div className="flex gap-[3px]">
+        {/* weekday labels */}
+        <div className="mr-1 flex flex-col gap-[3px]">
+          {WEEKDAY_LABELS.map((l, i) => (
+            <span
+              key={i}
+              className="flex h-[14px] w-3 items-center text-[8px] leading-none text-zinc-600"
+            >
+              {l}
+            </span>
+          ))}
+        </div>
+        {columns.map((col, ci) => (
+          <div key={ci} className="flex flex-col gap-[3px]">
+            {col.map((cell) => (
+              <span
+                key={cell.date}
+                title={`${cell.date}${cell.checked ? " — done" : ""}`}
+                aria-label={`${cell.date}${cell.checked ? " done" : ""}`}
+                className={`h-[14px] w-[14px] rounded-[3px] ${
+                  cell.filler
+                    ? "bg-transparent"
+                    : cell.checked
+                      ? "bg-cyan-500"
+                      : "bg-zinc-800"
+                }`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -61,10 +61,12 @@ Extends `auth.users`.
 |--------|---------------|
 | id, user_id, name, frequency, active, created_at | id, habit_id, user_id, checkin_date, created_at |
 
-### expenses
-| Column | Type |
-|--------|------|
-| id, user_id, amount, currency, category, description, expense_date, created_at |
+### expenses + expense_categories
+| expenses | expense_categories |
+|----------|--------------------|
+| id, user_id, amount, currency, category, description, expense_date, created_at | id, user_id, name, color, sort_order, created_at |
+
+`expense_categories` (migration `20260530T0508_expense_categories.sql`) replaces the old hard-coded 8-category allowlist with a per-user, color-tagged list that drives the spending-by-category breakdown chart. Existing `expenses.category` TEXT values are left as-is (no row migration); the app seeds the legacy 8 defaults for a user the first time they have none. `UNIQUE (user_id, name)`, indexed on `(user_id, sort_order)`. RLS: owner-only (`Users can access own expense_categories`) plus a SysOp read policy.
 
 ### notes
 | Column | Type |
@@ -74,7 +76,9 @@ Extends `auth.users`.
 ### reading_list
 | Column | Type |
 |--------|------|
-| id, user_id, title, author, status, rating, notes, started_at, finished_at, created_at |
+| id, user_id, title, author, status, rating, notes, started_at, finished_at, current_page, total_pages, created_at |
+
+`current_page` / `total_pages` (migration `20260530T0502_reading_progress.sql`, both nullable) back the per-book progress bar for "reading" books; `started_at` / `finished_at` are editable.
 
 ### user_feedback
 | Column | Type |
