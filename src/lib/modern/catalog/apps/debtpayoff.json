@@ -4,10 +4,6 @@
   "name": "Debt",
   "category": "finance",
   "icon": "⊠",
-  "description": "Payoff plan",
-  "ui": "goal",
-  "config": {
-    "goalType": "debt",
-    "hasTarget": true
-  }
+  "description": "Pay off debts with APR, a payment log & payoff projections",
+  "ui": "modern"
 }
