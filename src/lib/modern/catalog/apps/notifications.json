@@ -1,0 +1,9 @@
+{
+  "id": "notifications",
+  "order": 95,
+  "name": "Notifications",
+  "category": "org",
+  "icon": "✉",
+  "description": "Email digest preferences",
+  "ui": "modern"
+}
