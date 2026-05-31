@@ -90,4 +90,5 @@ export const APPS: AppEntry[] = [
   {"id":"kanban","name":"Kanban","category":"work","icon":"▥","description":"To do · Doing · Done board","ui":"modern"},
   {"id":"jobtracker","name":"Job Hunt","category":"work","icon":"❏","description":"Track applications & stages","ui":"modern"},
   {"id":"xp","name":"Level","category":"goals","icon":"✦","description":"Your XP, level, streak, and achievements","ui":"modern"},
+  {"id":"notifications","name":"Notifications","category":"org","icon":"✉","description":"Email digest preferences","ui":"modern"},
 ];

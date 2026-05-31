@@ -357,6 +357,25 @@ on the Today dashboard and a usage-ordered grid. Bumped by the `<TrackUsage>` mo
 `authenticated`, so a user can only ever touch their own row. Owner-only RLS (no SysOp policy). Indexed
 on `(user_id, last_used_at desc)`.
 
+### notification_prefs
+| Column | Type |
+|--------|------|
+| user_id, email_enabled, morning_enabled, evening_enabled, morning_time, evening_time, streak_save_enabled, ai_insights_enabled |
+
+Opt-in email-digest prefs (Spine Layer 4, migration `20260531T1700_notifications.sql`, **applied to
+the remote**). PK `user_id`. **No row = no email** (consent-first); email defaults off. `*_time` are
+`TIME`. `ai_insights_enabled` is consumed by Phase 5. Owner-only RLS; the cron reads via the
+service-role client.
+
+### notification_log
+| Column | Type |
+|--------|------|
+| id, user_id, kind, local_day, sent_at |
+
+Digest send ledger — idempotency (claim-before-send) + audit. Unique `(user_id, kind, local_day)` so a
+digest is sent once per user per local day. `kind` ∈ `morning`/`evening`/`streak_save`. RLS **enabled
+with no policy** ⇒ users see nothing; only the service role (cron / unsubscribe routes) touches it.
+
 ## RLS Policy Pattern
 ```sql
 ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;
