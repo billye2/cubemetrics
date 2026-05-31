@@ -15,6 +15,23 @@ export interface ContactRow {
   created_at: string;
 }
 
+/** A row from public.contact_log — one logged interaction with a contact. */
+export interface ContactLogRow {
+  id: number;
+  contact_id: number;
+  note: string | null;
+  logged_on: string | null; // YYYY-MM-DD
+  created_at: string;
+}
+
+/** A normalised interaction-history entry attached to a contact. */
+export interface ContactLog {
+  id: number;
+  contactId: number;
+  note: string;
+  loggedOn: string; // YYYY-MM-DD
+}
+
 /** Outreach status relative to a contact's cadence. */
 export type Status = "due" | "soon" | "ok" | "none";
 
@@ -225,4 +242,59 @@ export const CADENCE_OPTIONS = [
 export function cleanCadence(days: number): number | null {
   if (!Number.isFinite(days) || days <= 0) return null;
   return Math.min(Math.floor(days), 3650);
+}
+
+// ── Interaction history (P3) ───────────────────────────────────────────────
+
+/** Normalise a contact_log DB row into a view model. */
+export function toLog(row: ContactLogRow): ContactLog {
+  return {
+    id: row.id,
+    contactId: row.contact_id,
+    note: (row.note ?? "").trim(),
+    loggedOn: cleanStr(row.logged_on) ?? row.created_at.slice(0, 10),
+  };
+}
+
+/**
+ * Group interaction logs by contact id, newest-first, capped at `limit` per
+ * contact. Rows are assumed to arrive newest-first (created_at DESC) but we sort
+ * defensively by loggedOn then id so order is deterministic regardless.
+ */
+export function logsByContact(
+  rows: ContactLog[],
+  limit = 3,
+): Map<number, ContactLog[]> {
+  const out = new Map<number, ContactLog[]>();
+  const sorted = [...rows].sort(
+    (a, b) => b.loggedOn.localeCompare(a.loggedOn) || b.id - a.id,
+  );
+  for (const log of sorted) {
+    const list = out.get(log.contactId) ?? [];
+    if (list.length < limit) {
+      list.push(log);
+      out.set(log.contactId, list);
+    }
+  }
+  return out;
+}
+
+/** Human "5d ago" / "today" / "yesterday" label for a YYYY-MM-DD log date. */
+export function logAgo(loggedOn: string, today: Date = startOfToday()): string {
+  const ago = dayDiff(parseDate(loggedOn), today);
+  if (ago <= 0) return "today";
+  if (ago === 1) return "yesterday";
+  return `${fmtSpan(ago)} ago`;
+}
+
+/**
+ * A ready-to-edit check-in opener for a contact. Mentions the most recent
+ * interaction when we have one so the nudge feels personal rather than canned.
+ */
+export function draftCheckIn(contact: Contact, recent?: ContactLog | null): string {
+  const first = contact.name.trim().split(/\s+/)[0] || contact.name.trim();
+  if (recent && recent.note) {
+    return `Hey ${first}, been meaning to follow up since we last talked about ${recent.note.toLowerCase()} — how are things?`;
+  }
+  return `Hey ${first}, it's been a while — thinking of you and wanted to check in. How have you been?`;
 }

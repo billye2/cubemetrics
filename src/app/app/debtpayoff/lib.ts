@@ -253,3 +253,224 @@ export function portfolioTotals(
     paidCount,
   };
 }
+
+// ── P3: history, projection timelines, interest accrual, celebration ──────────
+
+/** A point on a balance-over-time chart. `month` is YYYY-MM; `balance` is owed. */
+export interface BalancePoint {
+  month: string; // YYYY-MM
+  balance: number;
+}
+
+/** First day of the calendar month a YYYY-MM-DD date falls in, as YYYY-MM. */
+export function monthKey(dateStr: string): string {
+  const [y, m] = dateStr.split("-");
+  return `${y}-${(m || "01").padStart(2, "0")}`;
+}
+
+/** Step a YYYY-MM key forward by one month. */
+function nextMonthKey(key: string): string {
+  const [y, m] = key.split("-").map(Number);
+  const d = new Date(y, (m || 1) - 1 + 1, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+/** "Mar 2027" from a YYYY-MM key. */
+export function monthKeyLabel(key: string): string {
+  return monthLabel(`${key}-01`);
+}
+
+/**
+ * Historical burn-down for ONE debt: starting from the original balance, subtract
+ * each month's payments cumulatively. Produces one point per calendar month from
+ * the first payment's month through the latest payment's month (no gaps), each
+ * point being the balance remaining at the END of that month. The opening point
+ * (month before the first payment) sits at the original balance so the line
+ * starts at the top. Returns [] when there are no payments.
+ */
+export function debtTimeline(
+  original: number,
+  payments: PaymentRow[]
+): BalancePoint[] {
+  if (payments.length === 0) return [];
+  const orig = Number(original) || 0;
+  // Sum payments per month.
+  const perMonth = new Map<string, number>();
+  for (const p of payments) {
+    const k = monthKey(p.paid_on);
+    perMonth.set(k, (perMonth.get(k) || 0) + (Number(p.amount) || 0));
+  }
+  const keys = [...perMonth.keys()].sort();
+  const firstKey = keys[0];
+  const lastKey = keys[keys.length - 1];
+
+  const points: BalancePoint[] = [];
+  // Opening point at the original balance, the month before the first payment.
+  let cursor = firstKey;
+  let bal = orig;
+  // Walk every month from first to last inclusive.
+  while (true) {
+    bal = bal - (perMonth.get(cursor) || 0);
+    const rounded = Math.max(0, Math.round(bal * 100) / 100);
+    points.push({ month: cursor, balance: rounded });
+    if (cursor === lastKey) break;
+    cursor = nextMonthKey(cursor);
+  }
+  return points;
+}
+
+/**
+ * Portfolio historical burn-down: total owed across all debts at the end of each
+ * calendar month from the earliest payment to the latest. Each debt's balance is
+ * carried forward at its last-known value between its own payment months so the
+ * total reflects every debt, not just the ones paid that month. Returns [] when
+ * there are no payments anywhere.
+ */
+export function portfolioTimeline(
+  debts: DebtRow[],
+  paymentsByDebt: Map<number, PaymentRow[]>
+): BalancePoint[] {
+  // Per-debt per-month payment sums + global month range.
+  const debtMonthPay = new Map<number, Map<string, number>>();
+  let minKey: string | null = null;
+  let maxKey: string | null = null;
+  let totalOriginal = 0;
+  for (const d of debts) {
+    totalOriginal += Number(d.original_balance) || 0;
+    const pays = paymentsByDebt.get(d.id) ?? [];
+    const m = new Map<string, number>();
+    for (const p of pays) {
+      const k = monthKey(p.paid_on);
+      m.set(k, (m.get(k) || 0) + (Number(p.amount) || 0));
+      if (minKey === null || k < minKey) minKey = k;
+      if (maxKey === null || k > maxKey) maxKey = k;
+    }
+    debtMonthPay.set(d.id, m);
+  }
+  if (minKey === null || maxKey === null) return [];
+
+  const points: BalancePoint[] = [];
+  let running = totalOriginal; // total owed, declines as months' payments land
+  let cursor = minKey;
+  while (true) {
+    let monthPaid = 0;
+    for (const m of debtMonthPay.values()) monthPaid += m.get(cursor) || 0;
+    running = running - monthPaid;
+    points.push({
+      month: cursor,
+      balance: Math.max(0, Math.round(running * 100) / 100),
+    });
+    if (cursor === maxKey) break;
+    cursor = nextMonthKey(cursor);
+  }
+  return points;
+}
+
+/**
+ * Forward projection timeline: amortize a balance at a monthly payment, accruing
+ * interest at apr/12 each month, recording the balance at the END of each month
+ * until it hits zero (capped). The first point is the starting balance ("now").
+ * When `accrueInterest` is false, interest is ignored (straight burn-down).
+ * Returns [] if the debt is already at zero or never pays off.
+ */
+export function projectionTimeline(
+  balance: number,
+  apr: number,
+  payment: number,
+  accrueInterest: boolean,
+  now: Date = new Date()
+): BalancePoint[] {
+  let bal = Number(balance) || 0;
+  const pay = Number(payment) || 0;
+  if (bal <= 0 || pay <= 0) return [];
+  const monthlyRate = accrueInterest ? (Number(apr) || 0) / 100 / 12 : 0;
+  if (monthlyRate > 0 && pay <= bal * monthlyRate) return []; // never pays off
+
+  const baseMonth = monthKey(addMonths(now, 0));
+  const points: BalancePoint[] = [{ month: baseMonth, balance: Math.round(bal * 100) / 100 }];
+  let cursor = baseMonth;
+  let months = 0;
+  while (bal > 0 && months < 1000) {
+    const accrued = bal * monthlyRate;
+    bal = bal + accrued - pay;
+    if (bal < 0) bal = 0;
+    cursor = nextMonthKey(cursor);
+    points.push({ month: cursor, balance: Math.round(bal * 100) / 100 });
+    months += 1;
+  }
+  if (months >= 1000 && bal > 0) return [];
+  return points;
+}
+
+/**
+ * Project the FULL portfolio burn-down forward, paying every active debt its
+ * minimum each month. Optionally accrues interest. Returns total-owed at the end
+ * of each month until everything clears (capped). First point is today's total.
+ */
+export function portfolioProjectionTimeline(
+  debts: DebtRow[],
+  paymentsByDebt: Map<number, PaymentRow[]>,
+  accrueInterest: boolean,
+  now: Date = new Date()
+): BalancePoint[] {
+  // Active debts with their current balance, apr, min.
+  const live = debts
+    .map((d) => ({
+      balance: balanceRemaining(d.original_balance, paymentsByDebt.get(d.id) ?? []),
+      apr: Number(d.apr) || 0,
+      min: Number(d.min_payment) || 0,
+    }))
+    .filter((d) => d.balance > 0 && d.min > 0);
+  if (live.length === 0) return [];
+
+  const baseMonth = monthKey(addMonths(now, 0));
+  const total = () =>
+    Math.max(0, Math.round(live.reduce((a, d) => a + d.balance, 0) * 100) / 100);
+  const points: BalancePoint[] = [{ month: baseMonth, balance: total() }];
+  let cursor = baseMonth;
+  let months = 0;
+  while (live.some((d) => d.balance > 0) && months < 1000) {
+    for (const d of live) {
+      if (d.balance <= 0) continue;
+      const rate = accrueInterest ? d.apr / 100 / 12 : 0;
+      const accrued = d.balance * rate;
+      // If this debt's min can't cover interest, it never clears — bail out.
+      if (rate > 0 && d.min <= d.balance * rate && months > 0) {
+        return points; // stop projecting; portfolio won't fully clear
+      }
+      d.balance = d.balance + accrued - d.min;
+      if (d.balance < 0) d.balance = 0;
+    }
+    cursor = nextMonthKey(cursor);
+    points.push({ month: cursor, balance: total() });
+    months += 1;
+  }
+  if (months >= 1000) return points;
+  return points;
+}
+
+export interface PaidOffInfo {
+  /** YYYY-MM-DD of the last (payoff) payment, or null. */
+  paidOn: string | null;
+  /** Total amount paid against the debt. */
+  totalPaid: number;
+  /** Interest is not stored; this is the original balance cleared. */
+  cleared: number;
+}
+
+/**
+ * Summary for a paid-off debt's archive card: when the final payment landed and
+ * how much was paid in total. Payments are assumed sorted newest-first as the
+ * page loads them, but we compute the max date defensively.
+ */
+export function paidOffInfo(debt: DebtRow, payments: PaymentRow[]): PaidOffInfo {
+  let paidOn: string | null = null;
+  for (const p of payments) {
+    if (paidOn === null || p.paid_on > paidOn) paidOn = p.paid_on;
+  }
+  return {
+    paidOn,
+    totalPaid: Math.round(totalPaid(payments) * 100) / 100,
+    cleared: Math.round((Number(debt.original_balance) || 0) * 100) / 100,
+  };
+}
