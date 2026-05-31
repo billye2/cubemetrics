@@ -118,6 +118,7 @@ const lanes = green
 const integration = await agent(
   `You are the INTEGRATOR (.claude/roles/integrator.md). Land these green builder PRs onto master TOGETHER:
    ${lanes}
+   STEP 0 — TOOLING SELF-CHECK (fail loud, never silent): before anything else, run \`echo integrator-tooling-alive\`. If the output is empty or missing, your tool session is dead — do NOT grope forward through blind calls. Immediately STOP and return { pushed: false, toolingDead: true, notes: "tooling self-check returned empty — aborting before blind integration" } so the orchestrator can re-run integration in a healthy session. Re-run this echo probe if any later command unexpectedly returns empty, and abort the same way if it confirms dead tooling.
    Steps:
    1. Merge each branch into a fresh integration of master. Lanes own disjoint files, so conflicts should be rare; resolve any that occur.
    2. Run \`npm run build:catalog\` to reassemble catalog/_generated.ts from every lane's catalog/apps/*.json.
@@ -125,7 +126,7 @@ const integration = await agent(
    4. UNION GATE — run \`npm test\` AND \`npm run build\` across the merged tree; both must be green. Audit the combined diff for secrets (public repo).
    5. Only if green + clean: push the integration branch and open ONE PR into master (master has hard branch protection — direct pushes are rejected). Wait for the \`verify\` CI check to pass, then \`gh pr merge --squash\` (this auto-deploys). Apply any new migrations to remote Supabase, close the linked issues, and delete the merged branches/worktrees.
    Do NOT merge a union you couldn't verify, and do NOT land a lane that fails to merge cleanly — bounce it back instead.
-   Report what landed, the union test/build result, and anything bounced.`,
+   Report what landed, the union test/build result, and anything bounced. If you abort for ANY reason without pushing, set pushed:false and explain in notes — never return a vague success.`,
   {
     label: 'integrate',
     phase: 'Integrate',
@@ -134,6 +135,7 @@ const integration = await agent(
       required: ['pushed'],
       properties: {
         pushed: { type: 'boolean' },
+        toolingDead: { type: 'boolean' },
         landed: { type: 'array', items: { type: 'string' } },
         unionTests: { type: 'string' },
         unionBuild: { type: 'string' },
@@ -144,5 +146,13 @@ const integration = await agent(
   },
 )
 
-log(integration.pushed ? `Shipped: ${(integration.landed || []).join(', ')}` : 'Integration did not push — see notes.')
-return { built, integrated: integration.pushed, integration }
+// Fail LOUD, not silent: surface a non-push in /workflows live and flag it for the
+// orchestrator to recover, rather than burying it in the final return value.
+if (integration.pushed) {
+  log(`Shipped: ${(integration.landed || []).join(', ')}`)
+} else if (integration.toolingDead) {
+  log(`⚠️ INTEGRATOR ABORTED — tooling died mid-run, nothing landed. Green lanes ARE safe on origin (${green.map((g) => g.branch).join(', ')}). ORCHESTRATOR: re-run integration in a healthy session. ${integration.notes || ''}`)
+} else {
+  log(`⚠️ INTEGRATION DID NOT PUSH — ${integration.notes || 'see notes'}. Green lanes safe on origin: ${green.map((g) => g.branch).join(', ')}.`)
+}
+return { built, integrated: integration.pushed, integration, needsRecovery: !integration.pushed && green.length > 0 }
