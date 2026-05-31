@@ -1,5 +1,8 @@
 # Spine — Phase 3: Today, the anchor ritual (build-ready spec)
 
+> ✅ **BUILT + SHIPPED (2026-05-31, PR #107, `master`).** `/today` is the logged-in home (grid → `/apps`);
+> `TodayHeader`/`TodayCard`/`TodayBody`, `getToday`+`ensureXp` fan-out, 43 back-links repointed. 555 tests.
+
 Companion to [../spine.md](../spine.md) (Layer 3) and Phases [1](spine-phase1.md)/[2](spine-phase2.md).
 Phase 1 gave `getToday()`; Phase 2 gave capture. **Phase 3 is the destination** — the logged-in home
 becomes a once-(or-twice)-daily ritual, not the 86-tile junk drawer. It's the surface every Phase-4

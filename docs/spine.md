@@ -2,7 +2,7 @@
 
 A plan for turning XP Boost's ~86 standalone apps into one product that *pulls you back daily*.
 
-> **Status:** plan / spec (not yet built). Authored 2026-05-31. All five core phases are specced build-ready (`spine-phase1..5.md`). **Start at [§7 Build order & kickoff](#7-build-order--kickoff-capstone).**
+> **Status:** ✅ **BUILT + SHIPPED (2026-05-31).** All five core phases are live on `master` (PRs #105–#109): substrate → capture → anchor (`/today`) → proactive engine → insight line. Layer 6 (cross-app links) remains opportunistic. The proactive engine + AI line are dormant pending ops provisioning (Resend/cron/secrets — see [phase 4](app-plans/spine-phase4.md) §11/§15 and [phase 5](app-plans/spine-phase5.md)). Per-phase detail in `spine-phase1..5.md`.
 > **North star:** the spine is not "done" when the apps feel coherent — it's done when **the product reaches out and brings you back on its own.**
 
 ---

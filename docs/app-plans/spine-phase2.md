@@ -1,5 +1,8 @@
 # Spine — Phase 2: Universal Quick Capture (build-ready spec)
 
+> ✅ **BUILT + SHIPPED (2026-05-31, PR #106, `master`).** `<QuickCapture>` in `Shell`,
+> `capture`/`captureTo`/`undoCapture` actions, `classify`/`loggableApps`, allowlisted undo. 549 tests.
+
 Companion to [../spine.md](../spine.md) (Layer 2) and [spine-phase1.md](spine-phase1.md). Phase 1
 shipped the substrate — adapters with `quickLog()`/`match()` and the registry. **Phase 2 is the
 surface**: one capture bar in the header, on every page, that turns free text into a row in the right
