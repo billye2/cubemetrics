@@ -43,9 +43,35 @@ export async function addProject(title: string) {
 
 export async function setStatus(id: number, status: string) {
   const { supabase, userId } = await requireUser();
+  const next = cleanStatus(status);
+
+  // Stamp blocked_at when entering "blocked" (only if not already blocked, so a
+  // re-set doesn't reset the clock); clear it on any other status. The "since"
+  // duration is read straight off this timestamp.
+  const update: { status: string; blocked_at?: string | null } = { status: next };
+  if (next === "blocked") {
+    const { data: cur } = await supabase
+      .from("projects")
+      .select("status, blocked_at")
+      .eq("id", id)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!cur || cur.status !== "blocked" || !cur.blocked_at) {
+      update.blocked_at = new Date().toISOString();
+    }
+  } else {
+    update.blocked_at = null;
+  }
+
+  await supabase.from("projects").update(update).eq("id", id).eq("user_id", userId);
+  revalidatePath(PATH);
+}
+
+export async function setBlockedReason(id: number, reason: string) {
+  const { supabase, userId } = await requireUser();
   await supabase
     .from("projects")
-    .update({ status: cleanStatus(status) })
+    .update({ blocked_reason: reason.trim().slice(0, 240) })
     .eq("id", id)
     .eq("user_id", userId);
   revalidatePath(PATH);

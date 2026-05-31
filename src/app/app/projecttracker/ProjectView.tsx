@@ -2,12 +2,13 @@
 
 import { useRef, useState, useTransition } from "react";
 import type { Project, ProjectTask } from "./page";
-import { pct, dueLabel } from "./lib";
+import { pct, dueLabel, blockedSince, sortFilter, type SortKey } from "./lib";
 import {
   addProject,
   addTask,
   deleteProject,
   deleteTask,
+  setBlockedReason,
   setDueDate,
   setNextAction,
   setStatus,
@@ -26,16 +27,33 @@ const STATUS_META: Record<
 
 const STATUS_OPTIONS = ["planning", "active", "blocked", "done"];
 
+/** Next status in the pipeline for tap-to-advance on the board (wraps done → planning). */
+const NEXT_STATUS: Record<string, string> = {
+  planning: "active",
+  active: "blocked",
+  blocked: "done",
+  done: "planning",
+};
+
+const SORT_LABELS: { key: SortKey; label: string }[] = [
+  { key: "status", label: "Status" },
+  { key: "deadline", label: "Deadline" },
+  { key: "progress", label: "% done" },
+  { key: "created", label: "Newest" },
+];
+
 export function ProjectView({ projects }: { projects: Project[] }) {
+  const [view, setView] = useState<"list" | "board">("list");
+  const [filter, setFilter] = useState<string>("all");
+  const [sort, setSort] = useState<SortKey>("status");
+
   const counts: Record<string, number> = {};
   for (const p of projects) counts[p.status] = (counts[p.status] || 0) + 1;
 
-  const sorted = [...projects].sort(
-    (a, b) => (STATUS_META[a.status]?.order ?? 0) - (STATUS_META[b.status]?.order ?? 0),
-  );
+  const visible = sortFilter(projects, filter, sort);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="grid grid-cols-4 gap-2">
         {STATUS_OPTIONS.map((s) => (
           <Stat key={s} label={STATUS_META[s].label} value={counts[s] || 0} bar={STATUS_META[s].bar} />
@@ -47,12 +65,170 @@ export function ProjectView({ projects }: { projects: Project[] }) {
       {projects.length === 0 ? (
         <EmptyState />
       ) : (
-        <ul className="space-y-3">
-          {sorted.map((p) => (
-            <ProjectCard key={p.id} project={p} />
-          ))}
-        </ul>
+        <>
+          <Controls
+            view={view}
+            setView={setView}
+            filter={filter}
+            setFilter={setFilter}
+            sort={sort}
+            setSort={setSort}
+          />
+
+          {view === "board" ? (
+            <Board projects={filter === "all" ? projects : visible} />
+          ) : (
+            <ul className="space-y-3">
+              {visible.map((p) => (
+                <ProjectCard key={p.id} project={p} />
+              ))}
+            </ul>
+          )}
+        </>
       )}
+    </div>
+  );
+}
+
+function Controls({
+  view,
+  setView,
+  filter,
+  setFilter,
+  sort,
+  setSort,
+}: {
+  view: "list" | "board";
+  setView: (v: "list" | "board") => void;
+  filter: string;
+  setFilter: (v: string) => void;
+  sort: SortKey;
+  setSort: (v: SortKey) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="inline-flex rounded-lg border border-zinc-800 bg-zinc-900/60 p-0.5">
+        {(["list", "board"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setView(v)}
+            className={`min-h-[36px] rounded-md px-3 text-xs font-semibold capitalize ${
+              view === v ? "bg-cyan-500 text-zinc-950" : "text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+
+      <label className="ml-auto flex items-center gap-1.5 text-[11px] text-zinc-500">
+        Filter
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-cyan-500"
+        >
+          <option value="all">All</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {STATUS_META[s].label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+        Sort
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortKey)}
+          className="rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-cyan-500"
+        >
+          {SORT_LABELS.map((s) => (
+            <option key={s.key} value={s.key}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
+function Board({ projects }: { projects: Project[] }) {
+  const byStatus: Record<string, Project[]> = { planning: [], active: [], blocked: [], done: [] };
+  for (const p of projects) (byStatus[p.status] ??= []).push(p);
+
+  return (
+    <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2">
+      {STATUS_OPTIONS.map((s) => (
+        <div key={s} className="flex w-60 shrink-0 flex-col gap-2">
+          <div className="flex items-center justify-between px-0.5">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-zinc-300">
+              <span className={`inline-block h-2 w-2 rounded-full ${STATUS_META[s].bar}`} />
+              {STATUS_META[s].label}
+            </span>
+            <span className="text-[11px] tabular-nums text-zinc-500">{byStatus[s].length}</span>
+          </div>
+          <div className="flex flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-900/30 p-2">
+            {byStatus[s].length === 0 ? (
+              <p className="px-1 py-3 text-center text-[11px] text-zinc-600">Empty</p>
+            ) : (
+              byStatus[s].map((p) => <BoardCard key={p.id} project={p} />)
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function BoardCard({ project }: { project: Project }) {
+  const [pending, start] = useTransition();
+  const percent = pct(project.tasks);
+  const due = dueLabel(project.due_date);
+  const since = project.status === "blocked" ? blockedSince(project.blocked_at) : null;
+  const nextLabel = STATUS_META[NEXT_STATUS[project.status]]?.label ?? "";
+
+  return (
+    <div className={`rounded-lg border border-zinc-800 bg-zinc-900/60 p-2.5 ${pending ? "opacity-60" : ""}`}>
+      <div className="break-words text-xs font-medium text-zinc-100">{project.title}</div>
+
+      {project.tasks.length > 0 && (
+        <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-zinc-800">
+          <div className="h-full rounded-full bg-cyan-500" style={{ width: `${percent}%` }} />
+        </div>
+      )}
+
+      <div className="mt-1.5 flex flex-wrap items-center gap-1">
+        {project.tasks.length > 0 && (
+          <span className="text-[10px] text-zinc-500">{percent}%</span>
+        )}
+        {since && (
+          <span className="rounded-full bg-rose-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-rose-300">
+            {since}
+          </span>
+        )}
+        {due && (
+          <span
+            className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+              due.overdue ? "bg-rose-500/15 text-rose-300" : "bg-zinc-800 text-zinc-300"
+            }`}
+          >
+            {due.text}
+          </span>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => start(() => setStatus(project.id, NEXT_STATUS[project.status]))}
+        disabled={pending}
+        className="mt-2 min-h-[32px] w-full rounded-md border border-zinc-700 px-2 text-[11px] font-semibold text-zinc-300 hover:border-cyan-500 hover:text-cyan-300 disabled:opacity-50"
+      >
+        → {nextLabel}
+      </button>
     </div>
   );
 }
@@ -113,6 +289,7 @@ function ProjectCard({ project }: { project: Project }) {
   const percent = pct(project.tasks);
   const doneCount = project.tasks.filter((t) => t.completed).length;
   const due = dueLabel(project.due_date);
+  const since = project.status === "blocked" ? blockedSince(project.blocked_at) : null;
 
   function remove() {
     if (!confirm(`Delete "${project.title}" and its tasks?`)) return;
@@ -140,7 +317,17 @@ function ProjectCard({ project }: { project: Project }) {
                 {due.text}
               </span>
             )}
+            {since && (
+              <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-300">
+                {since}
+              </span>
+            )}
           </div>
+
+          {/* Blocked reason — only when blocked, inline-editable */}
+          {project.status === "blocked" && (
+            <BlockedReason project={project} start={start} />
+          )}
 
           {/* Progress bar derived from tasks */}
           {project.tasks.length > 0 && (
@@ -266,6 +453,63 @@ function NextAction({
         <span className="break-words text-xs text-zinc-300">{project.next_action}</span>
       ) : (
         <span className="text-xs italic text-zinc-500">Set next action…</span>
+      )}
+    </button>
+  );
+}
+
+function BlockedReason({
+  project,
+  start,
+}: {
+  project: Project;
+  start: React.TransitionStartFunction;
+}) {
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function save() {
+    const value = inputRef.current?.value ?? "";
+    start(() => setBlockedReason(project.id, value));
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <div className="mt-2 flex items-center gap-2">
+        <input
+          ref={inputRef}
+          autoFocus
+          defaultValue={project.blocked_reason}
+          placeholder="What's blocking it?"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") save();
+            if (e.key === "Escape") setEditing(false);
+          }}
+          className="min-w-0 flex-1 rounded-lg border border-rose-500/40 bg-zinc-900 px-2 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-rose-400"
+        />
+        <button
+          type="button"
+          onClick={save}
+          className="shrink-0 rounded-lg bg-rose-500 px-2.5 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-rose-400"
+        >
+          Save
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setEditing(true)}
+      className="mt-2 flex w-full items-start gap-1.5 text-left"
+    >
+      <span className="text-rose-400">⚠</span>
+      {project.blocked_reason ? (
+        <span className="break-words text-xs text-rose-200/90">{project.blocked_reason}</span>
+      ) : (
+        <span className="text-xs italic text-zinc-500">Why is it blocked?</span>
       )}
     </button>
   );
