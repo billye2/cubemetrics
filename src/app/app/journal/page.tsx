@@ -20,7 +20,7 @@ export default async function JournalPage() {
     .limit(100);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Journal">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Journal">
       <TrackUsage appId="journal" />
       <JournalView entries={data || []} />
     </Shell>

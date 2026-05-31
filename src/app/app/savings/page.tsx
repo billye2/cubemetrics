@@ -47,7 +47,7 @@ export default async function SavingsPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Savings">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Savings">
       <SavingsView goals={goals} contributions={contributions} />
     </Shell>
   );

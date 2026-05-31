@@ -38,7 +38,7 @@ export default async function ReadingPage() {
     .limit(500);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Reading">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Reading">
       <ReadingView books={(data || []) as BookRow[]} />
     </Shell>
   );

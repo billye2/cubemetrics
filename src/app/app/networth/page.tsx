@@ -51,7 +51,7 @@ export default async function NetWorthPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Net Worth">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Net Worth">
       <NetWorthView accounts={accounts} snapshots={snapshots} />
     </Shell>
   );

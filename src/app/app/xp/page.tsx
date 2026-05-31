@@ -22,7 +22,7 @@ export default async function XpPage() {
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Level">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Level">
       {/* Hero */}
       <div className="flex flex-col items-center rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6">
         <div className="flex h-20 w-20 items-center justify-center rounded-full bg-cyan-500/15 text-3xl font-bold text-cyan-300 ring-2 ring-cyan-500/40">

@@ -21,7 +21,7 @@ export default async function TodoPage() {
     .limit(200);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Todo">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Todo">
       <TrackUsage appId="todo" />
       <TodoView initialTodos={data || []} />
     </Shell>

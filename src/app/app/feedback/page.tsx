@@ -53,7 +53,7 @@ export default async function FeedbackPage() {
   }
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Feedback">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Feedback">
       <FeedbackView mine={mine || []} board={board || []} isAdmin={admin} pending={pending} />
     </Shell>
   );

@@ -34,7 +34,7 @@ export default async function KanbanPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Kanban">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Kanban">
       <KanbanView cards={cards} />
     </Shell>
   );

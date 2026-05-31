@@ -18,7 +18,7 @@ export default async function CountdownPage() {
     .limit(200);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Countdown">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Countdown">
       <CountdownsView rows={data || []} />
     </Shell>
   );

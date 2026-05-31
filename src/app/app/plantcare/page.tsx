@@ -26,7 +26,7 @@ export default async function PlantcarePage() {
   const plants = sortPlants(((data as PlantRow[]) || []).map((r) => toPlant(r, today)));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Plants">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Plants">
       <PlantcareView plants={plants} />
     </Shell>
   );

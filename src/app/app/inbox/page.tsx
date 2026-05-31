@@ -39,7 +39,7 @@ export default async function InboxPage() {
   const oldest = rows.length ? ageLabel(rows[rows.length - 1].created_at) : null;
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Inbox">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Inbox">
       <InboxView
         items={rows.map((r) => ({ ...r, age: ageLabel(r.created_at) }))}
         oldest={oldest}

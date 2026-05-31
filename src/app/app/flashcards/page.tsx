@@ -26,7 +26,7 @@ export default async function FlashcardsPage() {
   const mastered = cards.filter((c) => c.reps >= 3).length;
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Flashcards">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Flashcards">
       <FlashcardsView cards={cards} today={today} dueCount={dueCount} mastered={mastered} />
     </Shell>
   );
