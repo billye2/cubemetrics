@@ -8,6 +8,7 @@ Live at **https://cubemetrics.com**
 ## Documentation
 - [Tech Stack](docs/tech-stack.md) — Next.js, Supabase, Tailwind, Vercel
 - [Architecture](docs/architecture.md) — RSC + Server Actions, the app catalog, feedback→GitHub workflow
+- [The Spine](docs/spine.md) — the cross-app layer that makes the suite cohere (contract → capture → Today → proactive → insight); phase specs in [docs/app-plans/spine-phase1..5.md](docs/app-plans/)
 - [Database](docs/database.md) — Schema, RLS policies, table conventions
 - [Commands](docs/commands.md) — Dev, build, deploy, Supabase CLI commands
 - [Environment](docs/environment.md) — Required env vars, Supabase Auth config
@@ -36,16 +37,26 @@ npm run test:watch
 ## Project Structure
 ```
 src/app/
-  page.tsx                  — Home (RSC, auth-gated, searchable app grid)
+  page.tsx                  — "/" → Landing (logged-out) / redirect to /today (logged-in)
+  today/page.tsx            — The Today anchor ritual (logged-in home; the Spine's destination)
+  apps/page.tsx             — The full searchable app grid (moved off "/")
   layout.tsx                — Root layout, dark theme defaults
   globals.css               — Tailwind + base styles
-  app/<id>/                 — Custom app pages (todo, journal, feedback, …)
+  app/<id>/                 — Custom app pages (todo, journal, feedback, notifications, …)
   app/[id]/page.tsx         — Factory dispatch for template apps (+ "coming soon" fallback)
   app/[id]/_factories/      — Tracker / Checklist / Logbook / Goal / Finance / Schedule views
   api/auth/                 — Google OAuth login, logout, callback
-src/components/modern/      — Shared UI primitives (Shell, HeaderFeedback, AppSearch, Card, SignOutButton)
+  api/cron/digest/          — Proactive digest cron (Spine Layer 4; CRON_SECRET-gated)
+  api/notifications/        — One-click unsubscribe (HMAC-verified)
+src/components/modern/      — Shared UI primitives (Shell, HeaderFeedback, QuickCapture, AppSearch, Card)
+  today/                    — TodayHeader / TodayCard / TodayBody / TodayInsight
 src/lib/
   modern/                   — App catalog (catalog/, generated from apps/*.json) + admin gate (admin.ts)
+  spine/                    — The cross-app contract: adapters/<id>.ts, generated registry, getToday()/route(),
+                              capture actions, usage beacon, pure today/view helpers
+  notify/                   — Proactive engine: select/policy/digest/email/tokens (Layer 4)
+  ai/                       — Today insight line (Layer 5; deterministic now, AI-ready)
+  xp/                        — The XP layer (levels/streaks/quests/achievements)
   github/                   — GitHub issue creation for the feedback workflow
   supabase/                 — Supabase server client + service-role admin client
 src/supabase/migrations/    — SQL migrations
@@ -58,6 +69,7 @@ tests/                      — Unit tests (Vitest)
 - Tailwind utility classes inline. Dark mode is the only mode. Cyan accent (`cyan-500`).
 - Phone-first layout. Safe-area insets respected. 44px+ tap targets.
 - The app catalog lives in `src/lib/modern/catalog/` — the single source of truth for the grid. It's **generated**: add an app by dropping `catalog/apps/<id>.json` and running `npm run build:catalog` (never hand-edit `_generated.ts`). Template apps (`tracker`/`checklist`/`logbook`/`goal`/`finance`/`schedule`) need only the JSON entry; custom apps also add a page + `actions.ts`. One-file-per-app keeps parallel build agents from colliding — see [Agent Orchestration](docs/agent-orchestration.md).
+- **The Spine** ([docs/spine.md](docs/spine.md)) is the cross-app layer: a per-app contract (`today()`/`quickLog()`) feeds the global capture bar (`⌘K`), the `/today` ritual, and the proactive digest. **Governance rule (spine-first):** a new app SHOULD ship a `src/lib/spine/adapters/<id>.ts` (then `npm run build:spine`) — or justify opting out in its app-plan — so new breadth strengthens the spine instead of diluting it. The adapter registry is generated, one-file-per-app (collision-free), just like the catalog.
 - Press the **Feedback** button in any app's header to send feedback tagged with that app. Admins (`ADMIN_EMAIL`) review it under `/app/feedback` and approve → opens a GitHub issue mentioning `@claude`.
 - Auth: Google OAuth only via Supabase, full-page nav, lands at `/api/auth/callback`.
 - Never commit `.env*` files — secrets stay local.

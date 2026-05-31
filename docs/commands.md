@@ -5,6 +5,7 @@
 npm run dev          # Start Next.js dev server (http://localhost:3000)
 npm run build        # Production build (Turbopack); prebuild regenerates the catalog
 npm run build:catalog # Regenerate src/lib/modern/catalog/_generated.ts from apps/*.json
+npm run build:spine   # Regenerate src/lib/spine/_generated.ts from spine/adapters/*.ts (Spine registry)
 npm run start        # Start production server locally
 npm run lint         # ESLint check
 npm test             # Run unit tests (Vitest); pretest regenerates the catalog
