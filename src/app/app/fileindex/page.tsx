@@ -25,7 +25,7 @@ export default async function FileIndexPage() {
   const entries = ((data as FileEntryRow[]) || []).map(toFileEntry);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="File Index">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="File Index">
       <FileIndexView entries={entries} />
     </Shell>
   );

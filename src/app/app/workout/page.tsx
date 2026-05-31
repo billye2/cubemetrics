@@ -74,7 +74,7 @@ export default async function WorkoutPage() {
   );
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Workout">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Workout">
       <WorkoutView
         sessions={enriched}
         prByExercise={Object.fromEntries(prByExercise)}

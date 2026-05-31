@@ -68,7 +68,7 @@ export default async function PomodoroPage() {
   }
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Pomodoro">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Pomodoro">
       <PomodoroView active={active} todayCount={count || 0} recent={recent || []} week={week} />
     </Shell>
   );

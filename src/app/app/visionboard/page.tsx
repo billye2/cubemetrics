@@ -24,7 +24,7 @@ export default async function VisionBoardPage() {
   const cards = sortCards((data || []).map((r) => toCard(r as VisionCardRow)));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Vision Board">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Vision Board">
       <VisionBoardView cards={cards} />
     </Shell>
   );

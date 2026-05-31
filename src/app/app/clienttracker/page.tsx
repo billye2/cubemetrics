@@ -47,7 +47,7 @@ export default async function ClientTrackerPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Clients">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Clients">
       <ClientView clients={clients} />
     </Shell>
   );

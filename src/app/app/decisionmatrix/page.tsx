@@ -99,7 +99,7 @@ export default async function DecisionMatrixPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Decisions">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Decisions">
       <DecisionsView decisions={decisions} />
     </Shell>
   );

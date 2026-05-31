@@ -76,7 +76,7 @@ export default async function ProjectTrackerPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Projects">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Projects">
       <ProjectView projects={projects} />
     </Shell>
   );

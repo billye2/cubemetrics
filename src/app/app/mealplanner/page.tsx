@@ -47,7 +47,7 @@ export default async function MealPlannerPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Meals">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Meals">
       <MealPlannerView today={today} initialMeals={meals} recipes={recipes} />
     </Shell>
   );

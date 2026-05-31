@@ -19,7 +19,7 @@ export default async function NotesPage() {
     .limit(200);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Notes">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Notes">
       <NotesView notes={data || []} />
     </Shell>
   );

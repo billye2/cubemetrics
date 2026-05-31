@@ -43,7 +43,7 @@ export default async function ContactsPage() {
   const logs: ContactLog[] = ((logsRes.data as ContactLogRow[] | null) ?? []).map(toLog);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Contacts">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Contacts">
       <ContactsView contacts={contacts} logs={logs} />
     </Shell>
   );

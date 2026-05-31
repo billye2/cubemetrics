@@ -23,7 +23,7 @@ export default async function TimeTrackerPage() {
     .limit(300);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Time Tracker">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Time Tracker">
       <TimeTrackerView entries={data || []} />
     </Shell>
   );

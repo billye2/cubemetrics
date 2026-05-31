@@ -119,7 +119,7 @@ export default async function BudgetPage({
   const hasPlan = (targetData || []).length > 0;
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Budget">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Budget">
       <TrackUsage appId="budget" />
       <BudgetView
         month={month}

@@ -32,7 +32,7 @@ export default async function CalendarPage() {
   const today = new Date().toISOString().slice(0, 10);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Calendar">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Calendar">
       <CalendarView events={(data || []) as Event[]} today={today} windowStart={windowStart} windowEnd={windowEnd} />
     </Shell>
   );

@@ -23,7 +23,7 @@ export default async function FocusPage() {
     .limit(200);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Focus">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Focus">
       <FocusView entries={data || []} />
     </Shell>
   );

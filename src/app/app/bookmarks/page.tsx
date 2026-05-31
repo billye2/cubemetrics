@@ -21,7 +21,7 @@ export default async function BookmarksPage() {
   const bookmarks = (data as BookmarkRow[] | null ?? []).map(toBookmark);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Bookmarks">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Bookmarks">
       <BookmarksView bookmarks={bookmarks} />
     </Shell>
   );
