@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { cleanConfidence, currentCycle } from "./lib";
+import { cleanConfidence, cleanKrType, currentCycle, nextCycle } from "./lib";
 
 async function requireUser() {
   const supabase = await createServerSupabase();
@@ -86,23 +86,76 @@ export async function deleteObjective(id: number) {
   revalidatePath(PATH);
 }
 
+// --- End-of-cycle grading (P2) ---------------------------------------------
+
+/** Close an objective: snapshot a reflection and archive it out of the active view. */
+export async function gradeObjective(id: number, reflection: string) {
+  const { supabase, userId } = await requireUser();
+  await supabase
+    .from("objectives")
+    .update({
+      status: "graded",
+      reflection: reflection.trim().slice(0, 2000),
+      graded_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath(PATH);
+}
+
+/** Re-open a graded objective for further work. */
+export async function reopenObjective(id: number) {
+  const { supabase, userId } = await requireUser();
+  await supabase
+    .from("objectives")
+    .update({ status: "active", graded_at: null })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath(PATH);
+}
+
+// --- Key results -----------------------------------------------------------
+
 export async function addKeyResult(
   objectiveId: number,
   title: string,
+  type: string,
+  startValue: number,
   target: number,
 ) {
   const t = title.trim();
   if (!t) return;
   const { supabase, userId } = await requireUser();
   if (!(await ownsObjective(supabase, userId, objectiveId))) return;
+
+  const krType = cleanKrType(type);
+  const start = krType === "baseline" ? cleanNumber(startValue, 0) : 0;
+  const targetValue =
+    krType === "milestone" ? 1 : cleanNumber(target, 100);
+  const current = krType === "baseline" ? start : 0;
+
   await supabase.from("key_results").insert({
     user_id: userId,
     objective_id: objectiveId,
     title: t.slice(0, 200),
-    current_value: 0,
-    target_value: cleanNumber(target, 100),
+    kr_type: krType,
+    start_value: start,
+    current_value: current,
+    target_value: targetValue,
   });
   revalidatePath(PATH);
+}
+
+/** Log a KR's new value to its history (P3 sparkline source). */
+async function logProgress(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  krId: number,
+  value: number,
+) {
+  await supabase
+    .from("kr_progress")
+    .insert({ user_id: userId, key_result_id: krId, value });
 }
 
 export async function updateKeyResult(
@@ -111,14 +164,33 @@ export async function updateKeyResult(
   target: number,
 ) {
   const { supabase, userId } = await requireUser();
-  await supabase
+  const value = cleanNumber(current, 0);
+  const { data } = await supabase
     .from("key_results")
     .update({
-      current_value: cleanNumber(current, 0),
+      current_value: value,
       target_value: cleanNumber(target, 100),
     })
     .eq("id", krId)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+  if (data) await logProgress(supabase, userId, krId, value);
+  revalidatePath(PATH);
+}
+
+/** Set a KR's current value directly (used by increment buttons / milestone toggle). */
+export async function setKeyResultValue(krId: number, current: number) {
+  const { supabase, userId } = await requireUser();
+  const value = cleanNumber(current, 0);
+  const { data } = await supabase
+    .from("key_results")
+    .update({ current_value: value })
+    .eq("id", krId)
+    .eq("user_id", userId)
+    .select("id")
+    .maybeSingle();
+  if (data) await logProgress(supabase, userId, krId, value);
   revalidatePath(PATH);
 }
 
@@ -137,5 +209,75 @@ export async function setKeyResultTitle(krId: number, title: string) {
 export async function deleteKeyResult(krId: number) {
   const { supabase, userId } = await requireUser();
   await supabase.from("key_results").delete().eq("id", krId).eq("user_id", userId);
+  revalidatePath(PATH);
+}
+
+// --- Carry-over (P3) -------------------------------------------------------
+
+/**
+ * Copy an incomplete KR into a fresh objective in the next cycle. If a sibling
+ * objective with the same title already exists in the next cycle it's reused,
+ * otherwise one is created. The KR's progress resets (baseline keeps its span).
+ */
+export async function carryOverKeyResult(krId: number) {
+  const { supabase, userId } = await requireUser();
+
+  const { data: kr } = await supabase
+    .from("key_results")
+    .select(
+      "id, objective_id, title, kr_type, start_value, target_value, current_value",
+    )
+    .eq("id", krId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!kr) return;
+
+  const { data: srcObj } = await supabase
+    .from("objectives")
+    .select("id, title, cycle, confidence")
+    .eq("id", kr.objective_id)
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!srcObj) return;
+
+  const target = nextCycle((srcObj.cycle as string) ?? "");
+
+  // Find or create the matching objective in the next cycle.
+  let destId: number | null = null;
+  const { data: existing } = await supabase
+    .from("objectives")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("title", srcObj.title)
+    .eq("cycle", target)
+    .maybeSingle();
+  if (existing) {
+    destId = existing.id as number;
+  } else {
+    const { data: created } = await supabase
+      .from("objectives")
+      .insert({
+        user_id: userId,
+        title: srcObj.title,
+        cycle: target,
+        confidence: "on_track",
+      })
+      .select("id")
+      .maybeSingle();
+    destId = (created?.id as number) ?? null;
+  }
+  if (!destId) return;
+
+  const krType = cleanKrType((kr.kr_type as string) ?? "metric");
+  const start = Number(kr.start_value) || 0;
+  await supabase.from("key_results").insert({
+    user_id: userId,
+    objective_id: destId,
+    title: kr.title,
+    kr_type: krType,
+    start_value: start,
+    current_value: krType === "baseline" ? start : 0,
+    target_value: Number(kr.target_value) || 100,
+  });
   revalidatePath(PATH);
 }

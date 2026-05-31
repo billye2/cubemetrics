@@ -15,7 +15,7 @@ export default async function InventoryPage() {
 
   const { data } = await supabase
     .from("inventory_items")
-    .select("id, name, quantity, value, location, category, photo_url, created_at")
+    .select("id, name, quantity, value, location, category, photo_url, receipt_url, warranty_url, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1000);
