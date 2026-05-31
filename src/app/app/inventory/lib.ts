@@ -10,6 +10,8 @@ export interface InventoryRow {
   location: string | null;
   category: string | null;
   photo_url: string | null;
+  receipt_url: string | null;
+  warranty_url: string | null;
   created_at: string;
 }
 
@@ -22,6 +24,8 @@ export interface InventoryItem {
   location: string | null;
   category: string | null;
   photoUrl: string | null;
+  receiptUrl: string | null;
+  warrantyUrl: string | null;
   createdAt: string;
 }
 
@@ -44,6 +48,8 @@ export function toItem(row: InventoryRow): InventoryItem {
     location: row.location,
     category: row.category,
     photoUrl: row.photo_url,
+    receiptUrl: row.receipt_url,
+    warrantyUrl: row.warranty_url,
     createdAt: row.created_at,
   };
 }

@@ -40,6 +40,8 @@ export async function addItem(input: {
   location?: string;
   category?: string;
   photoUrl?: string;
+  receiptUrl?: string;
+  warrantyUrl?: string;
 }) {
   const name = input.name.trim();
   if (!name) return;
@@ -52,6 +54,8 @@ export async function addItem(input: {
     location: input.location?.trim().slice(0, 120) || null,
     category: input.category?.trim().slice(0, 80) || null,
     photo_url: cleanUrl(input.photoUrl),
+    receipt_url: cleanUrl(input.receiptUrl),
+    warranty_url: cleanUrl(input.warrantyUrl),
   });
   revalidatePath(PATH);
 }
@@ -65,6 +69,8 @@ export async function updateItem(
     location?: string;
     category?: string;
     photoUrl?: string;
+    receiptUrl?: string;
+    warrantyUrl?: string;
   },
 ) {
   const { supabase, userId } = await requireUser();
@@ -79,6 +85,8 @@ export async function updateItem(
   if (patch.location !== undefined) update.location = patch.location.trim().slice(0, 120) || null;
   if (patch.category !== undefined) update.category = patch.category.trim().slice(0, 80) || null;
   if (patch.photoUrl !== undefined) update.photo_url = cleanUrl(patch.photoUrl);
+  if (patch.receiptUrl !== undefined) update.receipt_url = cleanUrl(patch.receiptUrl);
+  if (patch.warrantyUrl !== undefined) update.warranty_url = cleanUrl(patch.warrantyUrl);
   if (Object.keys(update).length === 0) return;
   await supabase.from("inventory_items").update(update).eq("id", id).eq("user_id", userId);
   revalidatePath(PATH);
