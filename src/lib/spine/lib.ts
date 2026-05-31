@@ -1,6 +1,12 @@
 // Pure, DB-free helpers for the spine. All branchy logic lives here (like
 // xp/rules.ts::scoreDay) so adapters stay thin and the logic is unit-tested.
-import { type TodayItem, type TodayStatus, type SpineToday, STATUS_ORDER, ITEM_CAP } from "./types";
+import { type TodayItem, type TodayStatus, type SpineToday, STATUS_ORDER, ITEM_CAP, CAPTURE_TABLES } from "./types";
+
+/** Whether a table is in the capture allowlist (guards undoCapture against an
+ *  untrusted client-supplied table name). Pure, so it's unit-testable. */
+export function isCaptureTable(table: string): boolean {
+  return (CAPTURE_TABLES as readonly string[]).includes(table);
+}
 
 // ── Capture parsing (used by adapter quickLog/match) ────────────────────────
 

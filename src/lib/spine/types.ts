@@ -51,6 +51,20 @@ export interface QuickLogResult {
 /** Tables a capture may undo. undoCapture() (Phase 2) rejects anything not here. */
 export const CAPTURE_TABLES = ["todos", "habit_checkins", "daily_trackers", "journal_entries"] as const;
 
+/** A loggable app surfaced in the capture picker (name/icon from the catalog). */
+export interface LoggableApp {
+  appId: string;
+  name: string;
+  icon: string;
+}
+
+/** Result of a capture attempt: the log result (null when nothing matched
+ *  confidently) plus the loggable apps for the "send elsewhere" / disambiguation picker. */
+export interface CaptureResponse {
+  result: QuickLogResult | null;
+  candidates: LoggableApp[];
+}
+
 export interface SpineCtx {
   supabase: Supabase;
   userId: string;
