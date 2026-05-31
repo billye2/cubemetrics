@@ -24,10 +24,25 @@ PR) and need to land together. For a single lane, the builder ships itself — n
   *combined* diff for leaked secrets (public repo).
 - **Ship via the integration PR.** `master` has hard branch protection (`enforce_admins=true`,
   required `verify` check) — **direct pushes are rejected, including yours.** So: push the merged
-  integration branch, open one PR into `master`, wait for the `verify` CI check (the same
-  test + build gate) to go green, then `gh pr merge --squash`. The merge auto-deploys. Apply any
-  new migrations to remote Supabase, then delete merged worktrees/branches and release their claims
-  — no branch outlives the run.
+  integration branch, open one PR into `master`, then wait for the `verify` CI check the
+  **blocking, jq-free way**: `gh pr checks <PR#> --watch --fail-fast` in the **foreground** — it
+  blocks until every check settles, needs no `jq` (not installed here), and exits non-zero on
+  failure. Once green, `gh pr merge <PR#> --squash --delete-branch`. The merge auto-deploys. Then
+  delete merged worktrees/branches and release their claims — no branch outlives the run.
+  - **NEVER strand the run.** Do not background the CI-wait (or any poll) and yield — the background
+    task finishes with nobody listening and the whole workflow hangs silently (this has bitten us).
+    Do not hand-roll poll loops and never pipe `gh` through `jq` (absent on Windows → silent empties).
+    If you cannot confirm forward progress, **abort loudly** (`pushed:false` + a clear note), never wait
+    on a signal that may never arrive.
+- **Apply new migrations via the Supabase MCP** (`apply_migration`, project ref
+  `aennreackkegaqwwbowg`) — one call per migration file *added vs master*, name = slug, query = SQL.
+  **Not `supabase db push`:** the remote `schema_migrations` history does not match the local
+  filenames (the early `001`–`022` were never recorded, and the `…T….sql` names aren't 14-digit
+  timestamps), so a push would try to re-run old, partly destructive migrations. Migrations are
+  idempotent, so re-applying the new ones is safe. **If the MCP is unavailable** (it can be absent in
+  headless/cron runs), do **not** silently skip: finish the merge but return `migrationsPending:true`
+  with the unapplied filenames so a human applies them — never report a clean success with migrations
+  skipped.
 
 **Gates before you merge the integration PR (non-negotiable):**
 - The **union** build + tests are green locally *and* the PR's `verify` check is green — never

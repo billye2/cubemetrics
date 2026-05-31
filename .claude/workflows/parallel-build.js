@@ -119,12 +119,15 @@ const integration = await agent(
   `You are the INTEGRATOR (.claude/roles/integrator.md). Land these green builder PRs onto master TOGETHER:
    ${lanes}
    STEP 0 — TOOLING SELF-CHECK (fail loud, never silent): before anything else, run \`echo integrator-tooling-alive\`. If the output is empty or missing, your tool session is dead — do NOT grope forward through blind calls. Immediately STOP and return { pushed: false, toolingDead: true, notes: "tooling self-check returned empty — aborting before blind integration" } so the orchestrator can re-run integration in a healthy session. Re-run this echo probe if any later command unexpectedly returns empty, and abort the same way if it confirms dead tooling.
+   NEVER STRAND THE WORKFLOW (this caused a silent hang before): run EVERY command in the FOREGROUND. NEVER launch a long-running command (a CI-wait, a poll loop) with run_in_background and then yield — the background task finishes with no one listening and the whole workflow hangs forever. Do not hand-roll poll loops, and do not use \`jq\` — it is NOT installed on this machine (Windows); a jq-based filter silently yields empty every iteration. If you cannot make forward progress, ABORT with pushed:false and a clear note — never wait on a signal that may never arrive.
    Steps:
    1. Merge each branch into a fresh integration of master. Lanes own disjoint files, so conflicts should be rare; resolve any that occur.
    2. Run \`npm run build:catalog\` to reassemble catalog/_generated.ts from every lane's catalog/apps/*.json.
    3. Fold each lane's schema delta (from its docs/app-plans/<id>.md) into docs/database.md; clear merged rows from _status.md "Active claims".
    4. UNION GATE — run \`npm test\` AND \`npm run build\` across the merged tree; both must be green. Audit the combined diff for secrets (public repo).
-   5. Only if green + clean: push the integration branch and open ONE PR into master (master has hard branch protection — direct pushes are rejected). Wait for the \`verify\` CI check to pass, then \`gh pr merge --squash\` (this auto-deploys). Apply any new migrations to remote Supabase, close the linked issues, and delete the merged branches/worktrees.
+   5. Only if green + clean: push the integration branch and open ONE PR into master (master has hard branch protection — direct pushes are rejected). WAIT FOR CI THE BLOCKING, jq-FREE WAY: run \`gh pr checks <PR#> --watch --fail-fast\` in the FOREGROUND. It blocks until every check settles, prints plain text (no jq), works on Windows, and exits non-zero if any check fails. Do NOT background it and yield (see "NEVER STRAND" above). If \`--watch\` is unavailable or exits non-zero, re-check ONCE with plain \`gh pr checks <PR#>\` (text output — never pipe through jq) and proceed only when 'verify' shows \`pass\`; if it will not pass, ABORT with pushed:false and explain — do not sit waiting. Then merge: \`gh pr merge <PR#> --squash --delete-branch\` (this auto-deploys). Confirm it merged with \`gh pr view <PR#> --json state -q .state\` (expect MERGED).
+   6. APPLY NEW MIGRATIONS via the Supabase MCP (NOT \`supabase db push\` — the repo's migration-history table does not line up with the local filenames, so a push would try to re-run old destructive migrations). For each file ADDED vs master (\`git diff master --name-only -- src/supabase/migrations/\`), load the tool with ToolSearch \`select:mcp__plugin_supabase_supabase__apply_migration\` and call it with project_id \`aennreackkegaqwwbowg\`, name = the file's slug, query = the file's SQL. Migrations are idempotent (IF NOT EXISTS / ON CONFLICT). FAIL LOUD IF THE MCP IS ABSENT — it can be missing in headless/cron runs: if ToolSearch finds no such tool or the call errors, do NOT silently skip. Finish the merge but return migrationsPending:true with the unapplied filenames in notes so a human applies them; NEVER report a clean success while migrations were skipped.
+   7. Close the linked issues (verify each is CLOSED — squash auto-close can miss issues listed only in the PR title) and delete the merged worktrees.
    Do NOT merge a union you couldn't verify, and do NOT land a lane that fails to merge cleanly — bounce it back instead.
    Report what landed, the union test/build result, and anything bounced. If you abort for ANY reason without pushing, set pushed:false and explain in notes — never return a vague success.`,
   {
@@ -136,6 +139,7 @@ const integration = await agent(
       properties: {
         pushed: { type: 'boolean' },
         toolingDead: { type: 'boolean' },
+        migrationsPending: { type: 'boolean' },
         landed: { type: 'array', items: { type: 'string' } },
         unionTests: { type: 'string' },
         unionBuild: { type: 'string' },
@@ -150,6 +154,9 @@ const integration = await agent(
 // orchestrator to recover, rather than burying it in the final return value.
 if (integration.pushed) {
   log(`Shipped: ${(integration.landed || []).join(', ')}`)
+  if (integration.migrationsPending) {
+    log(`⚠️ MIGRATIONS NOT APPLIED — the Supabase MCP was unavailable. ORCHESTRATOR/HUMAN: apply the pending migrations manually. ${integration.notes || ''}`)
+  }
 } else if (integration.toolingDead) {
   log(`⚠️ INTEGRATOR ABORTED — tooling died mid-run, nothing landed. Green lanes ARE safe on origin (${green.map((g) => g.branch).join(', ')}). ORCHESTRATOR: re-run integration in a healthy session. ${integration.notes || ''}`)
 } else {
