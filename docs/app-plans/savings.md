@@ -18,10 +18,11 @@
 - [x] **Projected finish date** — extrapolate from average monthly contributions; "on track for Oct 2026".
 - [x] **Multiple goals dashboard** — total saved across all goals + combined monthly contribution.
 
-**P3**
-- **Contribution chart** — cumulative-savings line and monthly-deposit bars.
-- **Recurring/auto reminder** — "you usually add ~$200 around the 1st".
-- **Celebration** at 100% + completed archive with the date hit.
+**P3** ✅ shipped
+- [x] **Contribution chart** — cumulative-savings SVG line + last-6-month monthly-deposit bars (shown once a goal has 2+ deposits).
+- [x] **Recurring/auto reminder** — detects a typical amount + day-of-month from recent deposits ("you usually add ~$200 around the 1st").
+- [x] **Celebration** at 100% + completed archive (`status = 'archived'`) showing amount saved and last-funded date, with Restore.
+- [x] **Multi-currency** — per-goal ISO-4217 currency with `Intl` formatting and a picker (requested in #74).
 
 **Data** — Graduate from the single-value `goals` row. Keep `goals` (title, target_value, due_date, status) and add `savings_contributions (id, goal_id, amount, contributed_on DATE, note, created_at)`; `current_value` derives from the sum. Standard RLS pair. (Generalizes the `goal_progress` history into amounts.)
 
@@ -35,4 +36,9 @@
 - Indexes on `(goal_id, contributed_on)` and `(user_id, contributed_on)`.
 - Reuses existing `public.goals` rows with `goal_type = 'savings'` (title / target_value / due_date / status). `goals.current_value` is kept in sync (= SUM of contributions) by the server actions so the bar matches the log.
 
-**Build notes** — catalog entry flipped `ui: "goal"` → `ui: "modern"` (custom page at `src/app/app/savings/`). Pace/projection math lives in `src/app/app/savings/lib.ts` (pure, unit-tested in `tests/unit/savings-lib.test.ts`). P3 (charts, recurring reminder, celebration/archive) not yet built.
+**Build notes** — catalog entry flipped `ui: "goal"` → `ui: "modern"` (custom page at `src/app/app/savings/`). Pace/projection math lives in `src/app/app/savings/lib.ts` (pure, unit-tested in `tests/unit/savings-lib.test.ts`).
+
+**P3 schema delta (shipped)** — migration `src/supabase/migrations/20260530T2010_savings_currency.sql`:
+- `alter table public.goals add column currency text not null default 'USD'` + CHECK `^[A-Z]{3}$`. No RLS change (goals already RLS-guarded). Existing rows backfill to USD.
+
+**P3 build notes** — new pure helpers in `lib.ts` (`cumulativeSeries`, `monthlyBuckets`, `recurringHint`, `ordinal`, `formatCurrency`/`formatCurrencyCompact`/`normalizeCurrency`), unit-tested in `tests/unit/savings-p3.test.ts`. `GoalRow.currency` is optional and normalized at use (defaults USD). Chart is inline SVG (no chart dep). Celebration/archive uses the existing `goals.status` column via a new `setGoalStatus` action. Currency picker on new/edit goal; dashboard folds mixed currencies into the most common code with a note.
