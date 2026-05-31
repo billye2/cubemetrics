@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Shell } from "@/components/modern/Shell";
+import { TrackUsage } from "@/components/modern/TrackUsage";
 import { JournalView } from "./JournalView";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +21,7 @@ export default async function JournalPage() {
 
   return (
     <Shell back={{ href: "/", label: "Apps" }} title="Journal">
+      <TrackUsage appId="journal" />
       <JournalView entries={data || []} />
     </Shell>
   );

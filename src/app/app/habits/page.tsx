@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Shell } from "@/components/modern/Shell";
+import { TrackUsage } from "@/components/modern/TrackUsage";
 import { HabitsView } from "./HabitsView";
 import { computeStreak, todayISO, weekCount } from "./lib";
 
@@ -70,6 +71,7 @@ export default async function HabitsPage() {
 
   return (
     <Shell back={{ href: "/", label: "Apps" }} title="Habits">
+      <TrackUsage appId="habits" />
       <HabitsView habits={enriched} />
     </Shell>
   );

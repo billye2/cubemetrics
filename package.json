@@ -5,11 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build:catalog": "node scripts/build-catalog.mjs",
-    "prebuild": "node scripts/build-catalog.mjs",
+    "build:spine": "node scripts/build-spine-registry.mjs",
+    "prebuild": "node scripts/build-catalog.mjs && node scripts/build-spine-registry.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "pretest": "node scripts/build-catalog.mjs",
+    "pretest": "node scripts/build-catalog.mjs && node scripts/build-spine-registry.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

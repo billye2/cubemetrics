@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Shell } from "@/components/modern/Shell";
+import { TrackUsage } from "@/components/modern/TrackUsage";
 import { BudgetView } from "./BudgetView";
 import {
   buildLines,
@@ -119,6 +120,7 @@ export default async function BudgetPage({
 
   return (
     <Shell back={{ href: "/", label: "Apps" }} title="Budget">
+      <TrackUsage appId="budget" />
       <BudgetView
         month={month}
         prevMonth={prevMonth}
