@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ensureXp } from "@/lib/xp/compute";
 import type { Mode } from "@/lib/spine/today-view";
+import { TodayInsight } from "./TodayInsight";
 
 type Xp = NonNullable<Awaited<ReturnType<typeof ensureXp>>>;
 
@@ -15,6 +16,7 @@ export function TodayHeader({ mode, name, xp }: { mode: Mode; name: string; xp: 
     <div className="mb-5">
       <p className="text-sm text-zinc-400">{GREETING[mode]}</p>
       <h2 className="mt-0.5 text-2xl font-bold tracking-tight">{name}</h2>
+      <TodayInsight />
 
       {xp && (
         <Link
