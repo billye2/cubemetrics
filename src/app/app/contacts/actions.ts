@@ -63,14 +63,51 @@ export async function updateContact(id: number, formData: FormData) {
   revalidatePath(PATH);
 }
 
-/** Stamp last_contacted = today in one tap ("logged a chat"). */
-export async function logContact(id: number) {
+function today(): string {
+  return new Date().toISOString().split("T")[0];
+}
+
+/** Verify a contact belongs to the user; returns null if not found. */
+async function ownsContact(
+  supabase: Awaited<ReturnType<typeof requireUser>>["supabase"],
+  userId: string,
+  contactId: number,
+): Promise<boolean> {
+  const { data } = await supabase
+    .from("contacts")
+    .select("id")
+    .eq("id", contactId)
+    .eq("user_id", userId)
+    .maybeSingle();
+  return !!data;
+}
+
+/**
+ * Record an interaction in the history (contact_log) and stamp last_contacted =
+ * today so the cadence layer stays in sync. A note is optional.
+ */
+export async function addInteraction(contactId: number, formData: FormData) {
   const { supabase, userId } = await requireUser();
+  if (!(await ownsContact(supabase, userId, contactId))) return;
+  const note = str(formData, "note", 1000);
+  await supabase.from("contact_log").insert({
+    user_id: userId,
+    contact_id: contactId,
+    note,
+    logged_on: today(),
+  });
   await supabase
     .from("contacts")
-    .update({ last_contacted: new Date().toISOString().split("T")[0] })
-    .eq("id", id)
+    .update({ last_contacted: today() })
+    .eq("id", contactId)
     .eq("user_id", userId);
+  revalidatePath(PATH);
+}
+
+/** Delete a single interaction-history entry. */
+export async function deleteInteraction(id: number) {
+  const { supabase, userId } = await requireUser();
+  await supabase.from("contact_log").delete().eq("id", id).eq("user_id", userId);
   revalidatePath(PATH);
 }
 

@@ -10,10 +10,17 @@ import {
   updateDebt,
 } from "./actions";
 import {
+  debtTimeline,
+  monthKeyLabel,
   monthLabel,
   orderByStrategy,
+  paidOffInfo,
+  portfolioProjectionTimeline,
+  portfolioTimeline,
   portfolioTotals,
+  projectionTimeline,
   statsFor,
+  type BalancePoint,
   type DebtRow,
   type PaymentRow,
   type Strategy,
@@ -27,6 +34,9 @@ export function DebtView({
   payments: PaymentRow[];
 }) {
   const [strategy, setStrategy] = useState<Strategy>("avalanche");
+  // Interest accrual: when on, projections compound APR/12 each month so the
+  // forward burn-down tracks realistically (off = straight-line on principal).
+  const [accrue, setAccrue] = useState(true);
 
   const byDebt = useMemo(() => {
     const m = new Map<number, PaymentRow[]>();
@@ -65,9 +75,33 @@ export function DebtView({
     [debts, byDebt]
   );
 
+  // Portfolio total-owed over time: real history, then dashed forward projection.
+  const history = useMemo(
+    () => portfolioTimeline(debts, byDebt),
+    [debts, byDebt]
+  );
+  const projection = useMemo(
+    () => portfolioProjectionTimeline(debts, byDebt, accrue),
+    [debts, byDebt, accrue]
+  );
+
+  // Celebration: every debt is cleared (and there's at least one).
+  const allClear = debts.length > 0 && totals.activeCount === 0;
+
   return (
     <div className="space-y-6">
+      {allClear && <DebtFreeBanner count={totals.paidCount} />}
+
       <PortfolioHero totals={totals} />
+
+      {(history.length >= 2 || projection.length >= 2) && (
+        <PortfolioChart
+          history={history}
+          projection={projection}
+          accrue={accrue}
+          onToggleAccrue={() => setAccrue((v) => !v)}
+        />
+      )}
 
       {totals.activeCount > 1 && (
         <StrategyPicker
@@ -91,19 +125,255 @@ export function DebtView({
               debt={d}
               payments={byDebt.get(d.id) ?? []}
               isFocus={d.id === focusId && totals.activeCount > 1}
-            />
-          ))}
-          {paidDebts.map((d) => (
-            <DebtCard
-              key={d.id}
-              debt={d}
-              payments={byDebt.get(d.id) ?? []}
-              isFocus={false}
+              accrue={accrue}
             />
           ))}
         </ul>
       )}
+
+      {paidDebts.length > 0 && (
+        <PaidOffArchive debts={paidDebts} byDebt={byDebt} />
+      )}
     </div>
+  );
+}
+
+// ── P3: celebration ───────────────────────────────────────────────────────────
+
+function DebtFreeBanner({ count }: { count: number }) {
+  return (
+    <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-5 text-center">
+      <div className="text-3xl" aria-hidden>
+        🎉🥳🎊
+      </div>
+      <div className="mt-2 text-lg font-bold text-emerald-300">
+        You&apos;re debt-free!
+      </div>
+      <div className="mt-1 text-xs text-emerald-200/70">
+        All {count} {count === 1 ? "debt" : "debts"} paid off. Nicely done.
+      </div>
+    </div>
+  );
+}
+
+// ── P3: portfolio total-owed chart (history + dashed projection) ──────────────
+
+function PortfolioChart({
+  history,
+  projection,
+  accrue,
+  onToggleAccrue,
+}: {
+  history: BalancePoint[];
+  projection: BalancePoint[];
+  accrue: boolean;
+  onToggleAccrue: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Total owed over time
+        </div>
+        <button
+          type="button"
+          onClick={onToggleAccrue}
+          aria-pressed={accrue}
+          className={`min-h-[28px] rounded-full px-3 py-1 text-[11px] font-semibold ${
+            accrue
+              ? "bg-cyan-500/15 text-cyan-300"
+              : "border border-zinc-700 text-zinc-400 hover:bg-zinc-800"
+          }`}
+        >
+          {accrue ? "interest: on" : "interest: off"}
+        </button>
+      </div>
+      <BalanceChart history={history} projection={projection} />
+      <p className="mt-2 text-[11px] text-zinc-600">
+        Solid = paid history. Dashed = projected payoff at current minimums
+        {accrue ? ", accruing APR each month" : " (principal only)"}.
+      </p>
+    </div>
+  );
+}
+
+/**
+ * SVG line of balance over months. Draws the solid history first, then a dashed
+ * projection that begins where history ends. Both share one Y scale so the line
+ * is continuous. Phone-first: fixed viewBox, non-scaling stroke.
+ */
+function BalanceChart({
+  history,
+  projection,
+}: {
+  history: BalancePoint[];
+  projection: BalancePoint[];
+}) {
+  // Stitch the two series on a shared month axis. Projection's first point is
+  // "now", which may overlap history's last month — drop the duplicate so the
+  // dashed line continues from the solid one without a flat backtrack.
+  const proj =
+    history.length > 0 && projection.length > 0 &&
+    projection[0].month <= history[history.length - 1].month
+      ? projection.slice(1)
+      : projection;
+
+  const all = [...history, ...proj];
+  if (all.length < 2) return null;
+
+  const values = all.map((p) => p.balance);
+  const max = Math.max(...values, 1);
+  const min = 0;
+  const span = max - min || 1;
+  const n = all.length;
+
+  const xy = (i: number, balance: number) => {
+    const x = (i / (n - 1)) * 100;
+    const y = 38 - ((balance - min) / span) * 36; // 2..38 in a 40 viewBox
+    return [x, y] as const;
+  };
+
+  const histPts = history
+    .map((p, i) => {
+      const [x, y] = xy(i, p.balance);
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
+
+  // Projection picks up at the index right after the last history point.
+  const projStartIdx = history.length - 1;
+  const projPtsArr = proj.map((p, k) => {
+    const [x, y] = xy(projStartIdx + 1 + k, p.balance);
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  });
+  // Bridge from the last history point into the projection so there's no gap.
+  if (history.length > 0 && projPtsArr.length > 0) {
+    const [hx, hy] = xy(projStartIdx, history[history.length - 1].balance);
+    projPtsArr.unshift(`${hx.toFixed(2)},${hy.toFixed(2)}`);
+  }
+
+  const firstLabel = all[0]?.month;
+  const lastLabel = all[all.length - 1]?.month;
+
+  return (
+    <div className="mt-3">
+      <svg
+        viewBox="0 0 100 40"
+        preserveAspectRatio="none"
+        className="h-20 w-full"
+        aria-hidden
+      >
+        {history.length >= 2 && (
+          <polyline
+            points={histPts}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="text-cyan-500"
+            vectorEffect="non-scaling-stroke"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        )}
+        {projPtsArr.length >= 2 && (
+          <polyline
+            points={projPtsArr.join(" ")}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeDasharray="3 2"
+            className="text-cyan-400/60"
+            vectorEffect="non-scaling-stroke"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        )}
+      </svg>
+      <div className="mt-1 flex justify-between text-[10px] text-zinc-600">
+        <span>{firstLabel ? monthKeyLabel(firstLabel) : ""}</span>
+        <span>{lastLabel ? monthKeyLabel(lastLabel) : ""}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── P3: paid-off archive ──────────────────────────────────────────────────────
+
+function PaidOffArchive({
+  debts,
+  byDebt,
+}: {
+  debts: DebtRow[];
+  byDebt: Map<number, PaymentRow[]>;
+}) {
+  return (
+    <div className="space-y-3">
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
+        <span aria-hidden>🎉</span> Paid off
+        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+          {debts.length}
+        </span>
+      </h2>
+      <ul className="space-y-3">
+        {debts.map((d) => (
+          <ArchiveCard key={d.id} debt={d} payments={byDebt.get(d.id) ?? []} />
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ArchiveCard({
+  debt,
+  payments,
+}: {
+  debt: DebtRow;
+  payments: PaymentRow[];
+}) {
+  const [editing, setEditing] = useState(false);
+  const info = useMemo(() => paidOffInfo(debt, payments), [debt, payments]);
+
+  return (
+    <li className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.04] p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span aria-hidden className="text-base">
+              ✓
+            </span>
+            <h3 className="break-words text-base font-semibold text-zinc-100">
+              {debt.name}
+            </h3>
+          </div>
+          <div className="mt-0.5 text-sm tabular-nums text-zinc-400">
+            <span className="font-semibold text-emerald-300">
+              {currency(info.cleared)}
+            </span>{" "}
+            cleared
+            {info.paidOn && (
+              <>
+                {" "}
+                · paid off{" "}
+                <span className="text-zinc-300">{shortDate(info.paidOn)}</span>
+              </>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          aria-label="Edit debt"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
+        >
+          <span className="text-sm">{editing ? "×" : "⋯"}</span>
+        </button>
+      </div>
+      {editing ? (
+        <EditDebtForm debt={debt} onDone={() => setEditing(false)} />
+      ) : (
+        <PaymentLog debtId={debt.id} payments={payments} />
+      )}
+    </li>
   );
 }
 
@@ -220,15 +490,30 @@ function DebtCard({
   debt,
   payments,
   isFocus,
+  accrue,
 }: {
   debt: DebtRow;
   payments: PaymentRow[];
   isFocus: boolean;
+  accrue: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const stats = useMemo(() => statsFor(debt, payments), [debt, payments]);
   const pct = Math.round(stats.fraction * 100);
   const proj = stats.projection;
+
+  // Per-debt burn-down: real payment history (solid) + projected payoff (dashed).
+  const history = useMemo(
+    () => debtTimeline(debt.original_balance, payments),
+    [debt.original_balance, payments]
+  );
+  const forward = useMemo(
+    () =>
+      stats.complete
+        ? []
+        : projectionTimeline(stats.balance, debt.apr, debt.min_payment, accrue),
+    [stats.complete, stats.balance, debt.apr, debt.min_payment, accrue]
+  );
 
   return (
     <li
@@ -293,6 +578,10 @@ function DebtCard({
 
       {!stats.complete && (
         <ProjectionRow projection={proj} minPayment={debt.min_payment} />
+      )}
+
+      {(history.length >= 2 || forward.length >= 2) && (
+        <BalanceChart history={history} projection={forward} />
       )}
 
       {editing ? (

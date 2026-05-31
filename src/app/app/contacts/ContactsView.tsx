@@ -5,12 +5,22 @@ import {
   CADENCE_OPTIONS,
   allTags,
   applyFilters,
+  draftCheckIn,
+  logAgo,
+  logsByContact,
   overdue,
   upcomingBirthdays,
   type Contact,
+  type ContactLog,
   type Status,
 } from "./lib";
-import { addContact, deleteContact, logContact, updateContact } from "./actions";
+import {
+  addContact,
+  addInteraction,
+  deleteContact,
+  deleteInteraction,
+  updateContact,
+} from "./actions";
 
 const STATUS_STYLE: Record<Status, { bar: string; text: string }> = {
   due: { bar: "bg-rose-500", text: "text-rose-300" },
@@ -22,7 +32,13 @@ const STATUS_STYLE: Record<Status, { bar: string; text: string }> = {
 const input =
   "min-w-0 w-full rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-base text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-cyan-500/60";
 
-export function ContactsView({ contacts }: { contacts: Contact[] }) {
+export function ContactsView({
+  contacts,
+  logs,
+}: {
+  contacts: Contact[];
+  logs: ContactLog[];
+}) {
   const [query, setQuery] = useState("");
   const [tag, setTag] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -32,6 +48,7 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
   const filtered = useMemo(() => applyFilters(contacts, { query, tag }), [contacts, query, tag]);
   const due = useMemo(() => overdue(contacts), [contacts]);
   const birthdays = useMemo(() => upcomingBirthdays(contacts, 30), [contacts]);
+  const history = useMemo(() => logsByContact(logs, 3), [logs]);
 
   return (
     <div className="space-y-5">
@@ -107,7 +124,12 @@ export function ContactsView({ contacts }: { contacts: Contact[] }) {
                 />
               </li>
             ) : (
-              <ContactCard key={c.id} contact={c} onEdit={() => setEditing(c.id)} />
+              <ContactCard
+                key={c.id}
+                contact={c}
+                logs={history.get(c.id) ?? []}
+                onEdit={() => setEditing(c.id)}
+              />
             ),
           )}
         </ul>
@@ -319,8 +341,18 @@ function ContactForm({
   );
 }
 
-function ContactCard({ contact, onEdit }: { contact: Contact; onEdit: () => void }) {
+function ContactCard({
+  contact,
+  logs,
+  onEdit,
+}: {
+  contact: Contact;
+  logs: ContactLog[];
+  onEdit: () => void;
+}) {
   const [pending, start] = useTransition();
+  const [logging, setLogging] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const style = STATUS_STYLE[contact.status];
 
   function remove() {
@@ -330,80 +362,181 @@ function ContactCard({ contact, onEdit }: { contact: Contact; onEdit: () => void
 
   return (
     <li
-      className={`flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 py-3 pl-3 pr-2 ${
-        pending ? "opacity-50" : ""
-      }`}
+      className={`rounded-xl border border-zinc-800 bg-zinc-900/40 ${pending ? "opacity-50" : ""}`}
     >
-      <span className={`mt-0.5 h-9 w-1 shrink-0 rounded-full ${style.bar}`} aria-hidden />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2">
-          <span className="break-words text-sm font-medium text-zinc-100">{contact.name}</span>
-          {contact.company && <span className="text-xs text-zinc-500">{contact.company}</span>}
+      <div className="flex items-start gap-3 py-3 pl-3 pr-2">
+        <span className={`mt-0.5 h-9 w-1 shrink-0 rounded-full ${style.bar}`} aria-hidden />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="break-words text-sm font-medium text-zinc-100">{contact.name}</span>
+            {contact.company && <span className="text-xs text-zinc-500">{contact.company}</span>}
+          </div>
+
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+            {contact.phone && (
+              <a href={`tel:${contact.phone}`} className="text-cyan-400 hover:underline">
+                ☎ {contact.phone}
+              </a>
+            )}
+            {contact.email && (
+              <a href={`mailto:${contact.email}`} className="text-cyan-400 hover:underline">
+                ✉ {contact.email}
+              </a>
+            )}
+          </div>
+
+          {contact.note && (
+            <p className="mt-1 break-words text-xs text-zinc-400">{contact.note}</p>
+          )}
+
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <span className={`text-xs ${style.text}`}>{contact.cadenceLabel}</span>
+            {contact.tags.map((t) => (
+              <span
+                key={t}
+                className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-400"
+              >
+                #{t}
+              </span>
+            ))}
+            {(logs.length > 0 || showHistory) && (
+              <button
+                type="button"
+                onClick={() => setShowHistory((v) => !v)}
+                className="rounded-full px-1.5 py-0.5 text-[10px] text-zinc-500 hover:text-cyan-300"
+                aria-expanded={showHistory}
+              >
+                {showHistory ? "hide history" : `history (${logs.length})`}
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-          {contact.phone && (
-            <a href={`tel:${contact.phone}`} className="text-cyan-400 hover:underline">
-              ☎ {contact.phone}
-            </a>
-          )}
-          {contact.email && (
-            <a href={`mailto:${contact.email}`} className="text-cyan-400 hover:underline">
-              ✉ {contact.email}
-            </a>
-          )}
-        </div>
-
-        {contact.note && (
-          <p className="mt-1 break-words text-xs text-zinc-400">{contact.note}</p>
-        )}
-
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <span className={`text-xs ${style.text}`}>{contact.cadenceLabel}</span>
-          {contact.tags.map((t) => (
-            <span
-              key={t}
-              className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-400"
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <button
+            type="button"
+            onClick={() => setLogging((v) => !v)}
+            disabled={pending}
+            title="Log a chat — record a note and mark contacted today"
+            aria-label={`Log an interaction with ${contact.name}`}
+            className="flex h-8 items-center justify-center rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-2.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20"
+          >
+            ✓ Log
+          </button>
+          <div className="flex gap-0.5">
+            <button
+              type="button"
+              onClick={onEdit}
+              disabled={pending}
+              aria-label={`Edit ${contact.name}`}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
             >
-              #{t}
-            </span>
-          ))}
+              <span className="text-sm leading-none">✎</span>
+            </button>
+            <button
+              type="button"
+              onClick={remove}
+              disabled={pending}
+              aria-label={`Delete ${contact.name}`}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
+            >
+              <span className="text-lg leading-none">×</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="flex shrink-0 flex-col items-end gap-1">
+      {logging && (
+        <LogForm
+          contact={contact}
+          recent={logs[0] ?? null}
+          onDone={() => setLogging(false)}
+        />
+      )}
+
+      {showHistory && logs.length > 0 && (
+        <ul className="space-y-1.5 border-t border-zinc-800/80 px-3 py-2.5">
+          {logs.map((log) => (
+            <li key={log.id} className="flex items-start gap-2 text-xs">
+              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-zinc-600" aria-hidden />
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] uppercase tracking-wider text-zinc-500">
+                  {logAgo(log.loggedOn)}
+                </span>
+                {log.note && <p className="break-words text-zinc-300">{log.note}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={() => deleteInteraction(log.id)}
+                aria-label="Delete this log entry"
+                className="shrink-0 text-zinc-600 hover:text-red-400"
+              >
+                <span className="text-sm leading-none">×</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+function LogForm({
+  contact,
+  recent,
+  onDone,
+}: {
+  contact: Contact;
+  recent: ContactLog | null;
+  onDone: () => void;
+}) {
+  const [note, setNote] = useState("");
+  const [pending, start] = useTransition();
+
+  function submit(formData: FormData) {
+    start(async () => {
+      await addInteraction(contact.id, formData);
+      setNote("");
+      onDone();
+    });
+  }
+
+  return (
+    <form action={submit} className="space-y-2 border-t border-zinc-800/80 px-3 py-2.5">
+      <textarea
+        name="note"
+        rows={2}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder={`What did you and ${contact.name.split(" ")[0]} talk about? (optional)`}
+        className={`${input} resize-y text-sm`}
+        autoFocus
+      />
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="min-h-[36px] rounded-lg bg-cyan-500 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
+        >
+          Log & mark contacted
+        </button>
         <button
           type="button"
-          onClick={() => start(() => logContact(contact.id))}
-          disabled={pending}
-          title="Logged a chat — mark contacted today"
-          aria-label={`Log that you contacted ${contact.name} today`}
-          className="flex h-8 items-center justify-center rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-2.5 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20"
+          onClick={() => setNote(draftCheckIn(contact, recent))}
+          className="min-h-[36px] rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
+          title="Draft a check-in message to copy"
         >
-          ✓ Logged
+          ✎ Draft check-in
         </button>
-        <div className="flex gap-0.5">
-          <button
-            type="button"
-            onClick={onEdit}
-            disabled={pending}
-            aria-label={`Edit ${contact.name}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
-          >
-            <span className="text-sm leading-none">✎</span>
-          </button>
-          <button
-            type="button"
-            onClick={remove}
-            disabled={pending}
-            aria-label={`Delete ${contact.name}`}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-red-400"
-          >
-            <span className="text-lg leading-none">×</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onDone}
+          className="min-h-[36px] rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-500 hover:text-zinc-300"
+        >
+          Cancel
+        </button>
       </div>
-    </li>
+    </form>
   );
 }
 

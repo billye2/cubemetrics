@@ -19,15 +19,27 @@
 
 **P3 — delight**
 - [x] **Birthdays** with an upcoming-birthdays strip (within 30 days, soonest first).
-- [ ] **Interaction history** (a few recent notes per person) and quick "draft a check-in". *(needs a `contact_log` child table — not built.)*
+- [x] **Interaction history** (a few recent notes per person) and quick "draft a check-in". Each contact card has a **Log** action: jot what you talked about, which records a `contact_log` row *and* stamps `last_contacted = today` (so logging and the cadence layer stay in sync). The card shows a collapsible **history (n)** list of the 3 most recent entries (with per-entry delete), and a **Draft check-in** button that pre-fills a personal opener — mentioning the last topic when there is one. Backed by a new `contact_log` child table.
 
-**Data** — **GRADUATED.** Reuses the existing `public.contacts` table (created in `029_keepintouch.sql`, shared with the Keep-in-Touch app): `id, user_id, name TEXT NOT NULL, phone, email, company, note, tags TEXT[], cadence_days INT, last_contacted DATE, created_at`, standard RLS (owner FOR ALL + SysOp SELECT). Migration `20260530T0820_contacts_birthday.sql` adds the one missing field: `birthday DATE` (idempotent `ADD COLUMN IF NOT EXISTS`; applied to remote). A future `contact_log` child table would back P3 interaction history.
+**Data** — **GRADUATED.** Reuses the existing `public.contacts` table (created in `029_keepintouch.sql`, shared with the Keep-in-Touch app): `id, user_id, name TEXT NOT NULL, phone, email, company, note, tags TEXT[], cadence_days INT, last_contacted DATE, created_at`, standard RLS (owner FOR ALL + SysOp SELECT). Migration `20260530T0820_contacts_birthday.sql` adds `birthday DATE` (idempotent `ADD COLUMN IF NOT EXISTS`; applied to remote). Migration `20260530T1500_contact_log.sql` adds the P3 **`public.contact_log`** child table for interaction history.
+
+**`public.contact_log`** — `id BIGINT identity PK, user_id UUID → auth.users ON DELETE CASCADE, contact_id BIGINT → public.contacts ON DELETE CASCADE, note TEXT NOT NULL DEFAULT '', logged_on DATE NOT NULL DEFAULT today, created_at TIMESTAMPTZ`. Standard owner FOR ALL + SysOp SELECT RLS; index `(user_id, contact_id, created_at DESC)`. Rows cascade away when the parent contact (or user) is deleted.
 
 **Schema delta (for the integrator to fold into `docs/database.md`):**
 ```sql
 ALTER TABLE public.contacts ADD COLUMN IF NOT EXISTS birthday DATE;
+
+CREATE TABLE IF NOT EXISTS public.contact_log (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  contact_id BIGINT NOT NULL REFERENCES public.contacts(id) ON DELETE CASCADE,
+  note TEXT NOT NULL DEFAULT '',
+  logged_on DATE NOT NULL DEFAULT (now() AT TIME ZONE 'utc')::date,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- owner FOR ALL + SysOp SELECT RLS; index (user_id, contact_id, created_at DESC)
 ```
-The `contacts` table is shared by two catalog apps: **Contacts** (full address book — fields, tags, search, cadence, birthdays) and **Keep in Touch** (cadence-only nudge list). No new table was needed.
+The `contacts` table is shared by two catalog apps: **Contacts** (full address book — fields, tags, search, cadence, birthdays, interaction history) and **Keep in Touch** (cadence-only nudge list). `contact_log` is owned by Contacts only.
 
 **Note** — the catalog entry changed `ui: "checklist"` → `ui: "modern"`; the old checklist-backed rows (stored in the shared `checklists` table under `list_type: "contacts"`, if any) are not migrated — the new app reads `public.contacts`.
 
