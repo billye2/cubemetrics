@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Shell, Card } from "@/components/modern/Shell";
+import { TrackUsage } from "@/components/modern/TrackUsage";
 import { getApp } from "@/lib/modern/catalog";
 import { TrackerView } from "../_factories/TrackerView";
 import { ChecklistView } from "../_factories/ChecklistView";
@@ -45,6 +46,7 @@ export default async function AppDispatch({
       .limit(500);
     return (
       <Shell back={back} title={app.name}>
+        <TrackUsage appId={id} />
         <TrackerView appId={app.id} config={config} entries={data || []} />
       </Shell>
     );
@@ -61,6 +63,7 @@ export default async function AppDispatch({
       .limit(200);
     return (
       <Shell back={back} title={app.name}>
+        <TrackUsage appId={id} />
         <ChecklistView appId={app.id} config={config} items={data || []} />
       </Shell>
     );
@@ -76,6 +79,7 @@ export default async function AppDispatch({
       .limit(100);
     return (
       <Shell back={back} title={app.name}>
+        <TrackUsage appId={id} />
         <LogbookView appId={app.id} config={config} entries={data || []} />
       </Shell>
     );
@@ -108,6 +112,7 @@ export default async function AppDispatch({
     }
     return (
       <Shell back={back} title={app.name}>
+        <TrackUsage appId={id} />
         <GoalView appId={app.id} config={config} goals={goals} history={history} />
       </Shell>
     );
@@ -125,6 +130,7 @@ export default async function AppDispatch({
       .limit(100);
     return (
       <Shell back={back} title={app.name}>
+        <TrackUsage appId={id} />
         <FinanceView appId={app.id} config={config} items={data || []} />
       </Shell>
     );
@@ -140,6 +146,7 @@ export default async function AppDispatch({
       .limit(200);
     return (
       <Shell back={back} title={app.name}>
+        <TrackUsage appId={id} />
         <ScheduleView appId={app.id} config={config} items={data || []} />
       </Shell>
     );

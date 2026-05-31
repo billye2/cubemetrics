@@ -1,5 +1,11 @@
 # Spine — Phase 1: The Substrate (build-ready spec)
 
+> ✅ **BUILT (2026-05-31).** Shipped: `app_usage` migration + `bump_app_usage` RPC (applied to remote),
+> `src/lib/spine/` (types/ctx/lib/registry/usage + generated registry), 6 adapters
+> (todo/habits/water/journal loggable; budget/bills read-only), `<TrackUsage>` beacon on the 4 custom
+> proof pages + the factory dispatch, and `tests/unit/spine-lib.test.ts` (incl. the user_id-filter
+> guard). Gates green: 544 tests, build compiles.
+
 Companion to [../spine.md](../spine.md). Implements **Layer 0 (App Contract)** + **Layer 1 (usage
 signal)** + the generalized `getToday()` reader, proven against **6 apps**. No user-facing surface
 ships in Phase 1 — that's Phase 3 (`/today`) and Phase 2 (capture bar). Phase 1's job is to make the

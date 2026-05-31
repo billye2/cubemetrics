@@ -343,6 +343,20 @@ progress is read from `xp_daily.breakdown`.
 
 All three enforce the standard owner-`FOR ALL` + SysOp-`SELECT` RLS pair.
 
+## Spine (cross-app layer)
+
+### app_usage
+| Column | Type |
+|--------|------|
+| user_id, app_id, last_used_at, use_count, pinned |
+
+Per-user app usage signal (Spine Layer 1, migration `20260531T1500_app_usage.sql`, **applied to the
+remote**). PK `(user_id, app_id)`. Recency + frequency + explicit pins power "the few apps you use"
+on the Today dashboard and a usage-ordered grid. Bumped by the `<TrackUsage>` mount beacon via the
+`bump_app_usage(p_app text)` RPC — `SECURITY DEFINER` but scoped to `auth.uid()` and `granted` only to
+`authenticated`, so a user can only ever touch their own row. Owner-only RLS (no SysOp policy). Indexed
+on `(user_id, last_used_at desc)`.
+
 ## RLS Policy Pattern
 ```sql
 ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;
