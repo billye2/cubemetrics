@@ -89,6 +89,7 @@ export async function ensureXp(
     logs,
     expenses,
     finance,
+    skills,
   ] = await Promise.all([
     supabase.from("daily_trackers").select("tracker_type, value, entry_date, created_at").eq("user_id", userId).limit(ROW_LIMIT),
     supabase.from("pomodoro_sessions").select("completed_at").eq("user_id", userId).eq("completed", true).limit(ROW_LIMIT),
@@ -101,6 +102,7 @@ export async function ensureXp(
     supabase.from("logs").select("created_at").eq("user_id", userId).limit(ROW_LIMIT),
     supabase.from("expenses").select("expense_date").eq("user_id", userId).limit(ROW_LIMIT),
     supabase.from("finance_items").select("created_at").eq("user_id", userId).limit(ROW_LIMIT),
+    supabase.from("skill_practice").select("created_at").eq("user_id", userId).limit(ROW_LIMIT),
   ]);
 
   const days = new Map<string, DayActivity>();
@@ -162,6 +164,7 @@ export async function ensureXp(
   bump(logs, "created_at", "logs", "ts");
   bump(expenses, "expense_date", "expenses", "date");
   bump(finance, "created_at", "finance", "ts");
+  bump(skills, "created_at", "skills", "ts");
 
   // Earliest / latest local hour-of-day across timestamped actions (DATE-only
   // sources have no time, so they can't pin a clock hour). Powers the
@@ -181,6 +184,7 @@ export async function ensureXp(
   for (const r of notes.data || []) noteHour(r.created_at as string);
   for (const r of logs.data || []) noteHour(r.created_at as string);
   for (const r of finance.data || []) noteHour(r.created_at as string);
+  for (const r of skills.data || []) noteHour(r.created_at as string);
 
   // Score every active day.
   const todayKey = tzTodayKey(tz, now);

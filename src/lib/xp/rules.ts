@@ -19,6 +19,7 @@ export interface DayActivity {
   logs: number; // logbook entries created
   expenses: number; // expenses logged
   finance: number; // finance items logged
+  skills: number; // skill-tree practice sessions logged
 }
 
 export function emptyActivity(): DayActivity {
@@ -36,6 +37,7 @@ export function emptyActivity(): DayActivity {
     logs: 0,
     expenses: 0,
     finance: 0,
+    skills: 0,
   };
 }
 
@@ -54,6 +56,7 @@ const CAP = {
   logs: 15,
   expenses: 10,
   finance: 10,
+  skills: 30,
 } as const;
 
 /** Bonus per app first touched that day — rewards breadth over grinding one app. */
@@ -75,6 +78,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   logs: "Logs",
   expenses: "Expenses",
   finance: "Finance",
+  skills: "Skill Tree",
   quests: "Quests",
   breadth: "Breadth bonus",
 };
@@ -105,6 +109,7 @@ export function scoreDay(a: DayActivity): DayScore {
     logs: clampCap(a.logs * 3, CAP.logs),
     expenses: clampCap(a.expenses * 2, CAP.expenses),
     finance: clampCap(a.finance * 2, CAP.finance),
+    skills: clampCap(a.skills * 10, CAP.skills),
   };
 
   const breakdown: Record<string, number> = {};
