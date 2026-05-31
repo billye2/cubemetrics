@@ -146,7 +146,95 @@ export async function updateRecipe(id: number, input: RecipeInput): Promise<void
 
 export async function deleteRecipe(id: number): Promise<void> {
   const { supabase, userId } = await requireUser();
+  // Best-effort remove the photo object before the row (CASCADE doesn't reach Storage).
+  const { data: rows } = await supabase
+    .from("recipes")
+    .select("photo_path")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .limit(1);
+  const photoPath: string | undefined = rows?.[0]?.photo_path ?? undefined;
+  if (photoPath) {
+    await supabase.storage.from(PHOTO_BUCKET).remove([photoPath]);
+  }
   // ON DELETE CASCADE clears child rows.
   await supabase.from("recipes").delete().eq("id", id).eq("user_id", userId);
+  revalidatePath(PATH);
+}
+
+/* ───────────────────────── P3 — recipe photo (Supabase Storage) ───────────────────────── */
+
+const PHOTO_BUCKET = "recipe-photos";
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024; // 5 MB
+const PHOTO_TYPES: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+};
+
+/**
+ * Upload a photo to Storage and stamp recipes.photo_path with the OBJECT PATH
+ * (not a URL — the page derives the public URL on read). Objects live under
+ * "<user_id>/<recipe_id>-<ts>.<ext>" so the owner-scoped Storage RLS admits the
+ * write. Best-effort removes the previous object so replacing doesn't orphan it.
+ * Returns an error string for the client to surface, or null on success.
+ */
+export async function uploadRecipePhoto(id: number, formData: FormData): Promise<string | null> {
+  const file = formData.get("photo");
+  if (!(file instanceof File) || file.size === 0) return "No file selected.";
+  if (file.size > MAX_PHOTO_BYTES) return "Image is too large (max 5 MB).";
+  const ext = PHOTO_TYPES[file.type];
+  if (!ext) return "Unsupported image type. Use JPEG, PNG, WebP, or GIF.";
+
+  const { supabase, userId } = await requireUser();
+
+  // Verify ownership (RLS also enforces it).
+  const { data: owned } = await supabase
+    .from("recipes")
+    .select("photo_path")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .single();
+  if (!owned) return "Recipe not found.";
+
+  const path = `${userId}/${id}-${Date.now()}.${ext}`;
+  const { error: upErr } = await supabase.storage
+    .from(PHOTO_BUCKET)
+    .upload(path, file, { contentType: file.type, upsert: true });
+  if (upErr) return "Upload failed. Please try again.";
+
+  const prev: string | undefined = owned.photo_path ?? undefined;
+  if (prev && prev !== path) {
+    await supabase.storage.from(PHOTO_BUCKET).remove([prev]);
+  }
+
+  await supabase
+    .from("recipes")
+    .update({ photo_path: path })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath(PATH);
+  return null;
+}
+
+/** Clear the photo: drop the Storage object (best-effort) and null the column. */
+export async function removeRecipePhoto(id: number): Promise<void> {
+  const { supabase, userId } = await requireUser();
+  const { data: rows } = await supabase
+    .from("recipes")
+    .select("photo_path")
+    .eq("id", id)
+    .eq("user_id", userId)
+    .limit(1);
+  const path: string | undefined = rows?.[0]?.photo_path ?? undefined;
+  if (path) {
+    await supabase.storage.from(PHOTO_BUCKET).remove([path]);
+  }
+  await supabase
+    .from("recipes")
+    .update({ photo_path: null })
+    .eq("id", id)
+    .eq("user_id", userId);
   revalidatePath(PATH);
 }

@@ -8,12 +8,16 @@ import {
   formatQty,
   formatTime,
   totalTime,
+  parseStepDuration,
+  formatClock,
   type Recipe,
 } from "./lib";
 import {
   createRecipe,
   updateRecipe,
   deleteRecipe,
+  uploadRecipePhoto,
+  removeRecipePhoto,
   type RecipeInput,
   type IngredientInput,
 } from "./actions";
@@ -24,14 +28,26 @@ type Mode =
   | { kind: "edit"; id: number | null } // null = new
   | { kind: "cook"; id: number };
 
-export function RecipesView({ recipes }: { recipes: Recipe[] }) {
-  const [mode, setMode] = useState<Mode>({ kind: "list" });
-
+export function RecipesView({
+  recipes,
+  initialId = null,
+}: {
+  recipes: Recipe[];
+  initialId?: number | null;
+}) {
   const byId = useMemo(() => {
     const m = new Map<number, Recipe>();
     for (const r of recipes) m.set(r.id, r);
     return m;
   }, [recipes]);
+
+  // P3 — deep link: /app/recipes?id=<n> (e.g. from a Meal Planner slot) opens
+  // that recipe's detail directly. Falls back to the list if the id is unknown.
+  const [mode, setMode] = useState<Mode>(
+    initialId !== null && byId.has(initialId)
+      ? { kind: "detail", id: initialId }
+      : { kind: "list" },
+  );
 
   if (mode.kind === "edit") {
     const existing = mode.id === null ? null : byId.get(mode.id) ?? null;
@@ -121,9 +137,18 @@ function List({
                   onClick={() => onOpen(r.id)}
                   className="flex w-full items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-left hover:border-cyan-500/40"
                 >
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-xl text-cyan-400 ring-1 ring-cyan-500/20">
-                    ◍
-                  </span>
+                  {r.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={r.photoUrl}
+                      alt=""
+                      className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-zinc-700"
+                    />
+                  ) : (
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-xl text-cyan-400 ring-1 ring-cyan-500/20">
+                      ◍
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-zinc-100">{r.name}</div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-zinc-500">
@@ -240,6 +265,15 @@ function Detail({
           </div>
         )}
       </div>
+
+      {recipe.photoUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={recipe.photoUrl}
+          alt={`${recipe.name} photo`}
+          className="aspect-video w-full rounded-2xl object-cover ring-1 ring-zinc-800"
+        />
+      )}
 
       <button
         type="button"
@@ -441,16 +475,18 @@ function CookMode({ recipe, onExit }: { recipe: Recipe; onExit: () => void }) {
       <ol className="space-y-3">
         {recipe.steps.map((s, i) => {
           const checked = done.has(s.id);
+          const seconds = parseStepDuration(s.text);
           return (
-            <li key={s.id}>
+            <li
+              key={s.id}
+              className={`rounded-xl border transition ${
+                checked ? "border-zinc-800 bg-zinc-900/30 opacity-50" : "border-zinc-700 bg-zinc-900/60"
+              }`}
+            >
               <button
                 type="button"
                 onClick={() => toggle(s.id)}
-                className={`flex w-full gap-3 rounded-xl border p-4 text-left transition ${
-                  checked
-                    ? "border-zinc-800 bg-zinc-900/30 opacity-50"
-                    : "border-zinc-700 bg-zinc-900/60"
-                }`}
+                className="flex w-full gap-3 p-4 text-left"
               >
                 <span
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
@@ -465,12 +501,124 @@ function CookMode({ recipe, onExit }: { recipe: Recipe; onExit: () => void }) {
                   {s.text}
                 </span>
               </button>
+              {seconds !== null && (
+                <div className="border-t border-zinc-800 px-4 py-2">
+                  <StepTimer seconds={seconds} />
+                </div>
+              )}
             </li>
           );
         })}
       </ol>
     </div>
   );
+}
+
+/* ───────────────────────── Per-step timer (cook mode, P3) ───────────────────────── */
+
+// A self-contained countdown for a single step. Detected from the step text
+// (e.g. "simmer 20 min"). Beeps + flashes when it hits zero; survives backgrounding
+// because remaining time is computed from a wall-clock deadline, not a tick count.
+function StepTimer({ seconds }: { seconds: number }) {
+  const [remaining, setRemaining] = useState(seconds);
+  const [running, setRunning] = useState(false);
+  const [done, setDone] = useState(false);
+  const deadlineRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!running) return;
+    const tick = () => {
+      const left = Math.max(0, Math.round((deadlineRef.current! - Date.now()) / 1000));
+      setRemaining(left);
+      if (left <= 0) {
+        setRunning(false);
+        setDone(true);
+        beep();
+      }
+    };
+    tick();
+    const h = window.setInterval(tick, 250);
+    return () => window.clearInterval(h);
+  }, [running]);
+
+  function startTimer() {
+    setDone(false);
+    deadlineRef.current = Date.now() + remaining * 1000;
+    setRunning(true);
+  }
+  function pause() {
+    setRunning(false);
+  }
+  function reset() {
+    setRunning(false);
+    setDone(false);
+    setRemaining(seconds);
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={`font-mono text-base tabular-nums ${
+          done ? "text-rose-400" : running ? "text-cyan-300" : "text-zinc-400"
+        }`}
+        aria-live="polite"
+      >
+        ⏱ {formatClock(remaining)}
+      </span>
+      {running ? (
+        <button
+          type="button"
+          onClick={pause}
+          className="rounded-md border border-zinc-700 px-2.5 py-1 text-xs font-medium text-zinc-300 hover:border-cyan-500"
+        >
+          Pause
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={startTimer}
+          disabled={remaining === 0 && !done}
+          className="rounded-md border border-cyan-500/50 px-2.5 py-1 text-xs font-medium text-cyan-300 hover:border-cyan-400 disabled:opacity-50"
+        >
+          {remaining === seconds ? "Start" : "Resume"}
+        </button>
+      )}
+      {(remaining !== seconds || done) && (
+        <button
+          type="button"
+          onClick={reset}
+          className="rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300"
+        >
+          Reset
+        </button>
+      )}
+      {done && <span className="text-xs font-semibold text-rose-400">Time&apos;s up!</span>}
+    </div>
+  );
+}
+
+// A short tone via the Web Audio API. No asset, degrades silently where blocked.
+function beep() {
+  try {
+    const Ctx =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 880;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.6);
+    osc.onended = () => ctx.close().catch(() => {});
+  } catch {
+    // Audio can be blocked (no gesture / unsupported) — ignore.
+  }
 }
 
 /* ───────────────────────── Editor ───────────────────────── */
@@ -586,6 +734,14 @@ function Editor({
         />
       </Field>
 
+      {recipe ? (
+        <PhotoManager recipe={recipe} />
+      ) : (
+        <p className="rounded-lg border border-dashed border-zinc-800 px-3 py-2 text-xs text-zinc-500">
+          Save the recipe first, then re-open it to add a photo.
+        </p>
+      )}
+
       <section>
         <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">Ingredients</h3>
         <ul className="space-y-2">
@@ -691,6 +847,80 @@ function Editor({
           className="w-full resize-y rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-cyan-500/60"
         />
       </Field>
+    </div>
+  );
+}
+
+/* ───────────────────────── Photo manager (editor, P3) ───────────────────────── */
+
+function PhotoManager({ recipe }: { recipe: Recipe }) {
+  const [, start] = useTransition();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  function onPick(file: File | null) {
+    if (!file) return;
+    setError(null);
+    setBusy(true);
+    const fd = new FormData();
+    fd.append("photo", file);
+    start(async () => {
+      const err = await uploadRecipePhoto(recipe.id, fd);
+      setBusy(false);
+      if (err) setError(err);
+      if (fileRef.current) fileRef.current.value = "";
+    });
+  }
+
+  function remove() {
+    setError(null);
+    setBusy(true);
+    start(async () => {
+      await removeRecipePhoto(recipe.id);
+      setBusy(false);
+    });
+  }
+
+  return (
+    <div>
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">Photo</span>
+      {recipe.photoUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={recipe.photoUrl}
+          alt={`${recipe.name} photo`}
+          className="mb-2 aspect-video w-full rounded-xl object-cover ring-1 ring-zinc-800"
+        />
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        className="hidden"
+        onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+      />
+      <div className="flex gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => fileRef.current?.click()}
+          className="rounded-lg border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-300 hover:border-cyan-500 disabled:opacity-50"
+        >
+          {busy ? "Uploading…" : recipe.photoUrl ? "Replace photo" : "📷 Add photo"}
+        </button>
+        {recipe.photoUrl && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={remove}
+            className="rounded-lg border border-zinc-800 px-3 py-1.5 text-sm font-medium text-zinc-500 hover:border-rose-500/50 hover:text-rose-400 disabled:opacity-50"
+          >
+            Remove
+          </button>
+        )}
+      </div>
+      {error && <p className="mt-1 text-xs text-rose-400">{error}</p>}
     </div>
   );
 }

@@ -12,7 +12,15 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function RecipesPage() {
+const PHOTO_BUCKET = "recipe-photos";
+
+export default async function RecipesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>;
+}) {
+  const { id: idParam } = await searchParams;
+  const initialId = idParam && /^\d+$/.test(idParam) ? Number(idParam) : null;
   const supabase = await createServerSupabase();
   const {
     data: { user },
@@ -51,15 +59,18 @@ export default async function RecipesPage() {
     }
 
     for (const row of (recipeRows || []) as RecipeRow[]) {
+      const photoUrl = row.photo_path
+        ? supabase.storage.from(PHOTO_BUCKET).getPublicUrl(row.photo_path).data.publicUrl
+        : null;
       recipes.push(
-        toRecipe(row, ingByRecipe.get(row.id) ?? [], stepsByRecipe.get(row.id) ?? []),
+        toRecipe(row, ingByRecipe.get(row.id) ?? [], stepsByRecipe.get(row.id) ?? [], photoUrl),
       );
     }
   }
 
   return (
     <Shell back={{ href: "/", label: "Apps" }} title="Recipes">
-      <RecipesView recipes={recipes} />
+      <RecipesView recipes={recipes} initialId={initialId} />
     </Shell>
   );
 }
