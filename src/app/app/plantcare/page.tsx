@@ -15,7 +15,9 @@ export default async function PlantcarePage() {
 
   const { data } = await supabase
     .from("plants")
-    .select("id, name, frequency_days, last_watered, light, note, photo_url, created_at")
+    .select(
+      "id, name, frequency_days, last_watered, light, note, photo_url, fertilize_days, last_fertilized, created_at",
+    )
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(500);
