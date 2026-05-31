@@ -2,12 +2,15 @@ import { describe, it, expect } from "vitest";
 import {
   type FileEntry,
   type FileEntryRow,
+  UNFILED_LABEL,
   allTags,
   allTypes,
   applyFilters,
   formatSize,
+  groupByLocation,
   isUrl,
   matchesQuery,
+  parseImport,
   parseTags,
   sortEntries,
   toFileEntry,
@@ -23,6 +26,7 @@ function entry(over: Partial<FileEntry>): FileEntry {
     sizeBytes: null,
     fileDate: null,
     description: null,
+    lastVerified: null,
     createdAt: "2026-01-01T00:00:00Z",
     ...over,
   };
@@ -39,12 +43,14 @@ describe("toFileEntry", () => {
       size_bytes: 1024,
       file_date: "2026-02-02",
       description: null,
+      last_verified: "2026-03-03",
       created_at: "2026-02-02T00:00:00Z",
     };
     const e = toFileEntry(row);
     expect(e.tags).toEqual([]);
     expect(e.sizeBytes).toBe(1024);
     expect(e.fileDate).toBe("2026-02-02");
+    expect(e.lastVerified).toBe("2026-03-03");
   });
 });
 
@@ -146,5 +152,66 @@ describe("allTags / allTypes", () => {
   });
   it("lists distinct types alpha", () => {
     expect(allTypes(list)).toEqual(["doc", "photo"]);
+  });
+});
+
+describe("groupByLocation", () => {
+  const list = [
+    entry({ id: 1, location: "/box/A" }),
+    entry({ id: 2, location: "/box/B" }),
+    entry({ id: 3, location: "/box/A" }),
+    entry({ id: 4, location: null }),
+    entry({ id: 5, location: "/box/A" }),
+  ];
+  it("groups with counts, biggest first, Unfiled last", () => {
+    const groups = groupByLocation(list);
+    expect(groups.map((g) => [g.location, g.count])).toEqual([
+      ["/box/A", 3],
+      ["/box/B", 1],
+      [null, 1],
+    ]);
+    expect(groups[2].location).toBeNull();
+    expect(UNFILED_LABEL).toBe("Unfiled");
+  });
+  it("preserves member order within a group", () => {
+    const groups = groupByLocation(list);
+    expect(groups[0].entries.map((e) => e.id)).toEqual([1, 3, 5]);
+  });
+  it("breaks count ties alphabetically by location", () => {
+    const g = groupByLocation([
+      entry({ id: 1, location: "zeta" }),
+      entry({ id: 2, location: "alpha" }),
+    ]);
+    expect(g.map((x) => x.location)).toEqual(["alpha", "zeta"]);
+  });
+});
+
+describe("parseImport", () => {
+  it("parses one name per line and skips blanks", () => {
+    const rows = parseImport("report.pdf\n\n  notes.txt  \n");
+    expect(rows).toEqual([{ name: "report.pdf" }, { name: "notes.txt" }]);
+  });
+  it("pulls size and date columns out of tab-separated rows", () => {
+    const rows = parseImport("scan.pdf\t2048\t2026-02-02");
+    expect(rows).toEqual([{ name: "scan.pdf", sizeBytes: 2048, fileDate: "2026-02-02" }]);
+  });
+  it("splits a path into location + basename", () => {
+    expect(parseImport("/box/3/scan.pdf")).toEqual([
+      { name: "scan.pdf", location: "/box/3" },
+    ]);
+    expect(parseImport("C:\\docs\\tax.pdf")).toEqual([
+      { name: "tax.pdf", location: "C:\\docs" },
+    ]);
+  });
+  it("keeps single spaces inside a name", () => {
+    expect(parseImport("Tax Return 2025.pdf")).toEqual([{ name: "Tax Return 2025.pdf" }]);
+  });
+  it("uses a leading path column as the location", () => {
+    const rows = parseImport("/cabinet/A    receipt.pdf");
+    expect(rows).toEqual([{ name: "receipt.pdf", location: "/cabinet/A" }]);
+  });
+  it("caps the number of rows", () => {
+    const many = Array.from({ length: 250 }, (_, i) => `f${i}.txt`).join("\n");
+    expect(parseImport(many).length).toBe(200);
   });
 });
