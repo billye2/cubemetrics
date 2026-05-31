@@ -53,6 +53,10 @@ export interface Recipe {
   cookMin: number | null;
   tags: string[];
   notes: string | null;
+  /** Storage object path ("<user_id>/<id>-<ts>.<ext>"), or null. */
+  photoPath: string | null;
+  /** Public URL derived from photoPath at read time, or null. */
+  photoUrl: string | null;
   createdAt: string;
   ingredients: Ingredient[];
   steps: Step[];
@@ -77,6 +81,7 @@ export function toRecipe(
   row: RecipeRow,
   ingredients: IngredientRow[],
   steps: StepRow[],
+  photoUrl: string | null = null,
 ): Recipe {
   return {
     id: row.id,
@@ -86,6 +91,8 @@ export function toRecipe(
     cookMin: row.cook_min,
     tags: row.tags ?? [],
     notes: row.notes,
+    photoPath: row.photo_path,
+    photoUrl,
     createdAt: row.created_at,
     ingredients: ingredients
       .map(toIngredient)
@@ -168,6 +175,45 @@ export function matchesQuery(recipe: Recipe, query: string): boolean {
   if (recipe.tags.some((t) => t.toLowerCase().includes(q))) return true;
   if (recipe.ingredients.some((i) => i.item.toLowerCase().includes(q))) return true;
   return false;
+}
+
+/**
+ * P3 — sniff a cook duration out of a step's text so cook mode can offer a
+ * one-tap timer. Matches the FIRST "<n> min" / "<n> minute(s)" / "<n> hr" /
+ * "<n> hour(s)" / "<n> sec(s)" mention (also "1-2 minutes" → uses the upper
+ * bound, the safer "don't undercook" choice). Returns the duration in seconds,
+ * or null when no time is mentioned. Capped at 4 hours so a stray "350 degrees
+ * for 1 hour" can't spawn a runaway timer.
+ */
+const DURATION_RE =
+  /(\d+(?:\.\d+)?)(?:\s*[-–—to]+\s*(\d+(?:\.\d+)?))?\s*(hours?|hrs?|h|minutes?|mins?|m|seconds?|secs?|s)\b/i;
+
+export function parseStepDuration(text: string): number | null {
+  const m = DURATION_RE.exec(text ?? "");
+  if (!m) return null;
+  // Prefer the upper bound of a range ("simmer 1-2 min" → 2 min).
+  const value = parseFloat(m[2] ?? m[1]);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  const unit = m[3].toLowerCase();
+  let seconds: number;
+  if (unit.startsWith("h")) seconds = value * 3600;
+  else if (unit.startsWith("s")) seconds = value;
+  else seconds = value * 60; // minutes (m / min / minute)
+  seconds = Math.round(seconds);
+  const MAX = 4 * 3600; // 4 hours
+  if (seconds < 1 || seconds > MAX) return null;
+  return seconds;
+}
+
+/** "5:00" / "1:02:30" — mm:ss, or h:mm:ss past an hour. For the live countdown. */
+export function formatClock(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (h > 0) return `${h}:${pad(m)}:${pad(sec)}`;
+  return `${m}:${pad(sec)}`;
 }
 
 /** Parse a comma/space-tolerant tag string into a clean, de-duped list. */

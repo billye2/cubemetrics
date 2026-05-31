@@ -7,6 +7,8 @@ import {
   totalTime,
   matchesQuery,
   parseTags,
+  parseStepDuration,
+  formatClock,
   toRecipe,
   type RecipeRow,
   type IngredientRow,
@@ -92,6 +94,49 @@ describe("parseTags", () => {
   });
   it("drops empties", () => {
     expect(parseTags(" , , ")).toEqual([]);
+  });
+});
+
+describe("parseStepDuration", () => {
+  it("parses minutes in various spellings", () => {
+    expect(parseStepDuration("Simmer for 20 minutes")).toBe(20 * 60);
+    expect(parseStepDuration("Bake 30 min")).toBe(30 * 60);
+    expect(parseStepDuration("Rest 5m before slicing")).toBe(5 * 60);
+  });
+  it("parses hours and seconds", () => {
+    expect(parseStepDuration("Roast for 1 hour")).toBe(3600);
+    expect(parseStepDuration("Roast 1.5 hr")).toBe(Math.round(1.5 * 3600));
+    expect(parseStepDuration("Blanch 30 seconds")).toBe(30);
+    expect(parseStepDuration("Whisk 45 secs")).toBe(45);
+  });
+  it("uses the upper bound of a range", () => {
+    expect(parseStepDuration("Cook 1-2 minutes")).toBe(2 * 60);
+    expect(parseStepDuration("Simmer 10 to 12 min")).toBe(12 * 60);
+  });
+  it("returns null when no duration is mentioned", () => {
+    expect(parseStepDuration("Season to taste")).toBeNull();
+    expect(parseStepDuration("")).toBeNull();
+  });
+  it("ignores durations over the 4-hour cap", () => {
+    expect(parseStepDuration("Marinate 8 hours")).toBeNull();
+  });
+  it("does not mistake oven temperatures for a duration", () => {
+    // "350" alone (no time unit) must not parse.
+    expect(parseStepDuration("Preheat oven to 350")).toBeNull();
+  });
+});
+
+describe("formatClock", () => {
+  it("formats mm:ss", () => {
+    expect(formatClock(0)).toBe("0:00");
+    expect(formatClock(65)).toBe("1:05");
+    expect(formatClock(600)).toBe("10:00");
+  });
+  it("formats h:mm:ss past an hour", () => {
+    expect(formatClock(3661)).toBe("1:01:01");
+  });
+  it("clamps negatives to zero", () => {
+    expect(formatClock(-5)).toBe("0:00");
   });
 });
 
