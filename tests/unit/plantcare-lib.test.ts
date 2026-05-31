@@ -2,11 +2,15 @@ import { describe, it, expect } from "vitest";
 import {
   computeNextDue,
   formatDue,
+  formatFertilizeDue,
   statusFor,
   toPlant,
+  toFertilizeTrack,
   sortPlants,
   statsFor,
   needsWaterToday,
+  waterIntervals,
+  averageInterval,
   type PlantRow,
 } from "@/app/app/plantcare/lib";
 
@@ -19,6 +23,8 @@ function row(over: Partial<PlantRow>): PlantRow {
     light: null,
     note: null,
     photo_url: null,
+    fertilize_days: null,
+    last_fertilized: null,
     created_at: "2026-05-01T00:00:00Z",
     ...over,
   };
@@ -130,5 +136,113 @@ describe("statsFor / needsWaterToday", () => {
     ];
     expect(statsFor(list)).toEqual({ total: 3, dueToday: 2, overdue: 1 });
     expect(needsWaterToday(list).map((p) => p.id).sort()).toEqual([2, 3]);
+  });
+});
+
+// --- P3 ---------------------------------------------------------------------
+
+describe("toFertilizeTrack", () => {
+  const today = new Date(2026, 4, 29);
+
+  it("is disabled when fertilize_days is null", () => {
+    const t = toFertilizeTrack(row({ fertilize_days: null }), today);
+    expect(t.enabled).toBe(false);
+    expect(t.status).toBeNull();
+    expect(t.nextDue).toBeNull();
+    expect(t.label).toBeNull();
+  });
+
+  it("is disabled when fertilize_days is zero or negative", () => {
+    expect(toFertilizeTrack(row({ fertilize_days: 0 }), today).enabled).toBe(false);
+    expect(toFertilizeTrack(row({ fertilize_days: -5 }), today).enabled).toBe(false);
+  });
+
+  it("treats an enabled-but-never-fed plant as due now", () => {
+    const t = toFertilizeTrack(row({ fertilize_days: 30, last_fertilized: null }), today);
+    expect(t.enabled).toBe(true);
+    expect(t.status).toBe("overdue");
+    expect(t.nextDue).toBeNull();
+    expect(t.label).toBe("feed now");
+  });
+
+  it("computes next fertilize-due from last_fertilized + fertilize_days", () => {
+    const t = toFertilizeTrack(
+      row({ fertilize_days: 30, last_fertilized: "2026-05-01" }),
+      today,
+    );
+    expect(t.nextDue).toBe("2026-05-31");
+    expect(t.status).toBe("upcoming");
+    expect(t.daysUntil).toBe(2);
+  });
+
+  it("flags an overdue fertilizing", () => {
+    const t = toFertilizeTrack(
+      row({ fertilize_days: 14, last_fertilized: "2026-05-01" }),
+      today,
+    );
+    expect(t.status).toBe("overdue");
+    expect(t.label).toContain("late");
+  });
+
+  it("is wired into toPlant", () => {
+    const p = toPlant(row({ fertilize_days: 30, last_fertilized: "2026-05-01" }), today);
+    expect(p.fertilize.enabled).toBe(true);
+    expect(p.fertilize.nextDue).toBe("2026-05-31");
+  });
+});
+
+describe("formatFertilizeDue", () => {
+  it("phrases never-fed, today, tomorrow, weeks, late", () => {
+    expect(formatFertilizeDue(-1, true)).toBe("feed now");
+    expect(formatFertilizeDue(0, false)).toBe("feed today");
+    expect(formatFertilizeDue(1, false)).toBe("feed tomorrow");
+    expect(formatFertilizeDue(5, false)).toBe("feed in 5 days");
+    expect(formatFertilizeDue(21, false)).toBe("feed in 3 weeks");
+    expect(formatFertilizeDue(-1, false)).toBe("feed (1 day late)");
+    expect(formatFertilizeDue(-3, false)).toBe("feed (3 days late)");
+  });
+});
+
+describe("waterIntervals", () => {
+  it("returns no bars with fewer than two waterings", () => {
+    expect(waterIntervals([], 7)).toEqual([]);
+    expect(waterIntervals(["2026-05-01"], 7)).toEqual([]);
+  });
+
+  it("computes gaps between consecutive (sorted) waterings", () => {
+    const bars = waterIntervals(["2026-05-15", "2026-05-01", "2026-05-08"], 7);
+    expect(bars.map((b) => b.gap)).toEqual([7, 7]);
+    expect(bars.every((b) => b.height === 1)).toBe(true);
+  });
+
+  it("flags a gap longer than the target frequency as late", () => {
+    const bars = waterIntervals(["2026-05-01", "2026-05-08", "2026-05-22"], 7);
+    expect(bars.map((b) => b.gap)).toEqual([7, 14]);
+    expect(bars.map((b) => b.late)).toEqual([false, true]);
+  });
+
+  it("scales bar height against the longest gap and keeps a floor", () => {
+    const bars = waterIntervals(["2026-05-01", "2026-05-02", "2026-05-22"], 7);
+    // gaps: 1, 20 → heights 0.05→floored to 0.12, and 1.0
+    expect(bars[0].height).toBeCloseTo(0.12, 5);
+    expect(bars[1].height).toBe(1);
+  });
+
+  it("ignores invalid and duplicate dates and caps the window", () => {
+    const dates = ["2026-05-01", "2026-05-01", "garbage", "2026-05-08"];
+    const bars = waterIntervals(dates, 7);
+    expect(bars.map((b) => b.gap)).toEqual([7]);
+  });
+});
+
+describe("averageInterval", () => {
+  it("returns null for fewer than two waterings", () => {
+    expect(averageInterval([])).toBeNull();
+    expect(averageInterval(["2026-05-01"])).toBeNull();
+  });
+
+  it("averages the interval across the span", () => {
+    expect(averageInterval(["2026-05-01", "2026-05-08", "2026-05-15"])).toBe(7);
+    expect(averageInterval(["2026-05-01", "2026-05-21"])).toBe(20);
   });
 });
