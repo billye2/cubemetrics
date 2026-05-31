@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Shell } from "@/components/modern/Shell";
+import { TrackUsage } from "@/components/modern/TrackUsage";
 import { TodoView } from "./TodoView";
 
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ export default async function TodoPage() {
 
   return (
     <Shell back={{ href: "/", label: "Apps" }} title="Todo">
+      <TrackUsage appId="todo" />
       <TodoView initialTodos={data || []} />
     </Shell>
   );
