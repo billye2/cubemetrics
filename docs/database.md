@@ -157,12 +157,12 @@ Backs the Warranty Tracker app (migration `20260530T0527_warranties.sql`). Gradu
 
 Backs the Vocabulary app (migration `20260530T0533_vocab_words.sql`). Graduates off the checklist template; carries SM-2-lite spaced-repetition fields (`ease/interval/due_date/reps`) — `word` = front, `definition` = back, same review engine as flashcards. RLS: owner `FOR ALL` ("Users access own rows"). Indexed on `(user_id, due_date)`.
 
-### plants
-| Column | Type |
-|--------|------|
-| id, user_id, name, frequency_days (INT, default 7), last_watered (DATE, null = never watered/due now), light (TEXT — low/medium/bright), note, photo_url (reserved P3), created_at |
+### plants + plant_waterings
+| plants | plant_waterings |
+|--------|-----------------|
+| id, user_id, name, frequency_days (INT, default 7), last_watered (DATE, null = never watered/due now), light (TEXT — low/medium/bright), note, photo_url (public Storage URL), fertilize_days (INT, null = off), last_fertilized (DATE), created_at | id, plant_id→plants ON DELETE CASCADE, user_id, watered_on (DATE), created_at |
 
-Backs the Plants app (migration `20260530T0600_plants.sql`). Graduates off the `checklists` factory into a recurrence model: next-due is **computed** (`last_watered + frequency_days`), never stored; the "Water" action stamps `last_watered = today` to advance it. RLS: owner `FOR ALL` ("Users can access own plants") + SysOp `FOR SELECT`. Indexed on `(user_id, last_watered)`.
+Backs the Plants app (migrations `20260530T0600_plants.sql`, P3 `20260530T0610_plants_p3.sql`). Graduates off the `checklists` factory into a recurrence model: next-due is **computed** (`last_watered + frequency_days`), never stored; the "Water" action stamps `last_watered = today` to advance it. P3 adds a **second recurrence track** for fertilizing (`fertilize_days` cadence + `last_fertilized`, next-due computed identically), an append-only **watering history** (`plant_waterings`, one row per Water tap, feeds the card sparkline), and a **photo** (`plant-photos` public Storage bucket; `photo_url` holds the public URL, uploads namespaced under `<user_id>/...`). RLS: `plants` + `plant_waterings` both use owner `FOR ALL` + SysOp `FOR SELECT`; Storage `plant-photos` is public-read with owner-only insert/update/delete keyed on the `<user_id>/` folder prefix. Indexes: `plants(user_id, last_watered)`, `plant_waterings(plant_id, watered_on DESC)`.
 
 ### recipes + recipe_ingredients + recipe_steps
 | recipes | recipe_ingredients | recipe_steps |
@@ -174,9 +174,9 @@ Backs the Recipes app (migration `20260530T0631_recipes.sql`). Graduates off the
 ### projects + project_tasks
 | projects | project_tasks |
 |----------|---------------|
-| id, user_id, title, status (default 'planning' — planning/active/blocked/done), next_action (default ''), due_date (DATE), note (default '', reserved P3), created_at | id, user_id, project_id→projects ON DELETE CASCADE, title, completed (BOOL default false), sort_order (INT default 0), created_at |
+| id, user_id, title, status (default 'planning' — planning/active/blocked/done), next_action (default ''), due_date (DATE), note (default '', reserved P3), blocked_reason (TEXT default ''), blocked_at (TIMESTAMPTZ, stamped on entering `blocked`, cleared on leaving), created_at | id, user_id, project_id→projects ON DELETE CASCADE, title, completed (BOOL default false), sort_order (INT default 0), created_at |
 
-Backs the Projects app (migration `20260530T0632_projects.sql`). Graduates the old single-`goals`-row "project" into a status pipeline with a task checklist (% complete derived from tasks done) + a single "next action". Legacy `goals` rows with `goal_type='project'` are left untouched (no auto-migration). RLS: both tables use the standard owner `FOR ALL` ("Users access own rows") + SysOp `FOR SELECT` pair. Indexes: `projects(user_id, status)`, `project_tasks(project_id, sort_order, created_at)`.
+Backs the Projects app (migrations `20260530T0632_projects.sql`, P2 `20260531T0418_projects_blocked.sql`). Graduates the old single-`goals`-row "project" into a status pipeline with a task checklist (% complete derived from tasks done) + a single "next action". P2 adds **blocked context**: `blocked_reason` (free text — why it stalled) and `blocked_at` (stamped when a project moves into `blocked`, cleared when it leaves), so "blocked N days" is honest. Legacy `goals` rows with `goal_type='project'` are left untouched (no auto-migration). RLS: both tables use the standard owner `FOR ALL` ("Users access own rows") + SysOp `FOR SELECT` pair; the new columns inherit the `projects` policies. Indexes: `projects(user_id, status)`, `project_tasks(project_id, sort_order, created_at)`.
 
 ### skills + skill_practice + skill_deps
 | skills | skill_practice | skill_deps |

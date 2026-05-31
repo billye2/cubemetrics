@@ -19,6 +19,9 @@ export interface Project {
   next_action: string;
   due_date: string | null;
   note: string;
+  blocked_reason: string;
+  blocked_at: string | null;
+  created_at: string;
   tasks: ProjectTask[];
 }
 
@@ -31,7 +34,7 @@ export default async function ProjectTrackerPage() {
 
   const { data: projectRows } = await supabase
     .from("projects")
-    .select("id, title, status, next_action, due_date, note, created_at")
+    .select("id, title, status, next_action, due_date, note, blocked_reason, blocked_at, created_at")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(200);
@@ -66,6 +69,9 @@ export default async function ProjectTrackerPage() {
     next_action: (p.next_action as string) ?? "",
     due_date: (p.due_date as string) ?? null,
     note: (p.note as string) ?? "",
+    blocked_reason: (p.blocked_reason as string) ?? "",
+    blocked_at: (p.blocked_at as string) ?? null,
+    created_at: (p.created_at as string) ?? "",
     tasks: tasksByProject[p.id as number] ?? [],
   }));
 

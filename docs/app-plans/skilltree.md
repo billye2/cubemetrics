@@ -18,9 +18,19 @@
 - [x] **Visual tree** — "Tree" tab renders nodes by dependency depth (`computeTiers`, longest-chain, cycle-guarded) in vertical tiers with connectors; color by state (locked grey / unlocked cyan / maxed gold). Phone-first 2-col grid per tier.
 
 **P3**
-- **XP from other apps** — auto-grant XP when a linked course/habit logs progress.
-- **Practice streak** + weekly XP chart; total account level across all skills.
-- **Decay / rust** — optional XP decay if a skill goes untouched.
+- [x] **XP from other apps → global XP layer** — each `skill_practice` session now feeds the
+  account-wide XP engine. Added a `skills` source in `src/lib/xp/rules.ts` (10 pts/session,
+  capped 30/day) and wired the `skill_practice` query into `src/lib/xp/compute.ts`, so practice
+  shows up on the `/app/xp` dashboard, streaks, breakdown, and early-bird/night-owl achievements.
+  (Reframed from the speculative "linked course/habit" hook to the concrete, existing global XP layer.)
+- [x] **Practice streak + weekly XP chart; total account level** — new "Stats" tab. Pure helpers in
+  `lib.ts`: `accountLevel` (sum of every skill's level), `practiceStreak` (consecutive-day streak
+  with one-day grace), `weeklyXp` (trailing-8-week Mon–Sun XP buckets). Header strip now leads with
+  Account Lv + Streak; Stats tab renders the 8-week bar chart.
+- [x] **Decay / rust** — non-destructive. `rustInfo`/`RUST_AFTER_DAYS` in `lib.ts` flags a skill that
+  has gone untouched ≥14 days; surfaced as a 🦀 "rusty" chip on the card/tree node and a "Going rusty"
+  panel in Stats. **XP is never auto-subtracted** — rust is a nudge only (auto-decay would silently
+  destroy logged progress and fight the practice loop; rejected in favor of a visible hint).
 
 **Data** — Graduate from `goals`. New tables: `skills (id, user_id, name, xp, category)`; `skill_practice (id, skill_id, xp, minutes, note, created_at)`; `skill_deps (skill_id, requires_skill_id, min_level)`. Standard RLS pair on each; levels/locks computed in `page.tsx`.
 
@@ -28,14 +38,23 @@
 
 ---
 
-## Shipped (P1 + P2)
+## Shipped (P1 + P2 + P3)
 
 Graduated from the `goal` template to a custom modern app. Catalog `ui` flipped
 `goal` → `modern` (config dropped). Route lives at `src/app/app/skilltree/`
-(`page.tsx`, `SkillTreeView.tsx`, `actions.ts`, `lib.ts`). Pure leveling/dep math
-is unit-tested in `tests/unit/skilltree-lib.test.ts` (17 cases).
+(`page.tsx`, `SkillTreeView.tsx`, `actions.ts`, `lib.ts`). Pure leveling/dep/stat math
+is unit-tested in `tests/unit/skilltree-lib.test.ts`.
 
-P3 (XP from other apps, streaks/weekly chart, decay) intentionally deferred.
+**P3 shipped** (this lane): global-XP wiring, a "Stats" tab (account level + practice
+streak + 8-week XP chart), and non-destructive "rust" hints. No new migration —
+P3 reuses the existing `skills` / `skill_practice` tables.
+
+### Global XP layer delta (for the integrator)
+
+`skill_practice` is now an XP source. `src/lib/xp/rules.ts` gained a `skills` field on
+`DayActivity` (10 pts/session, `CAP.skills = 30`/day, label "Skill Tree"); `compute.ts`
+queries `skill_practice.created_at` and folds it into the daily rollup + hour-of-day
+signals. Additive only — no behavior change to existing sources.
 
 ### Schema delta — migration `20260530T0700_skills.sql` (for the integrator to fold into `docs/database.md`)
 

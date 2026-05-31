@@ -1,9 +1,19 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
-import type { LightLevel, Plant, PlantStatus } from "./lib";
-import { needsWaterToday, statsFor } from "./lib";
-import { addPlant, deletePlant, updatePlant, waterPlant } from "./actions";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import type { LightLevel, Plant, PlantStatus, SparkBar } from "./lib";
+import { averageInterval, needsWaterToday, statsFor, waterIntervals } from "./lib";
+import {
+  addPlant,
+  deletePlant,
+  fertilizePlant,
+  getWateringHistory,
+  removePlantPhoto,
+  setFertilizeSchedule,
+  updatePlant,
+  uploadPlantPhoto,
+  waterPlant,
+} from "./actions";
 
 const FREQ_OPTIONS = [
   { v: 2, label: "Every 2 days" },
@@ -20,6 +30,20 @@ const LIGHT_OPTIONS: { v: LightLevel; label: string; icon: string }[] = [
   { v: "medium", label: "Medium", icon: "◐" },
   { v: "bright", label: "Bright", icon: "○" },
 ];
+
+const FERTILIZE_OPTIONS = [
+  { v: 0, label: "Off" },
+  { v: 14, label: "Every 2 weeks" },
+  { v: 30, label: "Monthly" },
+  { v: 60, label: "Every 2 months" },
+  { v: 90, label: "Quarterly" },
+];
+
+function fertilizeLabel(days: number | null): string {
+  if (!days) return "Off";
+  const found = FERTILIZE_OPTIONS.find((o) => o.v === days);
+  return found ? found.label : `Every ${days} days`;
+}
 
 const STATUS_STYLE: Record<PlantStatus, { bar: string; text: string; badge: string }> = {
   overdue: { bar: "bg-rose-500", text: "text-rose-300", badge: "bg-rose-500/15 text-rose-300" },
@@ -237,14 +261,26 @@ function AddPlantForm() {
   );
 }
 
+const FERT_STYLE: Record<PlantStatus, string> = {
+  overdue: "bg-amber-500/15 text-amber-300",
+  today: "bg-amber-500/15 text-amber-300",
+  upcoming: "bg-zinc-700/40 text-zinc-400",
+};
+
 function PlantRow({ p }: { p: Plant }) {
   const [pending, start] = useTransition();
   const [open, setOpen] = useState(false);
   const style = STATUS_STYLE[p.status];
+  const fert = p.fertilize;
 
   const freqOptions = [...FREQ_OPTIONS];
   if (!freqOptions.some((o) => o.v === p.frequencyDays)) {
     freqOptions.unshift({ v: p.frequencyDays, label: `Every ${p.frequencyDays} days` });
+  }
+
+  const fertOptions = [...FERTILIZE_OPTIONS];
+  if (fert.frequencyDays && !fertOptions.some((o) => o.v === fert.frequencyDays)) {
+    fertOptions.push({ v: fert.frequencyDays, label: `Every ${fert.frequencyDays} days` });
   }
 
   function remove() {
@@ -256,16 +292,36 @@ function PlantRow({ p }: { p: Plant }) {
     <li className={`rounded-xl border border-zinc-800 bg-zinc-900/40 ${pending ? "opacity-50" : ""}`}>
       <div className="flex items-center gap-3 py-3 pl-3 pr-2">
         <span className={`h-9 w-1 shrink-0 rounded-full ${style.bar}`} aria-hidden />
+        {p.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={p.photoUrl}
+            alt=""
+            className="h-9 w-9 shrink-0 rounded-lg object-cover ring-1 ring-zinc-700"
+          />
+        ) : (
+          <span
+            aria-hidden
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800/60 text-sm text-zinc-600"
+          >
+            ✿
+          </span>
+        )}
         <button type="button" onClick={() => setOpen((o) => !o)} className="min-w-0 flex-1 text-left">
           <div className="flex flex-wrap items-baseline gap-x-2">
             <span className="break-words text-sm font-medium text-zinc-100">{p.name}</span>
             {p.light && <span className="text-xs text-zinc-500">{LIGHT_LABEL[p.light]}</span>}
           </div>
-          <div className="mt-0.5 flex items-center gap-2">
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
             <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${style.badge}`}>
               {p.status === "overdue" ? "Overdue" : p.status === "today" ? "Today" : "Upcoming"}
             </span>
             <span className={`text-xs ${style.text}`}>{p.label}</span>
+            {fert.enabled && fert.status && (fert.status === "overdue" || fert.status === "today") && (
+              <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${FERT_STYLE[fert.status]}`}>
+                <span aria-hidden>🌿</span> {fert.label}
+              </span>
+            )}
           </div>
         </button>
         <button
@@ -289,7 +345,11 @@ function PlantRow({ p }: { p: Plant }) {
       </div>
 
       {open && (
-        <div className="space-y-2 border-t border-zinc-800 px-4 py-3 text-xs text-zinc-400">
+        <div className="space-y-3 border-t border-zinc-800 px-4 py-3 text-xs text-zinc-400">
+          <PhotoControl p={p} pending={pending} start={start} />
+
+          <WateringSparkline plantId={p.id} frequencyDays={p.frequencyDays} />
+
           <div className="flex justify-between">
             <span>Last watered</span>
             <span className="tabular-nums text-zinc-300">{p.lastWatered ?? "never"}</span>
@@ -331,6 +391,45 @@ function PlantRow({ p }: { p: Plant }) {
               ))}
             </select>
           </div>
+
+          {/* P3 — fertilizing track */}
+          <div className="space-y-2 rounded-lg border border-zinc-800 bg-zinc-900/40 p-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium text-zinc-300">
+                <span aria-hidden>🌿</span> Fertilize
+              </span>
+              <select
+                aria-label={`Fertilizing schedule for ${p.name}`}
+                value={fert.frequencyDays ?? 0}
+                onChange={(e) => start(() => setFertilizeSchedule(p.id, Number(e.target.value)))}
+                disabled={pending}
+                className="rounded-lg border border-zinc-700 bg-zinc-900 px-1.5 py-1 text-xs text-zinc-300 outline-none focus:border-amber-500"
+              >
+                {fertOptions.map((o) => (
+                  <option key={o.v} value={o.v}>
+                    {fertilizeLabel(o.v || null)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {fert.enabled && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-zinc-400">
+                  {fert.lastFertilized ? `Last fed ${fert.lastFertilized}` : "Never fed"}
+                  {fert.label ? ` · ${fert.label}` : ""}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => start(() => fertilizePlant(p.id))}
+                  disabled={pending}
+                  className="min-h-[32px] shrink-0 rounded-lg bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-300 ring-1 ring-amber-500/30 transition hover:bg-amber-500/25 disabled:opacity-50"
+                >
+                  Fed today
+                </button>
+              </div>
+            )}
+          </div>
+
           {p.note && (
             <div className="flex justify-between gap-4">
               <span>Note</span>
@@ -340,6 +439,135 @@ function PlantRow({ p }: { p: Plant }) {
         </div>
       )}
     </li>
+  );
+}
+
+function PhotoControl({
+  p,
+  pending,
+  start,
+}: {
+  p: Plant;
+  pending: boolean;
+  start: React.TransitionStartFunction;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("photo", file);
+    start(async () => {
+      const err = await uploadPlantPhoto(p.id, fd);
+      setUploading(false);
+      if (err) setError(err);
+      if (inputRef.current) inputRef.current.value = "";
+    });
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {p.photoUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={p.photoUrl}
+          alt={`${p.name} photo`}
+          className="max-h-48 w-full rounded-lg object-cover ring-1 ring-zinc-700"
+        />
+      )}
+      <div className="flex items-center gap-2">
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={onPick}
+          disabled={pending || uploading}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={pending || uploading}
+          className="min-h-[32px] rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs font-medium text-zinc-300 transition hover:border-cyan-500/60 hover:text-cyan-300 disabled:opacity-50"
+        >
+          {uploading ? "Uploading…" : p.photoUrl ? "Replace photo" : "📷 Add photo"}
+        </button>
+        {p.photoUrl && (
+          <button
+            type="button"
+            onClick={() => start(() => removePlantPhoto(p.id))}
+            disabled={pending || uploading}
+            className="min-h-[32px] rounded-lg px-2 py-1 text-xs text-zinc-500 transition hover:text-red-400 disabled:opacity-50"
+          >
+            Remove
+          </button>
+        )}
+      </div>
+      {error && <p className="text-[11px] text-rose-400">{error}</p>}
+    </div>
+  );
+}
+
+function WateringSparkline({
+  plantId,
+  frequencyDays,
+}: {
+  plantId: number;
+  frequencyDays: number;
+}) {
+  const [dates, setDates] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getWateringHistory(plantId).then((d) => {
+      if (active) setDates(d);
+    });
+    return () => {
+      active = false;
+    };
+  }, [plantId]);
+
+  if (dates === null) {
+    return <div className="h-8 animate-pulse rounded-lg bg-zinc-800/50" aria-hidden />;
+  }
+
+  const bars: SparkBar[] = waterIntervals(dates, frequencyDays);
+  const avg = averageInterval(dates);
+
+  if (bars.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-zinc-800 px-2 py-2 text-center text-[11px] text-zinc-600">
+        {dates.length === 1
+          ? "Watered once — history builds as you water."
+          : "No watering history yet."}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-[11px] text-zinc-500">
+        <span>Watering rhythm</span>
+        {avg !== null && <span className="tabular-nums">avg {avg}d between</span>}
+      </div>
+      <div className="flex h-9 items-end gap-1" aria-hidden>
+        {bars.map((b, i) => (
+          <div
+            key={i}
+            title={`${b.gap} days`}
+            style={{ height: `${Math.round(b.height * 100)}%` }}
+            className={`min-h-[3px] flex-1 rounded-sm ${
+              b.late ? "bg-rose-500/60" : "bg-cyan-500/60"
+            }`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
