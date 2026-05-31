@@ -5,6 +5,12 @@ import {
   unmetRequirements,
   isLocked,
   computeTiers,
+  accountLevel,
+  practiceStreak,
+  weeklyXp,
+  rustInfo,
+  isoToDay,
+  RUST_AFTER_DAYS,
   MAX_LEVEL,
   XP_BASE,
   type DepEdge,
@@ -125,6 +131,96 @@ describe("skilltree lib", () => {
       const tiers = computeTiers([1, 2], deps);
       expect(tiers[1]).toBeGreaterThanOrEqual(0);
       expect(tiers[2]).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  // --- P3 ---
+
+  describe("accountLevel", () => {
+    it("sums each skill's derived level", () => {
+      // 0 xp -> Lv1, XP_BASE -> Lv2, huge -> MAX_LEVEL
+      expect(accountLevel([0, XP_BASE, 10_000_000])).toBe(1 + 2 + MAX_LEVEL);
+    });
+    it("is 0 with no skills", () => {
+      expect(accountLevel([])).toBe(0);
+    });
+  });
+
+  describe("practiceStreak", () => {
+    const now = new Date("2026-05-28T12:00:00");
+    it("counts consecutive days ending today", () => {
+      const days = new Set(["2026-05-28", "2026-05-27", "2026-05-26"]);
+      expect(practiceStreak(days, now)).toBe(3);
+    });
+    it("applies a one-day grace when today wasn't practiced yet", () => {
+      const days = new Set(["2026-05-27", "2026-05-26"]);
+      expect(practiceStreak(days, now)).toBe(2);
+    });
+    it("is 0 when neither today nor yesterday was practiced", () => {
+      const days = new Set(["2026-05-20"]);
+      expect(practiceStreak(days, now)).toBe(0);
+    });
+    it("is 0 with no practice at all", () => {
+      expect(practiceStreak(new Set(), now)).toBe(0);
+    });
+  });
+
+  describe("weeklyXp", () => {
+    const now = new Date("2026-05-28T12:00:00"); // a Thursday
+    it("returns one bucket per requested week, oldest first", () => {
+      const buckets = weeklyXp([], 8, now);
+      expect(buckets).toHaveLength(8);
+      // The last bucket is the current week (its Monday).
+      expect(buckets[7].weekStart).toBe("2026-05-25");
+      expect(buckets.every((b) => b.xp === 0)).toBe(true);
+    });
+    it("sums XP into the right week and ignores out-of-window entries", () => {
+      const buckets = weeklyXp(
+        [
+          { xp: 30, created_at: "2026-05-28T09:00:00" }, // this week
+          { xp: 20, created_at: "2026-05-26T09:00:00" }, // this week (Tue)
+          { xp: 50, created_at: "2026-05-19T09:00:00" }, // last week
+          { xp: 99, created_at: "2026-01-01T09:00:00" }, // long ago, dropped
+        ],
+        8,
+        now,
+      );
+      expect(buckets[7].xp).toBe(50); // current week total
+      expect(buckets[6].xp).toBe(50); // prior week
+      expect(buckets.reduce((s, b) => s + b.xp, 0)).toBe(100);
+    });
+  });
+
+  describe("rustInfo", () => {
+    const now = new Date("2026-05-28T12:00:00");
+    it("never rusts a skill practiced recently", () => {
+      const r = rustInfo("2026-05-26T12:00:00", now);
+      expect(r.idleDays).toBe(2);
+      expect(r.rusting).toBe(false);
+    });
+    it("rusts once idle past the grace window", () => {
+      const r = rustInfo("2026-05-10T12:00:00", now); // 18 days
+      expect(r.idleDays).toBe(18);
+      expect(r.rusting).toBe(true);
+    });
+    it("rusts exactly at the threshold", () => {
+      const last = new Date(now.getTime() - RUST_AFTER_DAYS * 86_400_000).toISOString();
+      expect(rustInfo(last, now).rusting).toBe(true);
+    });
+    it("treats a never-practiced skill as not rusting", () => {
+      expect(rustInfo(null, now)).toEqual({ idleDays: null, rusting: false });
+    });
+  });
+
+  describe("isoToDay", () => {
+    it("projects an ISO timestamp to its local calendar day", () => {
+      expect(isoToDay("2026-05-28T23:30:00")).toBe(
+        new Date("2026-05-28T23:30:00").getFullYear() +
+          "-" +
+          String(new Date("2026-05-28T23:30:00").getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(new Date("2026-05-28T23:30:00").getDate()).padStart(2, "0"),
+      );
     });
   });
 });

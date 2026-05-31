@@ -91,6 +91,11 @@ describe("xp economy (scoreDay)", () => {
     const s = scoreDay(act({ trackerTypes: ["mood", "water", "sleep"] })); // 3*3 = 9
     expect(s.breakdown.trackers).toBe(9);
   });
+
+  it("skill-tree practice grants XP, capped per day", () => {
+    expect(scoreDay(act({ skills: 1 })).breakdown.skills).toBe(10); // 1 session * 10
+    expect(scoreDay(act({ skills: 99 })).breakdown.skills).toBe(30); // capped at CAP.skills
+  });
 });
 
 describe("xp streak", () => {
@@ -232,7 +237,7 @@ describe("xp quests", () => {
   it("questStatuses marks done at/over target", () => {
     const def = QUEST_POOL.find((q) => q.key === "todos_five")!;
     const metrics = metricsFromActivity(
-      { focus: [], timetracker: 0, trackerTypes: [], pomodoro: 0, todos: 5, habits: 0, journal: 0, workout: 0, reading: 0, notes: 0, logs: 0, expenses: 0, finance: 0 },
+      { focus: [], timetracker: 0, trackerTypes: [], pomodoro: 0, todos: 5, habits: 0, journal: 0, workout: 0, reading: 0, notes: 0, logs: 0, expenses: 0, finance: 0, skills: 0 },
       { points: 25, breakdown: { todos: 25 } },
     );
     const [st] = questStatuses([def], metrics);

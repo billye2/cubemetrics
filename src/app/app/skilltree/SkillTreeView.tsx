@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { levelFromXp, MAX_LEVEL } from "./lib";
-import type { Skill, PracticeEntry } from "./page";
+import { levelFromXp, MAX_LEVEL, RUST_AFTER_DAYS } from "./lib";
+import type { Skill, PracticeEntry, SkillStats } from "./page";
 import {
   addSkillAction,
   editSkillAction,
@@ -13,9 +13,9 @@ import {
   deleteDepAction,
 } from "./actions";
 
-type View = "list" | "tree";
+type View = "list" | "tree" | "stats";
 
-export function SkillTreeView({ skills }: { skills: Skill[] }) {
+export function SkillTreeView({ skills, stats }: { skills: Skill[]; stats: SkillStats }) {
   const [view, setView] = useState<View>("list");
   const [expanded, setExpanded] = useState<number | null>(null);
 
@@ -31,9 +31,13 @@ export function SkillTreeView({ skills }: { skills: Skill[] }) {
   return (
     <div>
       <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat label="Skills" value={String(skills.length)} />
-        <Stat label="Total XP" value={totalXp.toLocaleString()} tone="cyan" />
-        <Stat label="Maxed" value={String(maxedCount)} tone={maxedCount > 0 ? "gold" : undefined} />
+        <Stat label="Acct Lv" value={String(stats.accountLevel)} tone="cyan" />
+        <Stat label="Total XP" value={totalXp.toLocaleString()} />
+        <Stat
+          label="Streak"
+          value={stats.streak > 0 ? `${stats.streak}🔥` : "—"}
+          tone={stats.streak > 0 ? "gold" : undefined}
+        />
       </div>
 
       <div className="mb-4 flex rounded-xl bg-zinc-900/60 p-1 ring-1 ring-zinc-800">
@@ -43,30 +47,39 @@ export function SkillTreeView({ skills }: { skills: Skill[] }) {
         <Tab active={view === "tree"} onClick={() => setView("tree")}>
           Tree
         </Tab>
+        <Tab active={view === "stats"} onClick={() => setView("stats")}>
+          Stats
+        </Tab>
       </div>
 
-      <AddSkill skills={skills} />
-
-      {skills.length === 0 ? (
-        <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
-          <p className="text-sm text-zinc-400">No skills yet.</p>
-          <p className="mt-1 text-xs text-zinc-500">Add one, then log practice to earn XP and level up.</p>
-        </div>
-      ) : view === "tree" ? (
-        <TreeView skills={skills} nameById={nameById} />
+      {view === "stats" ? (
+        <StatsView skills={skills} stats={stats} />
       ) : (
-        <div className="mt-5 space-y-3">
-          {skills.map((s) => (
-            <SkillCard
-              key={s.id}
-              skill={s}
-              skills={skills}
-              nameById={nameById}
-              open={expanded === s.id}
-              onToggle={() => setExpanded((cur) => (cur === s.id ? null : s.id))}
-            />
-          ))}
-        </div>
+        <>
+          <AddSkill skills={skills} />
+
+          {skills.length === 0 ? (
+            <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
+              <p className="text-sm text-zinc-400">No skills yet.</p>
+              <p className="mt-1 text-xs text-zinc-500">Add one, then log practice to earn XP and level up.</p>
+            </div>
+          ) : view === "tree" ? (
+            <TreeView skills={skills} nameById={nameById} />
+          ) : (
+            <div className="mt-5 space-y-3">
+              {skills.map((s) => (
+                <SkillCard
+                  key={s.id}
+                  skill={s}
+                  skills={skills}
+                  nameById={nameById}
+                  open={expanded === s.id}
+                  onToggle={() => setExpanded((cur) => (cur === s.id ? null : s.id))}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -162,7 +175,10 @@ function SkillCard({
             <LevelBadge level={skill.level} maxed={skill.maxed} locked={skill.locked} />
             <span className="truncate text-sm font-semibold text-zinc-100">{skill.name}</span>
           </div>
-          <div className="mt-1 text-[11px] uppercase tracking-wider text-zinc-500">{skill.category}</div>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-[11px] uppercase tracking-wider text-zinc-500">{skill.category}</span>
+            {skill.rusting && <RustChip idleDays={skill.idleDays} />}
+          </div>
           <div className="mt-2">
             <XpBar skill={skill} />
           </div>
@@ -560,6 +576,100 @@ function AddSkill({ skills }: { skills: Skill[] }) {
   );
 }
 
+function RustChip({ idleDays }: { idleDays: number | null }) {
+  return (
+    <span
+      title={idleDays != null ? `Untouched for ${idleDays} days` : "Rusty"}
+      className="inline-flex items-center gap-0.5 rounded bg-orange-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-orange-300 ring-1 ring-orange-500/30"
+    >
+      🦀 rusty{idleDays != null ? ` · ${idleDays}d` : ""}
+    </span>
+  );
+}
+
+// --- Stats (P3) -------------------------------------------------------------
+// Account level, practice streak, a trailing-8-week XP bar chart, and the list
+// of skills that have gone rusty. All read-only — no mutations here.
+
+function StatsView({ skills, stats }: { skills: Skill[]; stats: SkillStats }) {
+  const weekMax = Math.max(1, ...stats.weekly.map((w) => w.xp));
+  const totalWeeklyXp = stats.weekly.reduce((sum, w) => sum + w.xp, 0);
+  const rusty = skills.filter((s) => s.rusting);
+  const maxedCount = skills.filter((s) => s.maxed).length;
+
+  if (skills.length === 0) {
+    return (
+      <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
+        <p className="text-sm text-zinc-400">No stats yet.</p>
+        <p className="mt-1 text-xs text-zinc-500">Add a skill and log practice to see your progress here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 space-y-4">
+      <div className="grid grid-cols-3 gap-3">
+        <Stat label="Account Lv" value={String(stats.accountLevel)} tone="cyan" />
+        <Stat label="Best streak" value={stats.streak > 0 ? `${stats.streak}` : "—"} />
+        <Stat label="Maxed" value={String(maxedCount)} tone={maxedCount > 0 ? "gold" : undefined} />
+      </div>
+
+      {/* Weekly XP chart */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+        <div className="mb-2 flex items-baseline justify-between">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">XP · last 8 weeks</span>
+          <span className="text-[10px] text-zinc-500">{totalWeeklyXp.toLocaleString()} XP</span>
+        </div>
+        <div className="flex h-24 items-end gap-1.5">
+          {stats.weekly.map((w, i) => {
+            const h = w.xp === 0 ? 4 : Math.max(8, Math.round((w.xp / weekMax) * 100));
+            const isLast = i === stats.weekly.length - 1;
+            return (
+              <div
+                key={w.weekStart}
+                title={`Week of ${w.weekStart}: ${w.xp} XP`}
+                className={`flex-1 rounded-sm transition-all ${
+                  w.xp === 0 ? "bg-zinc-800" : isLast ? "bg-cyan-400" : "bg-cyan-500/50"
+                }`}
+                style={{ height: `${h}%` }}
+              />
+            );
+          })}
+        </div>
+        <div className="mt-1.5 flex justify-between text-[9px] text-zinc-600">
+          <span>8 wks ago</span>
+          <span>this week</span>
+        </div>
+      </div>
+
+      {/* Rust panel */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+        <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+          Going rusty <span className="text-zinc-600">· idle {RUST_AFTER_DAYS}+ days</span>
+        </div>
+        {rusty.length === 0 ? (
+          <p className="text-xs text-zinc-500">Nothing rusting — every skill has been practiced recently. ✨</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {rusty
+              .slice()
+              .sort((a, b) => (b.idleDays ?? 0) - (a.idleDays ?? 0))
+              .map((s) => (
+                <li key={s.id} className="flex items-center gap-2 text-xs">
+                  <span className="min-w-0 flex-1 truncate text-zinc-300">{s.name}</span>
+                  <RustChip idleDays={s.idleDays} />
+                </li>
+              ))}
+          </ul>
+        )}
+        <p className="mt-2 text-[10px] leading-snug text-zinc-600">
+          Rust is just a nudge — your XP never drops on its own. Log a session to clear it.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // --- Visual tree (P2) -------------------------------------------------------
 // Phone-first: skills grouped into vertical tiers by dependency depth, with a
 // small connector between tiers. Color encodes state (locked / unlocked / maxed).
@@ -615,6 +725,11 @@ function TreeNode({ skill, nameById }: { skill: Skill; nameById: Record<number, 
         <div className="mt-1 truncate text-[10px] text-zinc-500">
           needs {nameById[skill.deps[0].requires_skill_id] ?? "?"} Lv {skill.deps[0].min_level}+
           {skill.deps.length > 1 ? ` +${skill.deps.length - 1}` : ""}
+        </div>
+      )}
+      {!skill.locked && skill.rusting && (
+        <div className="mt-1 truncate text-[10px] text-orange-300/80">
+          🦀 rusty{skill.idleDays != null ? ` · ${skill.idleDays}d idle` : ""}
         </div>
       )}
     </div>

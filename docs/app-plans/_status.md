@@ -59,7 +59,7 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 | weeklyreview | 🟢 At bar | graduated from logbook; structured wins/misses/lessons/next_focus, one per week |
 | warranty | 🟢 At bar | graduated from checklist; computed expiry, archive, expiry warnings |
 | vocabulary | 🟢 At bar | graduated from checklist; SM-2-lite spaced repetition, shares flashcards engine |
-| skilltree | 🟢 At bar | graduated from goal; XP leveling curve, practice log, skill dependency tree (P1+P2); P3: tree viz polish |
+| skilltree | 🟢 At bar | graduated from goal; XP leveling curve, practice log, skill dependency tree (P1+P2); P3 shipped: global-XP wiring (skill_practice → daily rollup), Stats tab (account level + practice streak + 8-week XP chart), rust hints |
 | savings | 🟢 At bar | graduated from goal; deposit log, currency, pace & projection; P3: multi-currency, chart |
 | okr | 🟢 At bar | graduated from goal; objective→key-result hierarchy, cycle, confidence, mean roll-up (P1) |
 | inventory | 🟢 At bar | graduated from checklist; quantity/value/location/category, total-worth roll-up (P1); P2/P3: photos, filters |
@@ -94,6 +94,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 | visionboard | 🔴 Graduate | checklist is the wrong model; needs a custom app |
 | ~~warranty~~ · ~~vocabulary~~ · ~~plantcare~~ · ~~inventory~~ · ~~fileindex~~ · ~~mealplanner~~ · ~~contacts~~ · ~~bookmarks~~ · ~~clienttracker~~ | ✅ Graduated | now custom apps (see Custom apps table) |
 
+> plantcare: 🟢 At bar — graduated from checklist; recurrence engine + computed next-due (P1); needs-water filter, light/notes, stats strip (P2); photo upload (`plant-photos` bucket), watering-history sparkline (`plant_waterings`), fertilizing as a 2nd recurrence track (P3). P1–P3 shipped.
+
 ## Logbooks (factory `logbook`)
 
 | App | Status | Note |
@@ -110,6 +112,8 @@ Remove the row when the branch merges or is abandoned. **Empty = nothing claimed
 | goals · milestones · courses | 🟡 Partial | categories, timeline, lesson checklist |
 | streaks | 🔴 Graduate | a single progress bar is the wrong shape (streaks → merge with Habits) |
 | ~~projecttracker~~ · ~~skilltree~~ · ~~savings~~ · ~~okr~~ · ~~debtpayoff~~ | ✅ Graduated | now custom apps (see Custom apps table) |
+
+> projecttracker: 🟢 At bar — graduated from goal; status pipeline + task checklist + next action (P1); board view (tap-to-advance) + blocked reason/since (P2). P3 (activity history, milestones, hero strip) still open.
 
 ## Finance (factory `finance`)
 
