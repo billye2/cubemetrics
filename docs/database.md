@@ -197,6 +197,8 @@ Backs the Skill Tree app (migration `20260530T0700_skills.sql`). Graduates the o
 
 Backs the Savings app (migration `20260530T0700_savings_contributions.sql`). Graduates the single-value `goals` row into a finance-shaped app: a savings goal stays a `goals` row (`goal_type='savings'`: title / target_value / due_date / status), and each deposit is one `savings_contributions` row. The goal's `current_value` is **derived** as `SUM(amount)`, preserving deposit history and momentum instead of overwriting a running total (generalizes `goal_progress` into amounts). RLS: standard owner `FOR ALL` + SysOp `FOR SELECT` pair. Indexes: `savings_contributions(goal_id, contributed_on)`, `savings_contributions(user_id, contributed_on)`.
 
+**Savings P3 multi-currency** (migration `20260530T2010_savings_currency.sql`): adds `currency TEXT NOT NULL DEFAULT 'USD'` to the shared **`goals`** table — a per-goal ISO-4217 code, guarded by a `goals_currency_format_chk` CHECK (`^[A-Z]{3}$`). Existing rows default to USD. Additive, no RLS change (`goals` already enforces owner RLS). Used by `Intl.NumberFormat` throughout the Savings app; dashboard totals fold mixed currencies into the most common code.
+
 ### objectives + key_results
 | objectives | key_results |
 |------------|-------------|
@@ -204,12 +206,14 @@ Backs the Savings app (migration `20260530T0700_savings_contributions.sql`). Gra
 
 Backs the OKR app (migration `20260530T0700_okr.sql`). Graduates the old single-`goals`-row OKR (a flat title + one target number) into a real objective→key-result hierarchy. An objective is qualitative (no number of its own), tagged with a `cycle` and a manually-set `confidence`; it owns 2–5 key results, each with its own current/target. The objective's score is the **mean of its KR %s** — computed in app code, not stored. `key_results` cascade on objective delete. RLS: standard owner `FOR ALL` + SysOp `FOR SELECT` pair on both. Indexes: `objectives(user_id, cycle)`, `key_results(objective_id, sort_order, created_at)`.
 
+**OKR P2/P3** (migration `20260530T2000_okr_p2_p3.sql`, all additive `ADD COLUMN IF NOT EXISTS`): `key_results` gains `kr_type TEXT NOT NULL DEFAULT 'metric'` (metric number→number / milestone done-not / baseline start→target) and `start_value NUMERIC NOT NULL DEFAULT 0` (baseline shape computes % from `start_value` instead of 0; existing rows keep 0 → identical math). `objectives` gains `status TEXT NOT NULL DEFAULT 'active'` (active|graded for end-of-cycle close), `reflection TEXT NOT NULL DEFAULT ''`, and `graded_at TIMESTAMPTZ`. New child table **`kr_progress`** (`id, user_id, key_result_id → key_results ON DELETE CASCADE, value NUMERIC, created_at`) is an append-only per-KR value history drawn as a sparkline. Standard owner `FOR ALL` + SysOp `FOR SELECT` RLS; indexed `(key_result_id, created_at)`.
+
 ### inventory_items
 | Column | Type |
 |--------|------|
-| id, user_id, name, quantity (INT default 1), value (NUMERIC), location, category, photo_url, created_at |
+| id, user_id, name, quantity (INT default 1), value (NUMERIC), location, category, photo_url, receipt_url, warranty_url, created_at |
 
-Backs the Inventory app (migration `20260530T0745_inventory_items.sql`). Graduates off the shared `checklists` factory (`list_type='inventory'`) into an attribute-driven possessions model: a thing you own has a quantity, a value, a location and a category — not a task to check off. The headline number is **total worth** = `SUM(value × quantity)` (for insurance), computed in app code. RLS: owner `FOR ALL` ("Users can access own inventory items") + SysOp `FOR SELECT`. Indexed on `(user_id, created_at DESC)`.
+Backs the Inventory app (migration `20260530T0745_inventory_items.sql`). Graduates off the shared `checklists` factory (`list_type='inventory'`) into an attribute-driven possessions model: a thing you own has a quantity, a value, a location and a category — not a task to check off. The headline number is **total worth** = `SUM(value × quantity)` (for insurance), computed in app code. RLS: owner `FOR ALL` ("Users can access own inventory items") + SysOp `FOR SELECT`. Indexed on `(user_id, created_at DESC)`. P3 (migration `20260530T1900_inventory_items_receipt_warranty.sql`) adds optional `receipt_url` / `warranty_url` per item (reference links for the insurance export); both nullable, no RLS change (inherits the base policies).
 
 ### meal_plan
 | Column | Type |
