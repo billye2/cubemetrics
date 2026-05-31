@@ -7,6 +7,7 @@ import { SignOutButton } from "@/components/modern/SignOutButton";
 import { AppSearch } from "@/components/modern/AppSearch";
 import { TimezoneSync } from "@/components/modern/TimezoneSync";
 import { ensureXp } from "@/lib/xp/compute";
+import { isAdmin, ADMIN_APP_IDS } from "@/lib/modern/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,14 @@ export default async function AppsPage() {
     xp = null;
   }
 
+  const admin = isAdmin(user.email);
+
+  // System/admin tools are pulled out of the normal grid; they live in the
+  // admins-only Administrator section below so they don't look like empty apps.
+  const gridApps = APPS.filter((a) => !ADMIN_APP_IDS.has(a.id));
+  // Search can find system apps for admins, but hides them from regular users.
+  const searchApps = admin ? APPS : gridApps;
+
   return (
     <Shell back={{ href: "/today", label: "Today" }} right={<SignOutButton />}>
       <TimezoneSync knownTz={profile?.timezone ?? null} />
@@ -41,10 +50,10 @@ export default async function AppsPage() {
 
       {xp && <XpStrip xp={xp} />}
 
-      <AppSearch apps={APPS} />
+      <AppSearch apps={searchApps} />
 
       {CATEGORIES.map((cat) => {
-        const apps = APPS.filter((a) => a.category === cat.id);
+        const apps = gridApps.filter((a) => a.category === cat.id);
         if (apps.length === 0) return null;
         return (
           <section key={cat.id} className="mb-8">
@@ -57,7 +66,74 @@ export default async function AppsPage() {
           </section>
         );
       })}
+
+      {admin && <AdminSection />}
     </Shell>
+  );
+}
+
+/**
+ * Admins-only section. Surfaces system tools (feedback review queue, notification
+ * prefs, data-health audit) separately from the productivity apps so they're
+ * never mistaken for broken/empty data apps. Only rendered when isAdmin(email).
+ */
+function AdminSection() {
+  const adminApps = APPS.filter((a) => ADMIN_APP_IDS.has(a.id));
+  return (
+    <section className="mb-8 rounded-2xl border border-amber-500/25 bg-amber-500/[0.03] p-4">
+      <h3 className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-amber-400/90">
+        <span aria-hidden>🛡</span> Administrator
+      </h3>
+      <p className="mb-3 text-xs text-zinc-500">System tools — visible to admins only.</p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <AdminTile
+          href="/app/feedback"
+          icon="✦"
+          name="Feedback Review"
+          description="Approve submissions → GitHub"
+        />
+        <AdminTile
+          href="/app/admin/health"
+          icon="✓"
+          name="Data Health"
+          description="Seed / audit app data"
+        />
+        {adminApps.map((app) => (
+          <AdminTile
+            key={app.id}
+            href={`/app/${app.id}`}
+            icon={app.icon}
+            name={app.name}
+            description={app.description}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function AdminTile({
+  href,
+  icon,
+  name,
+  description,
+}: {
+  href: string;
+  icon: string;
+  name: string;
+  description: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex flex-col rounded-2xl border border-amber-500/20 bg-zinc-900/50 p-4 transition active:scale-[0.98] hover:border-amber-500/40 hover:bg-zinc-900"
+    >
+      <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-xl text-amber-400 ring-1 ring-amber-500/20">
+        {icon}
+      </div>
+      <div className="text-sm font-semibold text-zinc-100">{name}</div>
+      <div className="text-xs text-zinc-500 line-clamp-1">{description}</div>
+    </Link>
   );
 }
 
