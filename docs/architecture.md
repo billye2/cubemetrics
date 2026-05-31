@@ -14,10 +14,13 @@ Browser (React)  ──Server Action / fetch──>  Next.js (RSC)  ──SQL─
 ---
 
 ## Routing
-- `src/app/page.tsx` — auth-gated home. Logged out → landing + Sign in with Google. Logged in → searchable app grid grouped by category.
-- `src/app/app/<id>/page.tsx` — per-app page (one folder per custom app: todo, journal, feedback, …).
-- `src/app/app/[id]/page.tsx` — factory dispatch for template-driven apps (tracker / checklist / logbook / goal / finance). Unknown ui types fall back to a "coming soon" card.
+- `src/app/page.tsx` — `/`. Logged out → landing + Sign in with Google. Logged in → **redirect to `/today`**.
+- `src/app/today/page.tsx` — the **Today anchor ritual** (the logged-in home; the Spine's output surface).
+- `src/app/apps/page.tsx` — the full searchable app grid grouped by category (moved off `/`; app back-links point here).
+- `src/app/app/<id>/page.tsx` — per-app page (one folder per custom app: todo, journal, feedback, notifications, …).
+- `src/app/app/[id]/page.tsx` — factory dispatch for template-driven apps (tracker / checklist / logbook / goal / finance / schedule). Unknown ui types fall back to a "coming soon" card.
 - `src/app/api/auth/{login,callback,logout}` — Google OAuth endpoints.
+- `src/app/api/cron/digest` — proactive digest cron (Spine Layer 4; `CRON_SECRET`-gated, service-role). `src/app/api/notifications/unsubscribe` — HMAC-verified one-click unsubscribe.
 
 ## Data access
 - **Reads** — Server Components call `createServerSupabase()` and query directly. RLS enforces the per-user filter at the DB layer.
@@ -67,6 +70,29 @@ Template apps share a config (`FactoryConfig`) and a backing table (`daily_track
    timestamp filename convention (`YYYYMMDDTHHMM_<slug>.sql`, see [database.md](database.md)).
 
 ---
+
+## The Spine (cross-app layer)
+
+The connective layer that makes ~87 standalone apps cohere and pull the user back daily. Full design
+in [spine.md](spine.md); phase specs in [app-plans/spine-phase1..5.md](app-plans/). All five layers are
+live on `master`.
+
+- **Contract (`src/lib/spine/`).** Each app may expose an optional adapter — `today(ctx)` (what's
+  relevant today) + `quickLog(ctx, input)` (accept a capture) — in `adapters/<id>.ts`. A **generated
+  registry** (`npm run build:spine` → `_generated.ts`, never hand-edit) assembles them, mirroring the
+  catalog's one-file-per-app pattern. `getToday()` fans out across adapters exactly like `ensureXp`
+  fans out across XP tables. **Invariant:** every adapter query filters `.eq("user_id", …)` — under
+  the cron's service-role client a missing filter would leak across tenants (enforced by a unit test).
+- **Usage signal.** `app_usage` (recency/count/pins) bumped by the `<TrackUsage>` mount beacon via the
+  `bump_app_usage` RPC; powers "the few apps you use" on Today.
+- **Capture (Layer 2).** `<QuickCapture>` in `Shell` (every page, `⌘K`) routes free text to the best
+  adapter's `quickLog`; `undoCapture` is guarded by a `CAPTURE_TABLES` allowlist + user-scoped delete.
+- **Today (Layer 3).** `/today` renders `getToday()` + `ensureXp` as a morning/evening ritual.
+- **Proactive engine (Layer 4, `src/lib/notify/`).** A `CRON_SECRET`-gated cron emails opted-in users a
+  digest at their local time — idempotent (claim-before-send), earned-only (`shouldSend` trust gate),
+  HTML-escaped. **Dormant until provisioned** (Resend + cron + secrets — see [environment.md](environment.md)).
+- **Insight line (Layer 5, `src/lib/ai/`).** One contextual line on Today, fetched progressively;
+  deterministic today, AI-ready (`generateObject` over the AI Gateway behind `AI_NUDGES_ENABLED`).
 
 ## Feedback → GitHub workflow
 
