@@ -50,7 +50,7 @@ export default async function DebtPayoffPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Debt">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Debt">
       <DebtView debts={debts} payments={payments} />
     </Shell>
   );

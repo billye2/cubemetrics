@@ -106,7 +106,7 @@ export default async function WeeklyReviewPage({
   };
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Weekly Review">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Weekly Review">
       <WeeklyReviewView
         weekStartISO={weekStartISO}
         prevWeekISO={prevWeekISO}

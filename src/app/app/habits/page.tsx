@@ -70,7 +70,7 @@ export default async function HabitsPage() {
   }
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Habits">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Habits">
       <TrackUsage appId="habits" />
       <HabitsView habits={enriched} />
     </Shell>

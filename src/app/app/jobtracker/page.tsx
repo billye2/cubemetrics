@@ -36,7 +36,7 @@ export default async function JobTrackerPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Job Hunt">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Job Hunt">
       <JobTrackerView applications={applications} />
     </Shell>
   );

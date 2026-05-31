@@ -115,7 +115,7 @@ export default async function CounterPage() {
   }
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Counter">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Counter">
       <CounterView
         counters={enriched}
         chart={chart}

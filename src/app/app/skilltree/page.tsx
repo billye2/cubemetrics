@@ -163,7 +163,7 @@ export default async function SkillTreePage() {
   };
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Skill Tree">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Skill Tree">
       <SkillTreeView skills={skills} stats={stats} />
     </Shell>
   );

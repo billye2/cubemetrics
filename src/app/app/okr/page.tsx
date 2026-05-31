@@ -103,7 +103,7 @@ export default async function OkrPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="OKRs">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="OKRs">
       <OkrView objectives={objectives} />
     </Shell>
   );

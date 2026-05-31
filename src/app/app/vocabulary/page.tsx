@@ -25,7 +25,7 @@ export default async function VocabularyPage() {
   const mastered = words.filter((w) => w.reps >= 3).length;
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Vocabulary">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Vocabulary">
       <VocabularyView words={words} today={today} dueCount={dueCount} mastered={mastered} />
     </Shell>
   );

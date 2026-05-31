@@ -13,7 +13,7 @@ const PLACEHOLDERS = ["water 2", "todo call mom", "journal had a good day", "run
  * logged-in page. Type free text → it routes to the right app's quickLog; if it's
  * unsure, a one-tap picker disambiguates. Confirmation offers Undo + Send-elsewhere.
  */
-export function QuickCapture() {
+export function QuickCapture({ variant = "header" }: { variant?: "header" | "cta" }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
@@ -103,16 +103,26 @@ export function QuickCapture() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        title="Quick capture (⌘K)"
-        aria-label="Quick capture"
-        className="flex h-9 items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900/60 px-2.5 text-xs font-medium text-zinc-300 hover:border-zinc-700 hover:text-zinc-100 active:bg-zinc-800"
-      >
-        <span aria-hidden>＋</span>
-        <span className="hidden sm:inline">Capture</span>
-      </button>
+      {variant === "cta" ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-zinc-700 bg-zinc-900/40 text-sm font-medium text-zinc-300 transition hover:border-cyan-500/40 hover:text-zinc-100 active:scale-[0.99]"
+        >
+          <span aria-hidden>＋</span> Capture something
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          title="Quick capture (⌘K)"
+          aria-label="Quick capture"
+          className="flex h-9 items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900/60 px-2.5 text-xs font-medium text-zinc-300 hover:border-zinc-700 hover:text-zinc-100 active:bg-zinc-800"
+        >
+          <span aria-hidden>＋</span>
+          <span className="hidden sm:inline">Capture</span>
+        </button>
+      )}
 
       {open &&
         createPortal(

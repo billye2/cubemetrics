@@ -69,7 +69,7 @@ export default async function RecipesPage({
   }
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Recipes">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Recipes">
       <RecipesView recipes={recipes} initialId={initialId} />
     </Shell>
   );

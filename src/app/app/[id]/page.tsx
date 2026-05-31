@@ -31,7 +31,7 @@ export default async function AppDispatch({
   if (!user) redirect("/");
 
   const config = app.config!;
-  const back = { href: "/", label: "Apps" };
+  const back = { href: "/apps", label: "Apps" };
 
   if (app.ui === "tracker") {
     const sixtyDaysAgo = new Date();
@@ -157,7 +157,7 @@ export default async function AppDispatch({
 
 function ComingSoon({ app }: { app: NonNullable<ReturnType<typeof getApp>> }) {
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title={app.name}>
+    <Shell back={{ href: "/apps", label: "Apps" }} title={app.name}>
       <Card className="p-6">
         <div className="flex items-start gap-4">
           <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-2xl text-cyan-400 ring-1 ring-cyan-500/20">

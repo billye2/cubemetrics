@@ -23,7 +23,7 @@ export default async function StopwatchPage() {
     .limit(500);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Stopwatch">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Stopwatch">
       <StopwatchView entries={(data || []) as TrackerEntry[]} />
     </Shell>
   );

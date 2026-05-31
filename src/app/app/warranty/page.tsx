@@ -26,7 +26,7 @@ export default async function WarrantyPage() {
   const archived = all.filter((w) => w.archived);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Warranties">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Warranties">
       <WarrantyView warranties={active} archived={archived} />
     </Shell>
   );

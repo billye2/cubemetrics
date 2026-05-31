@@ -23,7 +23,7 @@ export default async function InventoryPage() {
   const items = ((data as InventoryRow[]) || []).map(toItem);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Inventory">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Inventory">
       <InventoryView items={items} />
     </Shell>
   );

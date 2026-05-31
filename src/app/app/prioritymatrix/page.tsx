@@ -33,7 +33,7 @@ export default async function PriorityMatrixPage() {
   }));
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Priorities">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Priorities">
       <MatrixView tasks={tasks} />
     </Shell>
   );

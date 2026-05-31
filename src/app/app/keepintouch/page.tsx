@@ -99,7 +99,7 @@ export default async function KeepInTouchPage() {
   });
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Keep in Touch">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Keep in Touch">
       <KeepInTouchView contacts={contacts} />
     </Shell>
   );

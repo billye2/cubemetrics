@@ -121,7 +121,7 @@ export default async function ExpensesPage() {
     .sort((a, b) => b.total - a.total);
 
   return (
-    <Shell back={{ href: "/", label: "Apps" }} title="Expenses">
+    <Shell back={{ href: "/apps", label: "Apps" }} title="Expenses">
       <ExpensesView
         expenses={expenses}
         monthTotal={monthTotal}
