@@ -1,5 +1,10 @@
 # Spine — Phase 4: The Proactive Engine (build-ready spec)
 
+> ✅ **BUILT + SHIPPED (2026-05-31, PR #108, `master`; migration applied to remote).** Cron route +
+> `notify/` modules + unsubscribe + settings app; opt-in, idempotent, trust-gated. Built partly via
+> parallel sub-agents, security-reviewed (HTML-escaping, constant-time compares). 578 tests.
+> **DORMANT until provisioned** — see §11/§15 (Resend + DNS, `CRON_SECRET` + cron trigger, signing secret).
+
 Companion to [../spine.md](../spine.md) (Layer 4) and Phases [1](spine-phase1.md)–[3](spine-phase3.md).
 This is **the phase that makes the product get used more** — the only one that reaches *out*. It
 reuses the same `getToday()` / `ensureXp` data Phase 3 renders, but delivers it as an email digest +
