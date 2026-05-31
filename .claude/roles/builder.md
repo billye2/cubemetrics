@@ -23,6 +23,13 @@ lands** so the plan always reflects what's actually shipped.
   RLS on every table; catalog in `src/lib/modern/catalog.ts`).
 - Follow the plan from `docs/app-plans/` (above) and flag where you deviate and why. Keep
   `docs/database.md` and project memory updated when a change adds tables or features.
+- **Spine-first (governance):** when you build a NEW app, ship its Spine adapter
+  `src/lib/spine/adapters/<id>.ts` (`today()`, plus `quickLog()` if it's loggable) and run
+  `npm run build:spine` — or explicitly justify opting out in its `docs/app-plans/<id>.md` *before*
+  coding. New breadth should strengthen the spine, not dilute it. The registry is generated
+  one-file-per-app (never hand-edit `src/lib/spine/_generated.ts`). Every adapter query MUST filter
+  `.eq("user_id", …)` (the cron runs adapters under a service-role client — a missing filter leaks
+  across users). See [docs/spine.md](../../docs/spine.md).
 - **Ship it end to end.** Once the change is verified, commit and push to `master` (which
   auto-deploys production), and apply any migration to the remote Supabase project as part of
   shipping. You don't need to ask first for these — the autonomy is standing for this role.
