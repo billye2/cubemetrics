@@ -1,5 +1,11 @@
 # Spine — Phase 5: AI nudges over `today()` (build-ready spec)
 
+> ✅ **BUILT + SHIPPED (2026-05-31, PR #109, `master`).** Shipped **fallback-first** per §11: the Today
+> insight line is live (deterministic `getNudge`/`fallbackLine`), `fetchTodayNudge` action + `<TodayInsight>`
+> beacon, per-user opt-out. 588 tests. **AI model is the documented next step** — `npm i ai zod` +
+> `AI_NUDGES_ENABLED`, wire `generateObject` at `getNudge` (no migration was needed; `ai_nudges` cache
+> table is deferred with the model).
+
 Companion to [../spine.md](../spine.md) (Layer 5) and Phases [1](spine-phase1.md)–[4](spine-phase4.md).
 The **delight layer**: one short, specific, AI-written line over the aggregated day — shown in the
 `/today` header (Phase 3) and at the top of the digest email (Phase 4). It's what makes a glance or a
