@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HeaderFeedback } from "./HeaderFeedback";
 import { QuickCapture } from "./QuickCapture";
+import { BottomNav } from "./BottomNav";
 
 interface ShellProps {
   title?: string;
@@ -44,6 +45,8 @@ export function Shell({ title, back, right, children }: ShellProps) {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-4 sm:py-6">{children}</main>
+      {/* Chase-style fixed bottom tab bar — self-hides off the top-level routes. */}
+      <BottomNav />
     </div>
   );
 }
