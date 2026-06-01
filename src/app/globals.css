@@ -74,9 +74,14 @@ body {
  * cool gray): zinc-950 = app bg (cream), zinc-900 = cards (near-white), zinc-100
  * = ink text, zinc-500 = muted. Accent (cyan) → Cedar teal #0e7490; pale text
  * shades stay deep so accent/status text reads on cream (the earlier contrast
- * fix). Status hues mapped to Cedar's success/warn/danger. */
-@media (prefers-color-scheme: light) {
-  :root {
+ * fix). Status hues mapped to Cedar's success/warn/danger.
+ *
+ * Applied via `html[data-theme="light"]`, NOT @media: the theme is now a user
+ * choice (Settings → Light / Dark / Auto). A no-flash inline script in layout
+ * resolves the stored preference ("auto" → the OS via prefers-color-scheme) to a
+ * concrete "light"/"dark" and sets data-theme on <html> before first paint, so
+ * dark stays the default (:root) and this block overrides it only when light. */
+:root[data-theme="light"] {
     color-scheme: light;
 
     /* Warm cream → teal-charcoal neutral ramp (Cedar). */
@@ -118,7 +123,6 @@ body {
     --color-rose-300: #b5341f;
     --color-rose-400: #9c2c1a;
     --color-rose-500: #b5341f;
-  }
 }
 
 * {
