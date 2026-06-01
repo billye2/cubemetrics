@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { HeaderFeedback } from "./HeaderFeedback";
-import { QuickCapture } from "./QuickCapture";
 import { BottomNav } from "./BottomNav";
 
 interface ShellProps {
@@ -38,7 +37,6 @@ export function Shell({ title, back, right, children }: ShellProps) {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <QuickCapture />
             <HeaderFeedback />
             {right}
           </div>

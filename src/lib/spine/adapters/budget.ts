@@ -3,8 +3,7 @@ import { todayKey } from "@/lib/xp/tz";
 import { budgetToday } from "../lib";
 import type { SpineAdapter } from "../types";
 
-// Read-only adapter: this month's spend vs planned. No quickLog (expense capture
-// belongs to the `expenses` app), so no match() either.
+// Read-only adapter: this month's spend vs planned.
 export const adapter: SpineAdapter = {
   appId: "budget",
   async today(ctx) {

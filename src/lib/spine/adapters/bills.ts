@@ -3,8 +3,7 @@ import { todayKey, addDays } from "@/lib/xp/tz";
 import { billsToday } from "../lib";
 import type { SpineAdapter } from "../types";
 
-// Read-only adapter: unpaid bills due within 7 days (or overdue). No quickLog
-// (a bill needs name+amount+date — too lossy for one capture line in v1).
+// Read-only adapter: unpaid bills due within 7 days (or overdue).
 export const adapter: SpineAdapter = {
   appId: "bills",
   async today(ctx) {

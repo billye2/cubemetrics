@@ -7,9 +7,7 @@ import { usePathname } from "next/navigation";
  * Chase-style fixed bottom tab bar. Mounted in <Shell> (every logged-in page)
  * but only RENDERS on the top-level section routes below — so it's the primary
  * nav on the hubs and stays out of the way inside an individual app (which keeps
- * its own back button). Each tab is its own page; the raised center "Capture"
- * button isn't a route — it opens the global Quick Capture bar by dispatching
- * `xpb:capture`, which <QuickCapture> listens for.
+ * its own back button). Each tab is its own page.
  */
 
 const TAB_ROUTES = new Set(["/today", "/apps", "/app/xp", "/settings"]);
@@ -34,7 +32,6 @@ export function BottomNav() {
         <div className="mx-auto flex h-16 max-w-3xl items-stretch justify-around px-2">
           <Tab href="/today" label="Today" active={isActive(pathname, "/today")} icon={<IconToday />} />
           <Tab href="/apps" label="Apps" active={isActive(pathname, "/apps")} icon={<IconApps />} />
-          <CaptureTab />
           <Tab href="/app/xp" label="Progress" active={isActive(pathname, "/app/xp")} icon={<IconProgress />} />
           <Tab href="/settings" label="Settings" active={isActive(pathname, "/settings")} icon={<IconSettings />} />
         </div>
@@ -65,24 +62,6 @@ function Tab({
       <span className="flex h-6 w-6 items-center justify-center">{icon}</span>
       <span>{label}</span>
     </Link>
-  );
-}
-
-function CaptureTab() {
-  return (
-    <button
-      type="button"
-      aria-label="Quick capture"
-      onClick={() => window.dispatchEvent(new CustomEvent("xpb:capture"))}
-      className="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium text-zinc-500"
-    >
-      <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-cyan-500 text-zinc-950 shadow-lg ring-4 ring-zinc-950 transition active:scale-95">
-        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-          <path d="M12 6v12M6 12h12" />
-        </svg>
-      </span>
-      <span className="-mt-1 text-cyan-400">Capture</span>
-    </button>
   );
 }
 
