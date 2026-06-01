@@ -4,7 +4,7 @@
   "name": "Invoices",
   "category": "work",
   "icon": "⌗",
-  "description": "Billing",
+  "description": "Track invoices you've billed and their status",
   "ui": "finance",
   "config": {
     "itemType": "invoice",

@@ -4,7 +4,7 @@
   "name": "Backlog",
   "category": "tasks",
   "icon": "☷",
-  "description": "Someday/maybe",
+  "description": "Park someday/maybe ideas for later",
   "ui": "checklist",
   "config": {
     "listType": "backlog",

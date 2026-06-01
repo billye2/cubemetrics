@@ -4,7 +4,7 @@
   "name": "Goals",
   "category": "goals",
   "icon": "◎",
-  "description": "Long-term goals",
+  "description": "Set long-term goals and track progress",
   "ui": "goal",
   "config": {
     "goalType": "smart",

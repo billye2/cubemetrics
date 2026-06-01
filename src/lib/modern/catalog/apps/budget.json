@@ -4,6 +4,6 @@
   "name": "Budget",
   "category": "finance",
   "icon": "⊟",
-  "description": "Monthly budget",
+  "description": "Set monthly budgets and track actual vs planned",
   "ui": "modern"
 }

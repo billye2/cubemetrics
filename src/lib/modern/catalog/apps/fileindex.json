@@ -4,6 +4,6 @@
   "name": "File Index",
   "category": "org",
   "icon": "☰",
-  "description": "Searchable file catalog",
+  "description": "Catalog where your files and documents live",
   "ui": "modern"
 }

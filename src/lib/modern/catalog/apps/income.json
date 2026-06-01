@@ -4,7 +4,7 @@
   "name": "Income",
   "category": "finance",
   "icon": "↑",
-  "description": "Money in, by source",
+  "description": "Log money coming in, by source",
   "ui": "finance",
   "config": {
     "itemType": "income",

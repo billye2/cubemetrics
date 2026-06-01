@@ -4,7 +4,7 @@
   "name": "Writing",
   "category": "notes",
   "icon": "✑",
-  "description": "Words written today",
+  "description": "Log your daily word count toward a goal",
   "ui": "tracker",
   "config": {
     "trackerType": "writing",

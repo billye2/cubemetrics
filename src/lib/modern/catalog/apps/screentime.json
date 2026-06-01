@@ -4,7 +4,7 @@
   "name": "Screen Time",
   "category": "habits",
   "icon": "▢",
-  "description": "Hours on screens",
+  "description": "Log daily screen hours against a limit",
   "ui": "tracker",
   "config": {
     "trackerType": "screentime",

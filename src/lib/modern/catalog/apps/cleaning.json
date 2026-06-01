@@ -4,7 +4,7 @@
   "name": "Cleaning",
   "category": "lifestyle",
   "icon": "✦",
-  "description": "Cleaning schedule",
+  "description": "Work through your cleaning checklist",
   "ui": "checklist",
   "config": {
     "listType": "cleaning",

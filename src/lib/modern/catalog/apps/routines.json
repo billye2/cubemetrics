@@ -4,7 +4,7 @@
   "name": "Routines",
   "category": "tasks",
   "icon": "⟳",
-  "description": "Recurring sequences",
+  "description": "Run through recurring step-by-step routines",
   "ui": "checklist",
   "config": {
     "listType": "routine",

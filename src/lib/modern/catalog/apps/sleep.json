@@ -4,7 +4,7 @@
   "name": "Sleep",
   "category": "habits",
   "icon": "☾",
-  "description": "Hours of sleep",
+  "description": "Log hours slept and spot your sleep trend",
   "ui": "tracker",
   "config": {
     "trackerType": "sleep",

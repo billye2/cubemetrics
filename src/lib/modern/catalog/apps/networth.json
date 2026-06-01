@@ -4,6 +4,6 @@
   "name": "Net Worth",
   "category": "finance",
   "icon": "❖",
-  "description": "Assets − liabilities over time",
+  "description": "Track assets minus liabilities over time",
   "ui": "modern"
 }

@@ -4,7 +4,7 @@
   "name": "Steps",
   "category": "habits",
   "icon": "➤",
-  "description": "Daily step count",
+  "description": "Log your daily step count toward a goal",
   "ui": "tracker",
   "config": {
     "trackerType": "steps",

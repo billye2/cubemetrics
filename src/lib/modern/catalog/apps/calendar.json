@@ -4,6 +4,6 @@
   "name": "Calendar",
   "category": "org",
   "icon": "◰",
-  "description": "Events",
+  "description": "See your events on a calendar and agenda",
   "ui": "modern"
 }

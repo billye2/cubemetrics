@@ -4,6 +4,6 @@
   "name": "Journal",
   "category": "notes",
   "icon": "✎",
-  "description": "Daily entries",
+  "description": "Write a dated journal entry each day",
   "ui": "modern"
 }

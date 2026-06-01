@@ -4,7 +4,7 @@
   "name": "Wishlist",
   "category": "org",
   "icon": "★",
-  "description": "Things to buy",
+  "description": "Keep a list of things you want to buy",
   "ui": "checklist",
   "config": {
     "listType": "wishlist",

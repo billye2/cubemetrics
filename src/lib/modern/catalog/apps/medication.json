@@ -4,7 +4,7 @@
   "name": "Meds",
   "category": "habits",
   "icon": "✛",
-  "description": "Medications & refills on a cadence",
+  "description": "Track medications and refills on a cadence",
   "ui": "schedule",
   "config": {
     "scheduleType": "medication",

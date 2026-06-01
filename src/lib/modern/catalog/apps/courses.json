@@ -4,7 +4,7 @@
   "name": "Courses",
   "category": "learning",
   "icon": "◧",
-  "description": "Course tracking",
+  "description": "Track courses you're working through",
   "ui": "goal",
   "config": {
     "goalType": "course",

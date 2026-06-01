@@ -4,6 +4,6 @@
   "name": "Workout",
   "category": "habits",
   "icon": "✚",
-  "description": "Training log",
+  "description": "Log workouts — exercises, sets, reps, and weight",
   "ui": "modern"
 }

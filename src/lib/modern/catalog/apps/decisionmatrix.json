@@ -4,6 +4,6 @@
   "name": "Decisions",
   "category": "notes",
   "icon": "◰",
-  "description": "Weighted decision matrix",
+  "description": "Score options against weighted criteria",
   "ui": "modern"
 }
