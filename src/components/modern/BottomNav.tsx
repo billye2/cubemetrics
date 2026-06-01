@@ -4,21 +4,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /**
- * Chase-style fixed bottom tab bar. Mounted in <Shell> (every logged-in page)
- * but only RENDERS on the top-level section routes below — so it's the primary
- * nav on the hubs and stays out of the way inside an individual app (which keeps
- * its own back button). Each tab is its own page.
+ * Chase-style fixed bottom tab bar. Mounted in <Shell> (every logged-in page).
+ * Renders on the five tab routes AND inside individual apps (/app/<id>), so the
+ * primary nav is always within thumb's reach. Hidden only off those routes
+ * (e.g. the logged-out landing page, which doesn't use Shell anyway). Each tab
+ * is its own page.
  */
 
 const TAB_ROUTES = new Set(["/today", "/favorites", "/apps", "/app/xp", "/settings"]);
 
-function isActive(pathname: string, href: string): boolean {
-  return pathname === href;
+function shouldShow(pathname: string): boolean {
+  return TAB_ROUTES.has(pathname) || pathname.startsWith("/app/");
 }
 
 export function BottomNav() {
   const pathname = usePathname() ?? "";
-  if (!TAB_ROUTES.has(pathname)) return null;
+  if (!shouldShow(pathname)) return null;
+
+  // Inside an individual app (any /app/<id> except the Progress dashboard
+  // /app/xp), highlight Apps — that's where the user came from.
+  const inApp = pathname.startsWith("/app/") && pathname !== "/app/xp";
 
   return (
     <>
@@ -30,11 +35,11 @@ export function BottomNav() {
         className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-800 bg-zinc-950/90 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/75 pb-[env(safe-area-inset-bottom)]"
       >
         <div className="mx-auto flex h-16 max-w-3xl items-stretch justify-around px-1">
-          <Tab href="/today" label="Today" active={isActive(pathname, "/today")} icon={<IconToday />} />
-          <Tab href="/favorites" label="Favorites" active={isActive(pathname, "/favorites")} icon={<IconStar />} />
-          <Tab href="/apps" label="Apps" active={isActive(pathname, "/apps")} icon={<IconApps />} />
-          <Tab href="/app/xp" label="Progress" active={isActive(pathname, "/app/xp")} icon={<IconProgress />} />
-          <Tab href="/settings" label="Settings" active={isActive(pathname, "/settings")} icon={<IconSettings />} />
+          <Tab href="/today" label="Today" active={pathname === "/today"} icon={<IconToday />} />
+          <Tab href="/favorites" label="Favorites" active={pathname === "/favorites"} icon={<IconStar />} />
+          <Tab href="/apps" label="Apps" active={pathname === "/apps" || inApp} icon={<IconApps />} />
+          <Tab href="/app/xp" label="Progress" active={pathname === "/app/xp"} icon={<IconProgress />} />
+          <Tab href="/settings" label="Settings" active={pathname === "/settings"} icon={<IconSettings />} />
         </div>
       </nav>
     </>
