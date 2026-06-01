@@ -43,8 +43,11 @@ function fmtDateHeader(iso: string): string {
   });
 }
 
+// Categorical palette for the per-category breakdown — kept deliberately varied
+// so categories stay distinguishable. The lead hue is the theme azure; the cool
+// cyan was swapped to it to match Warm Graphite.
 const PALETTE = [
-  "#06b6d4",
+  "#74a9f0",
   "#f59e0b",
   "#3b82f6",
   "#8b5cf6",

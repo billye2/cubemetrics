@@ -28,8 +28,8 @@ const DEFAULT_CATEGORIES: { name: string; color: string }[] = [
   { name: "Utilities", color: "#14b8a6" },
   { name: "Entertainment", color: "#ec4899" },
   { name: "Health", color: "#ef4444" },
-  { name: "Shopping", color: "#06b6d4" },
-  { name: "Other", color: "#71717a" },
+  { name: "Shopping", color: "#74a9f0" },
+  { name: "Other", color: "#948e85" },
 ];
 
 export default async function BudgetPage({

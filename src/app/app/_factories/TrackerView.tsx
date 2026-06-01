@@ -162,11 +162,12 @@ function GoalRing({
   const r = (size - stroke) / 2;
   const circ = 2 * Math.PI * r;
   const dash = circ * Math.max(0, Math.min(1, pct));
-  const color = over ? "#f87171" : met ? "#34d399" : "#22d3ee";
+  // Azure accent (Warm Graphite) for on-track; semantic green/red for met/over.
+  const color = over ? "#f87171" : met ? "#34d399" : "#74a9f0";
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#27272a" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#2c2926" strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -486,7 +487,7 @@ function LineChart({
           <polyline
             points={polyline}
             fill="none"
-            stroke="#22d3ee"
+            stroke="#74a9f0"
             strokeWidth={1.5}
             strokeLinejoin="round"
             strokeLinecap="round"
