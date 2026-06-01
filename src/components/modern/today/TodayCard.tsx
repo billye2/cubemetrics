@@ -37,7 +37,7 @@ export function TodayCard({ card }: { card: SpineToday }) {
     >
       <div className="flex items-center gap-3">
         <div
-          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-lg ring-1 ring-cyan-500/20 ${ICON_ACCENT[card.severity]}`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-cyan-500/10 text-lg ${ICON_ACCENT[card.severity]}`}
         >
           {app?.icon ?? "•"}
         </div>
