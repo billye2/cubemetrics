@@ -38,6 +38,22 @@ export async function toggleFavorite(appId: string): Promise<{ ok: boolean; pinn
   return { ok: true, pinned: next };
 }
 
+/** Whether the signed-in user has starred a single app. False when signed out. */
+export async function isFavorite(appId: string): Promise<boolean> {
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return false;
+  const { data } = await supabase
+    .from("app_usage")
+    .select("pinned")
+    .eq("user_id", user.id)
+    .eq("app_id", appId)
+    .maybeSingle();
+  return data?.pinned ?? false;
+}
+
 /** The set of app ids the signed-in user has starred. Empty when signed out. */
 export async function getFavoriteIds(): Promise<string[]> {
   const supabase = await createServerSupabase();
