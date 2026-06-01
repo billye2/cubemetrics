@@ -4,6 +4,8 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { Shell } from "@/components/modern/Shell";
 import { SignOutButton } from "@/components/modern/SignOutButton";
 import { isAdmin } from "@/lib/modern/admin";
+import { ThemeToggle } from "@/components/modern/ThemeToggle";
+import { isThemePref, type ThemePref } from "@/lib/theme";
 
 export const dynamic = "force-dynamic";
 
@@ -21,10 +23,11 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("handle")
+    .select("handle, theme")
     .eq("id", user.id)
     .single();
 
+  const themePref: ThemePref = isThemePref(profile?.theme) ? profile.theme : "auto";
   const admin = isAdmin(user.email);
 
   return (
@@ -36,6 +39,17 @@ export default async function SettingsPage() {
           <p className="text-xs text-zinc-500">{user.email}</p>
         )}
       </div>
+
+      <section className="mb-6">
+        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">Appearance</h3>
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <p className="mb-3 text-sm text-zinc-300">Theme</p>
+          <ThemeToggle initial={themePref} />
+          <p className="mt-3 text-xs text-zinc-500">
+            “Auto” follows your phone’s light/dark setting.
+          </p>
+        </div>
+      </section>
 
       <Section label="Account">
         <Row href="/app/notifications" icon="✉" name="Notifications" desc="Email digest & reminder preferences" />
