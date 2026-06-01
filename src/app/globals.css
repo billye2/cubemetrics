@@ -2,18 +2,29 @@
 
 /*
  * Theme. The whole app is painted with Tailwind's neutral `zinc` ramp (≈1700
- * utility usages) plus a `cyan` accent. Tailwind v4 compiles every color class
- * to `var(--color-<name>-<shade>)` (opacity modifiers included, via color-mix),
- * so we can re-theme the entire app from this one file by overriding those
- * variables — no component edits.
+ * utility usages) plus `cyan` accent and `emerald`/`amber`/`rose` status colors.
+ * Tailwind v4 compiles every color class to `var(--color-<name>-<shade>)`
+ * (opacity modifiers included, via color-mix), so we can re-theme the entire app
+ * from this one file by overriding those variables — no component edits.
  *
- * Light mode follows the OS via `prefers-color-scheme: light`. We INVERT the
- * neutral ramp (zinc-N ⇄ zinc-(1000-N), pivoting at 500) so existing
- * dark-first classes flip correctly: `bg-zinc-950` (app background) becomes the
- * lightest shade, `text-zinc-100` (body text) becomes near-black, etc. The cyan
- * accent's pale text shades (300/400) are deepened so accent text stays legible
- * on a light background; the cyan-500 fill used for buttons/rings is left as-is.
- * Semantic status colors (rose/amber/emerald) are intentionally NOT inverted.
+ * Light mode follows the OS via `prefers-color-scheme: light`:
+ *
+ * 1. NEUTRAL RAMP — invert `zinc` (zinc-N ⇄ zinc-(1000-N), pivot 500) so
+ *    dark-first classes flip: `bg-zinc-950` (app bg) → lightest, `text-zinc-100`
+ *    (body) → near-black, borders → light gray.
+ *
+ * 2. ACCENT TEXT — the app uses pale shades (200/300/400) of cyan/emerald/amber/
+ *    rose for text, designed to glow on a dark bg. On a LIGHT bg those are
+ *    illegible (pale-green-on-light-green, pale-yellow-on-light-yellow). A single
+ *    Tailwind shade var backs BOTH text and fills, so we deepen 200–400 to ~600/
+ *    700 — fixing accent/status text. The few same-shade *fills* (hovers, dots,
+ *    progress bars) get slightly deeper too, which is benign on white.
+ *
+ * 3. BUTTON FILL — primary buttons are `bg-cyan-500 text-zinc-950`; inverting
+ *    zinc-950 turned the label near-white, so the cyan fill is darkened (500→600,
+ *    plus the 400 hover) to restore contrast for white text.
+ *
+ * Status HUES are preserved (green stays green, etc.) — only lightness shifts.
  */
 
 html,
@@ -50,10 +61,28 @@ body {
     --color-zinc-100: oklch(0.21 0.006 285.885);
     --color-zinc-50: oklch(0.141 0.005 285.823);
 
-    /* Deepen the pale accent-text cyans so links/labels read on white.
-       cyan-500 (button/ring fill) is deliberately left at its default. */
-    --color-cyan-400: oklch(0.609 0.126 221.723); /* default cyan-600 */
-    --color-cyan-300: oklch(0.52 0.105 223.128); /* default cyan-700 */
+    /* CYAN accent — deepen pale text shades; darken the 500/400 button fills so
+       the (now near-white) `text-zinc-950` label keeps contrast. */
+    --color-cyan-200: oklch(0.609 0.126 221.723); /* ← cyan-600 */
+    --color-cyan-300: oklch(0.52 0.105 223.128); /* ← cyan-700 */
+    --color-cyan-400: oklch(0.52 0.105 223.128); /* text + hover fill ← cyan-700 */
+    --color-cyan-500: oklch(0.609 0.126 221.723); /* button fill ← cyan-600 */
+
+    /* EMERALD (success/green) — fixes pale green text on light-green tints. */
+    --color-emerald-200: oklch(0.596 0.145 163.225); /* ← emerald-600 */
+    --color-emerald-300: oklch(0.508 0.118 165.612); /* ← emerald-700 */
+    --color-emerald-400: oklch(0.508 0.118 165.612); /* ← emerald-700 */
+
+    /* AMBER (warning/yellow) — fixes pale yellow text on light-yellow tints.
+       Amber is intrinsically light, so push text well down for contrast. */
+    --color-amber-200: oklch(0.555 0.163 48.998); /* ← amber-700 */
+    --color-amber-300: oklch(0.555 0.163 48.998); /* ← amber-700 */
+    --color-amber-400: oklch(0.473 0.137 46.201); /* ← amber-800 */
+
+    /* ROSE (danger/overdue) — deepen pale rose text for light bg. */
+    --color-rose-200: oklch(0.586 0.253 17.585); /* ← rose-600 */
+    --color-rose-300: oklch(0.514 0.222 16.935); /* ← rose-700 */
+    --color-rose-400: oklch(0.514 0.222 16.935); /* ← rose-700 */
   }
 }
 
