@@ -8,6 +8,8 @@ import { AppSearch } from "@/components/modern/AppSearch";
 import { TimezoneSync } from "@/components/modern/TimezoneSync";
 import { ensureXp } from "@/lib/xp/compute";
 import { isAdmin, ADMIN_APP_IDS } from "@/lib/modern/admin";
+import { getFavoriteIds } from "@/lib/spine/favorites";
+import { StarButton } from "@/components/modern/StarButton";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,7 @@ export default async function AppsPage() {
     xp = null;
   }
 
+  const favoriteIds = new Set(await getFavoriteIds().catch(() => []));
   const admin = isAdmin(user.email);
 
   // System/admin tools are pulled out of the normal grid; they live in the
@@ -60,7 +63,7 @@ export default async function AppsPage() {
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">{cat.label}</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {apps.map((app) => (
-                <AppTile key={app.id} app={app} />
+                <AppTile key={app.id} app={app} starred={favoriteIds.has(app.id)} />
               ))}
             </div>
           </section>
@@ -164,17 +167,22 @@ function XpStrip({ xp }: { xp: NonNullable<Awaited<ReturnType<typeof ensureXp>>>
   );
 }
 
-function AppTile({ app }: { app: (typeof APPS)[number] }) {
+function AppTile({ app, starred }: { app: (typeof APPS)[number]; starred: boolean }) {
+  // The star is a SIBLING of the Link (a <button> can't live inside an <a>);
+  // the relative wrapper anchors its absolute position over the tile.
   return (
-    <Link
-      href={`/app/${app.id}`}
-      className="group flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 transition active:scale-[0.98] hover:border-zinc-700 hover:bg-zinc-900"
-    >
-      <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-xl text-cyan-400 ring-1 ring-cyan-500/20">
-        {app.icon}
-      </div>
-      <div className="text-sm font-semibold text-zinc-100">{app.name}</div>
-      <div className="text-xs text-zinc-500 line-clamp-1">{app.description}</div>
-    </Link>
+    <div className="relative">
+      <Link
+        href={`/app/${app.id}`}
+        className="group flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 pr-10 transition active:scale-[0.98] hover:border-zinc-700 hover:bg-zinc-900"
+      >
+        <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-xl text-cyan-400 ring-1 ring-cyan-500/20">
+          {app.icon}
+        </div>
+        <div className="text-sm font-semibold text-zinc-100">{app.name}</div>
+        <div className="text-xs text-zinc-500 line-clamp-1">{app.description}</div>
+      </Link>
+      <StarButton appId={app.id} initial={starred} />
+    </div>
   );
 }
