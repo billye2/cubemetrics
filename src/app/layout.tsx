@@ -16,7 +16,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
   // Browser chrome follows the OS theme (matches body bg in each mode).
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+    { media: "(prefers-color-scheme: dark)", color: "#1a1918" },
     { media: "(prefers-color-scheme: light)", color: "#fafafa" },
   ],
 };

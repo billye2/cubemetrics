@@ -40,8 +40,39 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ── DARK MODE: "Warm Graphite" ─────────────────────────────────────────────
+ * Warm-neutral charcoal surfaces + warm off-white text + a calm azure accent,
+ * replacing Tailwind's cool default zinc/cyan. Applied by re-pointing the same
+ * theme vars the whole app already uses, so no component edits. The light-mode
+ * @media block below overrides these back for light users (the two are
+ * independent). Hex values come straight from the Warm Graphite spec; the
+ * neutral ramp interpolates them into a smooth 50→950 scale (warm hue throughout)
+ * and the azure ramp is built around accent #74a9f0 (= the spec's accent, which
+ * also backs the soft tile tints at low opacity). */
 :root {
   color-scheme: dark;
+
+  /* Warm graphite neutral ramp (light → dark as the number grows). */
+  --color-zinc-50: #faf8f3;
+  --color-zinc-100: #f2efe9; /* primary text (spec --text) */
+  --color-zinc-200: #e6e0d6;
+  --color-zinc-300: #c7c1b6; /* secondary text */
+  --color-zinc-400: #a39d93;
+  --color-zinc-500: #948e85; /* muted text (spec --text-mute) */
+  --color-zinc-600: #6e6860;
+  --color-zinc-700: #3c3733; /* stronger dividers */
+  --color-zinc-800: #2c2926; /* hairline borders + raised chips */
+  --color-zinc-900: #232120; /* cards / surfaces (spec --surface) */
+  --color-zinc-950: #1a1918; /* app background (spec --bg) */
+
+  /* Azure accent (replaces cyan). 500 = fill, 400 = brighter hover, 300/400 =
+     accent text; low-opacity tints reuse the same hue for the soft tiles. */
+  --color-cyan-200: #a9c7f5;
+  --color-cyan-300: #74a9f0; /* accent text (spec --accent) */
+  --color-cyan-400: #8fb8f4; /* accent text / hover-bright fill */
+  --color-cyan-500: #74a9f0; /* button + ring fill */
+  --color-cyan-600: #6a9ff0; /* gradient start / pressed */
+  --color-cyan-700: #5a90e8;
 }
 
 @media (prefers-color-scheme: light) {
