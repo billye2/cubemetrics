@@ -65,6 +65,20 @@ body {
   --color-cyan-500: #74a9f0; /* button + ring fill */
   --color-cyan-600: #6a9ff0; /* gradient start / pressed */
   --color-cyan-700: #5a90e8;
+
+  /* Per-category icon hues. In DARK (Warm Graphite) they all fall back to the
+     azure accent — the multi-color system is a LIGHT-theme treatment, so dark
+     keeps its single calm accent. Light mode (Cedar) overrides each below. */
+  --cat-time: var(--color-cyan-500);
+  --cat-tasks: var(--color-cyan-500);
+  --cat-goals: var(--color-cyan-500);
+  --cat-habits: var(--color-cyan-500);
+  --cat-notes: var(--color-cyan-500);
+  --cat-finance: var(--color-cyan-500);
+  --cat-learning: var(--color-cyan-500);
+  --cat-org: var(--color-cyan-500);
+  --cat-work: var(--color-cyan-500);
+  --cat-lifestyle: var(--color-cyan-500);
 }
 
 /* ── LIGHT MODE: "Cedar" ─────────────────────────────────────────────────────
@@ -123,6 +137,20 @@ body {
     --color-rose-300: #b5341f;
     --color-rose-400: #9c2c1a;
     --color-rose-500: #b5341f;
+
+    /* Per-category icon hues (Cedar light only). One signature hue per catalog
+       category, from the icon color system. Each tile renders its icon in
+       var(--cat-<category>) on a 13% tint. Dark mode keeps the azure fallback. */
+    --cat-time: #15707f;     /* Time & Focus     */
+    --cat-tasks: #2b86b8;    /* Tasks & Planning */
+    --cat-goals: #c98a22;    /* Goals & Progress */
+    --cat-habits: #4f9d54;   /* Habits & Wellness */
+    --cat-notes: #6a5fc4;    /* Notes & Thinking */
+    --cat-finance: #2e9b86;  /* Finance          */
+    --cat-learning: #9a55b8; /* Learning & Reading */
+    --cat-org: #c75d44;      /* Organization     */
+    --cat-work: #c0567f;     /* Work & Collaboration */
+    --cat-lifestyle: #7ba32e;/* Lifestyle        */
 }
 
 * {
