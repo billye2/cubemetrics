@@ -3,7 +3,7 @@
   "order": 74,
   "name": "Stopwatch",
   "category": "time",
-  "icon": "⏲",
+  "icon": "◷",
   "description": "Time any activity live with a stopwatch",
   "ui": "modern",
   "config": {

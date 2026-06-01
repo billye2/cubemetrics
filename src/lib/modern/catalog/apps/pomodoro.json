@@ -3,7 +3,7 @@
   "order": 76,
   "name": "Pomodoro",
   "category": "time",
-  "icon": "⏱",
+  "icon": "◓",
   "description": "Work in focused sprints with timed breaks",
   "ui": "modern"
 }

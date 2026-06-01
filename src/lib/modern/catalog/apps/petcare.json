@@ -3,7 +3,7 @@
   "order": 27,
   "name": "Pets",
   "category": "lifestyle",
-  "icon": "♥",
+  "icon": "❀",
   "description": "Track pet care tasks and routines",
   "ui": "checklist",
   "config": {

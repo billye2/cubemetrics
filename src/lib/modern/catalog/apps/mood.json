@@ -3,7 +3,7 @@
   "order": 4,
   "name": "Mood",
   "category": "habits",
-  "icon": "☺",
+  "icon": "◕",
   "description": "Log how you feel each day and watch the trend",
   "ui": "tracker",
   "config": {

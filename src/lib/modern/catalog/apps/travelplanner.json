@@ -3,7 +3,7 @@
   "order": 29,
   "name": "Travel",
   "category": "lifestyle",
-  "icon": "✈",
+  "icon": "➢",
   "description": "Plan a trip with a checklist of to-dos",
   "ui": "checklist",
   "config": {

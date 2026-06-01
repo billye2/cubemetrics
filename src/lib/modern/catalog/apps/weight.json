@@ -3,7 +3,7 @@
   "order": 8,
   "name": "Weight",
   "category": "habits",
-  "icon": "⚖",
+  "icon": "⤓",
   "description": "Log your weight and track the trend over time",
   "ui": "tracker",
   "config": {

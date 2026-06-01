@@ -3,7 +3,7 @@
   "order": 72,
   "name": "Countdown",
   "category": "time",
-  "icon": "⏳",
+  "icon": "⧖",
   "description": "Count down the days to dates that matter",
   "ui": "modern"
 }

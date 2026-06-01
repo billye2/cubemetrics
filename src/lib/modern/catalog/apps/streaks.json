@@ -3,7 +3,7 @@
   "order": 54,
   "name": "Streaks",
   "category": "goals",
-  "icon": "⚡",
+  "icon": "↯",
   "description": "Keep daily streaks alive, day by day",
   "ui": "goal",
   "config": {

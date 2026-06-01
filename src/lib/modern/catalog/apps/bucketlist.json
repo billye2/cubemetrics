@@ -3,7 +3,7 @@
   "order": 18,
   "name": "Bucket List",
   "category": "goals",
-  "icon": "☑",
+  "icon": "▣",
   "description": "Track life goals and tick them off",
   "ui": "checklist",
   "config": {
