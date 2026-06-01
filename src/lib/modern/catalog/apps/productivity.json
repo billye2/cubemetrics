@@ -4,7 +4,7 @@
   "name": "Productivity",
   "category": "tasks",
   "icon": "▲",
-  "description": "Rate your day",
+  "description": "Rate how productive each day felt",
   "ui": "tracker",
   "config": {
     "trackerType": "productivity",

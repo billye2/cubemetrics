@@ -4,7 +4,7 @@
   "name": "Wins",
   "category": "work",
   "icon": "★",
-  "description": "Brag doc — log accomplishments",
+  "description": "Log your accomplishments for review season",
   "ui": "logbook",
   "config": {
     "logType": "brag",

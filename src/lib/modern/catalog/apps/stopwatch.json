@@ -4,7 +4,7 @@
   "name": "Stopwatch",
   "category": "time",
   "icon": "⏲",
-  "description": "Time anything live",
+  "description": "Time any activity live with a stopwatch",
   "ui": "modern",
   "config": {
     "trackerType": "stopwatch",

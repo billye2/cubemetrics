@@ -4,7 +4,7 @@
   "name": "Packing",
   "category": "lifestyle",
   "icon": "☐",
-  "description": "Packing lists",
+  "description": "Check off what to pack before a trip",
   "ui": "checklist",
   "config": {
     "listType": "packing",

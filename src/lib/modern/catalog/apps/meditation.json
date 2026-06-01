@@ -4,7 +4,7 @@
   "name": "Meditation",
   "category": "time",
   "icon": "☯",
-  "description": "Minutes meditated",
+  "description": "Log minutes meditated toward a daily goal",
   "ui": "tracker",
   "config": {
     "trackerType": "meditation",

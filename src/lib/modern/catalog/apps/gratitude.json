@@ -4,7 +4,7 @@
   "name": "Gratitude",
   "category": "habits",
   "icon": "♥",
-  "description": "Daily gratitude",
+  "description": "Jot a few things you're grateful for each day",
   "ui": "logbook",
   "config": {
     "logType": "gratitude",

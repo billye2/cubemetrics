@@ -4,7 +4,7 @@
   "name": "Learning Log",
   "category": "learning",
   "icon": "✦",
-  "description": "What you learned",
+  "description": "Note what you learned, day by day",
   "ui": "logbook",
   "config": {
     "logType": "learning",

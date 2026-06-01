@@ -4,7 +4,7 @@
   "name": "Caffeine",
   "category": "habits",
   "icon": "◉",
-  "description": "Caffeine intake",
+  "description": "Log caffeine intake against a daily limit",
   "ui": "tracker",
   "config": {
     "trackerType": "caffeine",

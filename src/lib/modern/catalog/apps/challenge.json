@@ -4,7 +4,7 @@
   "name": "Challenges",
   "category": "goals",
   "icon": "⚑",
-  "description": "Time-boxed challenges with a target",
+  "description": "Run a time-boxed challenge toward a target",
   "ui": "goal",
   "config": {
     "goalType": "challenge",

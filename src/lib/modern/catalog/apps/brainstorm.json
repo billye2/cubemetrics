@@ -4,7 +4,7 @@
   "name": "Brainstorm",
   "category": "notes",
   "icon": "✺",
-  "description": "Idea sessions",
+  "description": "Capture free-form idea sessions",
   "ui": "logbook",
   "config": {
     "logType": "brainstorm",

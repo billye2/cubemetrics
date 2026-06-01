@@ -4,7 +4,7 @@
   "name": "Grocery",
   "category": "org",
   "icon": "◍",
-  "description": "Shopping list",
+  "description": "Build a shopping list and check items off",
   "ui": "checklist",
   "config": {
     "listType": "grocery",
