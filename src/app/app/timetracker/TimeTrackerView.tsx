@@ -63,22 +63,10 @@ export function TimeTrackerView({ entries }: { entries: Entry[] }) {
 
   return (
     <div>
-      <Intro />
       <TodayCard breakdown={todayBreakdown} colorFor={colorFor} />
       <LogForm recentCategories={recentCategories} colorFor={colorFor} />
       <WeekChart breakdown={weekBreakdown} colorFor={colorFor} />
       <History entries={entries.slice(0, 30)} colorFor={colorFor} />
-    </div>
-  );
-}
-
-function Intro() {
-  return (
-    <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-900/30 p-3 text-xs text-zinc-400">
-      <span className="font-semibold text-zinc-300">Log where your time went</span>{" "}
-      — bucket each chunk of your day by category. Use{" "}
-      <span className="font-semibold text-cyan-400">Focus</span> when you want a
-      timer to keep you on one thing.
     </div>
   );
 }
