@@ -3,7 +3,7 @@
   "order": 37,
   "name": "Gratitude",
   "category": "habits",
-  "icon": "♥",
+  "icon": "♡",
   "description": "Jot a few things you're grateful for each day",
   "ui": "logbook",
   "config": {

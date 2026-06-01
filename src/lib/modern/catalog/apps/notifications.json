@@ -3,7 +3,7 @@
   "order": 95,
   "name": "Notifications",
   "category": "org",
-  "icon": "✉",
+  "icon": "▤",
   "description": "Email digest preferences",
   "ui": "modern"
 }
