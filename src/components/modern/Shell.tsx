@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HeaderFeedback } from "./HeaderFeedback";
 import { HeaderStar } from "./HeaderStar";
+import { AppSubheader } from "./AppSubheader";
 import { BottomNav } from "./BottomNav";
 
 interface ShellProps {
@@ -44,7 +45,11 @@ export function Shell({ title, back, right, children }: ShellProps) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 py-4 sm:py-6">{children}</main>
+      <main className="mx-auto max-w-3xl px-4 py-4 sm:py-6">
+        {/* One-line app description (catalog) on individual app pages; self-hides elsewhere. */}
+        <AppSubheader />
+        {children}
+      </main>
       {/* Chase-style fixed bottom tab bar — self-hides off the top-level routes. */}
       <BottomNav />
     </div>
