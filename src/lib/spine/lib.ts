@@ -1,60 +1,6 @@
 // Pure, DB-free helpers for the spine. All branchy logic lives here (like
 // xp/rules.ts::scoreDay) so adapters stay thin and the logic is unit-tested.
-import { type TodayItem, type TodayStatus, type SpineToday, STATUS_ORDER, ITEM_CAP, CAPTURE_TABLES } from "./types";
-
-/** Whether a table is in the capture allowlist (guards undoCapture against an
- *  untrusted client-supplied table name). Pure, so it's unit-testable. */
-export function isCaptureTable(table: string): boolean {
-  return (CAPTURE_TABLES as readonly string[]).includes(table);
-}
-
-// ── Capture parsing (used by adapter quickLog/match) ────────────────────────
-
-/** First positive number in the string, else `fallback`. "w 2"→2, "water"→1, "w -3"→1. */
-export function parseLeadingNumber(s: string, fallback = 1): number {
-  const m = s.match(/-?\d+(\.\d+)?/);
-  if (!m) return fallback;
-  const n = parseFloat(m[0]);
-  return Number.isFinite(n) && n > 0 ? n : fallback;
-}
-
-/** Strip a leading command word (case-insensitive, word-boundary). "todo call mom"→"call mom". */
-export function stripPrefix(s: string, prefixes: string[]): string {
-  const t = s.trim();
-  for (const p of prefixes) {
-    const re = new RegExp(`^${p}\\b\\s*`, "i");
-    if (re.test(t)) return t.replace(re, "").trim();
-  }
-  return t;
-}
-
-/** Best name match: exact > startsWith > includes (case-insensitive). null if no overlap. */
-export function fuzzyFind<T>(q: string, items: T[], key: (t: T) => string): T | null {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return null;
-  let best: T | null = null;
-  let bestScore = 0;
-  for (const it of items) {
-    const k = key(it).toLowerCase();
-    const s = k === needle ? 3 : k.startsWith(needle) ? 2 : k.includes(needle) ? 1 : 0;
-    if (s > bestScore) {
-      bestScore = s;
-      best = it;
-    }
-  }
-  return best;
-}
-
-/** Rank loggable apps for a capture string by each adapter's match(). Pure. */
-export function rankCandidates(
-  input: string,
-  adapters: { appId: string; match: (s: string) => number }[],
-): { appId: string; score: number }[] {
-  return adapters
-    .map((a) => ({ appId: a.appId, score: a.match(input) }))
-    .filter((x) => x.score > 0)
-    .sort((x, y) => y.score - x.score);
-}
+import { type TodayItem, type TodayStatus, type SpineToday, STATUS_ORDER, ITEM_CAP } from "./types";
 
 // ── Today shaping ───────────────────────────────────────────────────────────
 

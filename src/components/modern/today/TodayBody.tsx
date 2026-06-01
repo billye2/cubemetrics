@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { QuickCapture } from "@/components/modern/QuickCapture";
 import { Card } from "@/components/modern/Shell";
 import { TodayCard } from "./TodayCard";
 import type { Mode, TodayGroups } from "@/lib/spine/today-view";
@@ -43,10 +42,6 @@ export function TodayBody({ mode, groups }: { mode: Mode; groups: TodayGroups })
 
   return (
     <div>
-      <div className="mb-4">
-        <QuickCapture variant="cta" />
-      </div>
-
       <div className="mb-5 flex gap-1.5">
         {MODES.map((m) => (
           <Link
@@ -65,7 +60,7 @@ export function TodayBody({ mode, groups }: { mode: Mode; groups: TodayGroups })
       {empty ? (
         <Card className="p-6 text-center">
           <p className="text-sm text-zinc-300">Your day is a blank slate.</p>
-          <p className="mt-1 text-sm text-zinc-500">Capture your first thing, or open an app to get rolling.</p>
+          <p className="mt-1 text-sm text-zinc-500">Open an app to get rolling.</p>
         </Card>
       ) : (
         order.map(([title, cards]) => <Section key={title} title={title} cards={cards} />)
