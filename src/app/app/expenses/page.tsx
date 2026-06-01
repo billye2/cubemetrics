@@ -31,8 +31,8 @@ export const DEFAULT_CATEGORIES: { name: string; color: string }[] = [
   { name: "Utilities", color: "#14b8a6" },
   { name: "Entertainment", color: "#ec4899" },
   { name: "Health", color: "#ef4444" },
-  { name: "Shopping", color: "#06b6d4" },
-  { name: "Other", color: "#71717a" },
+  { name: "Shopping", color: "#74a9f0" },
+  { name: "Other", color: "#948e85" },
 ];
 
 function startOfMonthISO(): string {
@@ -115,7 +115,7 @@ export default async function ExpensesPage() {
     .map(([name, total]) => ({
       name,
       total,
-      color: colorOf.get(name) || "#71717a",
+      color: colorOf.get(name) || "#948e85",
       pct: monthTotal > 0 ? (total / monthTotal) * 100 : 0,
     }))
     .sort((a, b) => b.total - a.total);
