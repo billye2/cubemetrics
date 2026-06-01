@@ -14,7 +14,11 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-  themeColor: "#000000",
+  // Browser chrome follows the OS theme (matches body bg in each mode).
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+  ],
 };
 
 export default function RootLayout({
@@ -23,7 +27,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    // Theme follows the OS via prefers-color-scheme (see globals.css). No
+    // forced `dark` class — the app supports both light and dark.
+    <html lang="en">
       <body>{children}</body>
     </html>
   );
