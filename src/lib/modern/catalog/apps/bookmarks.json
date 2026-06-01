@@ -4,6 +4,6 @@
   "name": "Bookmarks",
   "category": "org",
   "icon": "☖",
-  "description": "Saved links",
+  "description": "Save and tag links to revisit later",
   "ui": "modern"
 }

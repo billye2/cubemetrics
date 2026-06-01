@@ -4,7 +4,7 @@
   "name": "Weight",
   "category": "habits",
   "icon": "⚖",
-  "description": "Weight log",
+  "description": "Log your weight and track the trend over time",
   "ui": "tracker",
   "config": {
     "trackerType": "weight",

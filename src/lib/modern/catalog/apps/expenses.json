@@ -4,6 +4,6 @@
   "name": "Expenses",
   "category": "finance",
   "icon": "⟢",
-  "description": "Track spending",
+  "description": "Log spending and see it by category",
   "ui": "modern"
 }

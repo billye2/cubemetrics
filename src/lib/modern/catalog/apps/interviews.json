@@ -4,7 +4,7 @@
   "name": "Interviews",
   "category": "work",
   "icon": "☷",
-  "description": "Interview debriefs",
+  "description": "Record interview debriefs and verdicts",
   "ui": "logbook",
   "config": {
     "logType": "interview",

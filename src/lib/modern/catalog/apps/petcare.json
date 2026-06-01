@@ -4,7 +4,7 @@
   "name": "Pets",
   "category": "lifestyle",
   "icon": "♥",
-  "description": "Pet care",
+  "description": "Track pet care tasks and routines",
   "ui": "checklist",
   "config": {
     "listType": "petcare",

@@ -4,6 +4,6 @@
   "name": "Priorities",
   "category": "tasks",
   "icon": "⊞",
-  "description": "Urgent × important quadrants",
+  "description": "Sort tasks by urgency and importance",
   "ui": "modern"
 }

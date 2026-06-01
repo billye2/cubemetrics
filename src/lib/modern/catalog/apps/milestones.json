@@ -4,7 +4,7 @@
   "name": "Milestones",
   "category": "goals",
   "icon": "◆",
-  "description": "Big wins",
+  "description": "Mark the big wins along the way",
   "ui": "goal",
   "config": {
     "goalType": "milestone",

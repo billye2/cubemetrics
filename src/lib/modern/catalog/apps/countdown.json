@@ -4,6 +4,6 @@
   "name": "Countdown",
   "category": "time",
   "icon": "⏳",
-  "description": "Live countdown to upcoming dates",
+  "description": "Count down the days to dates that matter",
   "ui": "modern"
 }

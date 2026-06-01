@@ -4,7 +4,7 @@
   "name": "Home",
   "category": "lifestyle",
   "icon": "⌂",
-  "description": "Home maintenance",
+  "description": "Stay on top of home upkeep tasks",
   "ui": "checklist",
   "config": {
     "listType": "homemaint",

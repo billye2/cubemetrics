@@ -4,7 +4,7 @@
   "name": "Retro",
   "category": "work",
   "icon": "⟲",
-  "description": "Team retros",
+  "description": "Capture team retro takeaways",
   "ui": "logbook",
   "config": {
     "logType": "retro",

@@ -4,6 +4,6 @@
   "name": "Pomodoro",
   "category": "time",
   "icon": "⏱",
-  "description": "Focus timer",
+  "description": "Work in focused sprints with timed breaks",
   "ui": "modern"
 }

@@ -4,6 +4,6 @@
   "name": "Todo",
   "category": "tasks",
   "icon": "✓",
-  "description": "Tasks and priorities",
+  "description": "Capture tasks, set priorities, and check them off",
   "ui": "modern"
 }

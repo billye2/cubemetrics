@@ -4,7 +4,7 @@
   "name": "Stress",
   "category": "habits",
   "icon": "◭",
-  "description": "Stress level",
+  "description": "Rate your stress each day and watch the trend",
   "ui": "tracker",
   "config": {
     "trackerType": "stress",

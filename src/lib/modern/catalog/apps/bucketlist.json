@@ -4,7 +4,7 @@
   "name": "Bucket List",
   "category": "goals",
   "icon": "☑",
-  "description": "Life list",
+  "description": "Track life goals and tick them off",
   "ui": "checklist",
   "config": {
     "listType": "bucket",

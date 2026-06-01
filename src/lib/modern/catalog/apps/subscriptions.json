@@ -4,7 +4,7 @@
   "name": "Subscriptions",
   "category": "finance",
   "icon": "⟳",
-  "description": "Recurring charges",
+  "description": "Track recurring charges and what they cost",
   "ui": "finance",
   "config": {
     "itemType": "subscription",

@@ -4,7 +4,7 @@
   "name": "Water",
   "category": "habits",
   "icon": "◐",
-  "description": "Glasses of water",
+  "description": "Tap to log glasses of water toward a daily goal",
   "ui": "tracker",
   "config": {
     "trackerType": "water",

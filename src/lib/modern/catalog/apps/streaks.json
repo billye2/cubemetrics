@@ -4,7 +4,7 @@
   "name": "Streaks",
   "category": "goals",
   "icon": "⚡",
-  "description": "Consecutive days",
+  "description": "Keep daily streaks alive, day by day",
   "ui": "goal",
   "config": {
     "goalType": "streak",

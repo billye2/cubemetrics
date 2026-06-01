@@ -4,7 +4,7 @@
   "name": "Travel",
   "category": "lifestyle",
   "icon": "✈",
-  "description": "Trip planning",
+  "description": "Plan a trip with a checklist of to-dos",
   "ui": "checklist",
   "config": {
     "listType": "travel",

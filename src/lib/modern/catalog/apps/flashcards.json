@@ -4,6 +4,6 @@
   "name": "Flashcards",
   "category": "notes",
   "icon": "◫",
-  "description": "Cards to review",
+  "description": "Study flashcards with spaced repetition",
   "ui": "modern"
 }

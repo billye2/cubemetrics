@@ -4,6 +4,6 @@
   "name": "Kanban",
   "category": "work",
   "icon": "▥",
-  "description": "To do · Doing · Done board",
+  "description": "Move cards across To-do, Doing, and Done",
   "ui": "modern"
 }
