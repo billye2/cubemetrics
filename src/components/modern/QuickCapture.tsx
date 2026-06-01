@@ -40,7 +40,13 @@ export function QuickCapture({ variant = "header" }: { variant?: "header" | "cta
       }
     }
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // The bottom-nav center button (and anything else) can open capture via this event.
+    const onOpen = () => setOpen(true);
+    window.addEventListener("xpb:capture", onOpen);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("xpb:capture", onOpen);
+    };
   }, [open]);
 
   useEffect(() => {
