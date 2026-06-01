@@ -7,6 +7,7 @@ import { APPS } from "@/lib/modern/catalog";
 import { ADMIN_APP_IDS } from "@/lib/modern/admin";
 import { getFavoriteIds } from "@/lib/spine/favorites";
 import { StarButton } from "@/components/modern/StarButton";
+import { categoryIconStyle } from "@/lib/modern/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -55,7 +56,10 @@ export default async function FavoritesPage() {
                   href={`/app/${app.id}`}
                   className="group flex flex-col rounded-2xl border border-zinc-800 bg-zinc-900/50 p-4 pr-10 transition active:scale-[0.98] hover:border-zinc-700 hover:bg-zinc-900"
                 >
-                  <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-xl text-cyan-400 ring-1 ring-cyan-500/20">
+                  <div
+                    className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl text-xl"
+                    style={categoryIconStyle(app.category)}
+                  >
                     {app.icon}
                   </div>
                   <div className="text-sm font-semibold text-zinc-100">{app.name}</div>

@@ -79,6 +79,24 @@ export const CATEGORIES: { id: string; label: string }[] = [
   { id: "lifestyle", label: "Lifestyle" },
 ];
 
+/**
+ * Inline style for an app's icon chip, colored by its category. Reads the
+ * `--cat-<category>` CSS var (per-category hue in light/Cedar, azure fallback in
+ * dark — see globals.css) for the icon color, and a 13% tint of it for the chip
+ * background, mirroring the icon-color-system spec. Keeps the icon tiles
+ * theme-aware with no per-app data. Returns a plain style object for a tile.
+ */
+export function categoryIconStyle(categoryId: string): {
+  color: string;
+  backgroundColor: string;
+} {
+  const c = `var(--cat-${categoryId}, var(--color-cyan-500))`;
+  return {
+    color: c,
+    backgroundColor: `color-mix(in srgb, ${c} 13%, var(--color-zinc-900))`,
+  };
+}
+
 export function getApp(id: string): AppEntry | undefined {
   return APPS.find((a) => a.id === id);
 }
