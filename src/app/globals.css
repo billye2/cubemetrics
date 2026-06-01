@@ -7,24 +7,16 @@
  * (opacity modifiers included, via color-mix), so we can re-theme the entire app
  * from this one file by overriding those variables — no component edits.
  *
- * Light mode follows the OS via `prefers-color-scheme: light`:
+ * Two named themes, each just a set of var overrides:
+ *   - DARK (default, :root): "Warm Graphite" — warm charcoal + azure.
+ *   - LIGHT (@media prefers-color-scheme: light): "Cedar" — warm cream + teal.
  *
- * 1. NEUTRAL RAMP — invert `zinc` (zinc-N ⇄ zinc-(1000-N), pivot 500) so
- *    dark-first classes flip: `bg-zinc-950` (app bg) → lightest, `text-zinc-100`
- *    (body) → near-black, borders → light gray.
- *
- * 2. ACCENT TEXT — the app uses pale shades (200/300/400) of cyan/emerald/amber/
- *    rose for text, designed to glow on a dark bg. On a LIGHT bg those are
- *    illegible (pale-green-on-light-green, pale-yellow-on-light-yellow). A single
- *    Tailwind shade var backs BOTH text and fills, so we deepen 200–400 to ~600/
- *    700 — fixing accent/status text. The few same-shade *fills* (hovers, dots,
- *    progress bars) get slightly deeper too, which is benign on white.
- *
- * 3. BUTTON FILL — primary buttons are `bg-cyan-500 text-zinc-950`; inverting
- *    zinc-950 turned the label near-white, so the cyan fill is darkened (500→600,
- *    plus the 400 hover) to restore contrast for white text.
- *
- * Status HUES are preserved (green stays green, etc.) — only lightness shifts.
+ * In both, the neutral ramp maps zinc-950 → app background and zinc-100 → body
+ * text (so dark-first classes like `bg-zinc-950`/`text-zinc-100` read correctly),
+ * and the pale accent/status text shades (200–400) are kept deep enough to stay
+ * legible on the surface — primary buttons are `bg-cyan-500 text-zinc-950`, so
+ * the 500 fill is chosen to contrast its label. Status hues (emerald/amber/rose)
+ * are preserved; only lightness/saturation shift per theme.
  */
 
 html,
@@ -75,45 +67,57 @@ body {
   --color-cyan-700: #5a90e8;
 }
 
+/* ── LIGHT MODE: "Cedar" ─────────────────────────────────────────────────────
+ * Warm cream surfaces + teal-charcoal ink + a teal accent (replaces the blue
+ * azure). Same mechanism as dark: re-point the zinc/cyan/status vars, no
+ * component edits. The neutral ramp is a WARM cream→ink scale (not inverted
+ * cool gray): zinc-950 = app bg (cream), zinc-900 = cards (near-white), zinc-100
+ * = ink text, zinc-500 = muted. Accent (cyan) → Cedar teal #0e7490; pale text
+ * shades stay deep so accent/status text reads on cream (the earlier contrast
+ * fix). Status hues mapped to Cedar's success/warn/danger. */
 @media (prefers-color-scheme: light) {
   :root {
     color-scheme: light;
 
-    /* Inverted neutral ramp (defaults of the mirror shade). */
-    --color-zinc-950: oklch(0.985 0 0);
-    --color-zinc-900: oklch(0.967 0.001 286.375);
-    --color-zinc-800: oklch(0.92 0.004 286.32);
-    --color-zinc-700: oklch(0.871 0.006 286.286);
-    --color-zinc-600: oklch(0.705 0.015 286.067);
-    --color-zinc-500: oklch(0.552 0.016 285.938); /* pivot — unchanged */
-    --color-zinc-400: oklch(0.442 0.017 285.786);
-    --color-zinc-300: oklch(0.37 0.013 285.805);
-    --color-zinc-200: oklch(0.274 0.006 286.033);
-    --color-zinc-100: oklch(0.21 0.006 285.885);
-    --color-zinc-50: oklch(0.141 0.005 285.823);
+    /* Warm cream → teal-charcoal neutral ramp (Cedar). */
+    --color-zinc-950: #f6f2ea; /* app background (Cedar --bg) */
+    --color-zinc-900: #fffdf8; /* cards / surfaces (Cedar --surface) */
+    --color-zinc-800: #e8e1d4; /* hairline borders (Cedar --border) */
+    --color-zinc-700: #d8cfbe; /* stronger dividers */
+    --color-zinc-600: #94a09f; /* faint text (Cedar --faint) */
+    --color-zinc-500: #5c6a6b; /* muted text (Cedar --muted) */
+    --color-zinc-400: #4a5658;
+    --color-zinc-300: #374447;
+    --color-zinc-200: #283638;
+    --color-zinc-100: #1b2a2d; /* primary ink (Cedar --ink) */
+    --color-zinc-50: #0f1a1c;
 
-    /* CYAN accent — deepen pale text shades; darken the 500/400 button fills so
-       the (now near-white) `text-zinc-950` label keeps contrast. */
-    --color-cyan-200: oklch(0.609 0.126 221.723); /* ← cyan-600 */
-    --color-cyan-300: oklch(0.52 0.105 223.128); /* ← cyan-700 */
-    --color-cyan-400: oklch(0.52 0.105 223.128); /* text + hover fill ← cyan-700 */
-    --color-cyan-500: oklch(0.609 0.126 221.723); /* button fill ← cyan-600 */
+    /* TEAL accent (Cedar --accent #0e7490 / --accent-2 #0b5e74). Pale text
+       shades kept deep so accent text reads on cream; 500 = button/ring fill. */
+    --color-cyan-200: #0e7490;
+    --color-cyan-300: #0b5e74; /* accent text ← Cedar --accent-2 */
+    --color-cyan-400: #0e7490; /* accent text / hover ← Cedar --accent */
+    --color-cyan-500: #0e7490; /* button + ring fill */
+    --color-cyan-600: #0b5e74; /* pressed / gradient */
+    --color-cyan-700: #094c5e;
 
-    /* EMERALD (success/green) — fixes pale green text on light-green tints. */
-    --color-emerald-200: oklch(0.596 0.145 163.225); /* ← emerald-600 */
-    --color-emerald-300: oklch(0.508 0.118 165.612); /* ← emerald-700 */
-    --color-emerald-400: oklch(0.508 0.118 165.612); /* ← emerald-700 */
+    /* EMERALD (success) — Cedar --success #15803d. */
+    --color-emerald-200: #15803d;
+    --color-emerald-300: #15803d;
+    --color-emerald-400: #166534;
+    --color-emerald-500: #15803d;
 
-    /* AMBER (warning/yellow) — fixes pale yellow text on light-yellow tints.
-       Amber is intrinsically light, so push text well down for contrast. */
-    --color-amber-200: oklch(0.555 0.163 48.998); /* ← amber-700 */
-    --color-amber-300: oklch(0.555 0.163 48.998); /* ← amber-700 */
-    --color-amber-400: oklch(0.473 0.137 46.201); /* ← amber-800 */
+    /* AMBER (warning) — Cedar --warn #d97a06. */
+    --color-amber-200: #b5650a;
+    --color-amber-300: #b5650a;
+    --color-amber-400: #d97a06;
+    --color-amber-500: #d97a06;
 
-    /* ROSE (danger/overdue) — deepen pale rose text for light bg. */
-    --color-rose-200: oklch(0.586 0.253 17.585); /* ← rose-600 */
-    --color-rose-300: oklch(0.514 0.222 16.935); /* ← rose-700 */
-    --color-rose-400: oklch(0.514 0.222 16.935); /* ← rose-700 */
+    /* ROSE (danger/overdue) — Cedar --danger #b5341f. */
+    --color-rose-200: #b5341f;
+    --color-rose-300: #b5341f;
+    --color-rose-400: #9c2c1a;
+    --color-rose-500: #b5341f;
   }
 }
 
