@@ -1,6 +1,5 @@
 import "server-only";
 import { todayKey } from "@/lib/xp/tz";
-import { stripPrefix } from "../lib";
 import type { SpineAdapter } from "../types";
 
 export const adapter: SpineAdapter = {
@@ -31,25 +30,5 @@ export const adapter: SpineAdapter = {
           items: [{ id: "journal:today", label: "Write today's entry", status: "due", href: "/app/journal" }],
           href: "/app/journal",
         };
-  },
-  async quickLog(ctx, input) {
-    const body = stripPrefix(input, ["journal", "j"]).trim();
-    if (!body) return { ok: false, appId: "journal", message: "Nothing to write" };
-    const { data, error } = await ctx.supabase
-      .from("journal_entries")
-      .insert({ user_id: ctx.userId, body, entry_date: todayKey(ctx.tz, ctx.now) })
-      .select("id")
-      .single();
-    if (error || !data) return { ok: false, appId: "journal", message: "Couldn't save entry" };
-    return {
-      ok: true,
-      appId: "journal",
-      message: "Saved journal entry",
-      href: "/app/journal",
-      undo: { table: "journal_entries", id: data.id as number },
-    };
-  },
-  match(input) {
-    return /^(journal|j)\b/i.test(input.trim()) ? 1 : 0;
   },
 };

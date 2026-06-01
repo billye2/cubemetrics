@@ -1,12 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
-  parseLeadingNumber,
-  stripPrefix,
-  fuzzyFind,
   bucketStatus,
   worstStatus,
   sortItems,
-  rankCandidates,
   todoToday,
   habitsToday,
   sumToday,
@@ -22,31 +18,6 @@ import { adapter as budgetAdapter } from "@/lib/spine/adapters/budget";
 import { adapter as billsAdapter } from "@/lib/spine/adapters/bills";
 
 const TODAY = "2026-05-31";
-
-describe("capture parsing", () => {
-  it("parseLeadingNumber: first positive number else fallback", () => {
-    expect(parseLeadingNumber("w 2")).toBe(2);
-    expect(parseLeadingNumber("water")).toBe(1);
-    expect(parseLeadingNumber("w 2.5")).toBe(2.5);
-    expect(parseLeadingNumber("w -3")).toBe(1);
-    expect(parseLeadingNumber("abc", 5)).toBe(5);
-  });
-
-  it("stripPrefix removes a leading command word, case-insensitive", () => {
-    expect(stripPrefix("todo call mom", ["todo", "t"])).toBe("call mom");
-    expect(stripPrefix("Todo  buy milk", ["todo", "t"])).toBe("buy milk");
-    expect(stripPrefix("call mom", ["todo", "t"])).toBe("call mom");
-    // \b must not strip "todo" via the short alias "t"
-    expect(stripPrefix("todoist thing", ["t"])).toBe("todoist thing");
-  });
-
-  it("fuzzyFind: exact > startsWith > includes, null if none", () => {
-    const habits = [{ name: "Run" }, { name: "Read" }, { name: "Meditate" }];
-    expect(fuzzyFind("run", habits, (h) => h.name)?.name).toBe("Run");
-    expect(fuzzyFind("med", habits, (h) => h.name)?.name).toBe("Meditate");
-    expect(fuzzyFind("xyz", habits, (h) => h.name)).toBeNull();
-  });
-});
 
 describe("today shaping helpers", () => {
   it("bucketStatus relative to today", () => {
@@ -148,23 +119,6 @@ describe("per-app builders", () => {
     expect(card.summary).toBe("2 due soon");
     expect(card.severity).toBe("overdue");
     invariants(card);
-  });
-});
-
-describe("capture routing (rankCandidates over real adapter match)", () => {
-  const loggable = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter].map((a) => ({
-    appId: a.appId,
-    match: a.match!,
-  }));
-  const top = (s: string) => rankCandidates(s, loggable)[0]?.appId;
-
-  it("routes by prefix, falls back to todo for bare text", () => {
-    expect(top("w 2")).toBe("water");
-    expect(top("todo x")).toBe("todo");
-    expect(top("h run")).toBe("habits");
-    expect(top("journal had a good day")).toBe("journal");
-    expect(top("random thought")).toBe("todo"); // 0.2 fallback
-    expect(rankCandidates("random thought", loggable).map((r) => r.appId)).toEqual(["todo"]);
   });
 });
 
