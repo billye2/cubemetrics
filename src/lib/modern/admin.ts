@@ -1,11 +1,25 @@
 /**
- * The single account allowed to review and approve feedback. Configurable via
- * the ADMIN_EMAIL env var; defaults to the project owner.
+ * Whether `email` belongs to an admin. The allowlist lives in the `app_admins`
+ * table in Supabase (RLS-locked to the service role) — NOT in source (so no
+ * personal email is baked into this public repo) and NOT in `profiles.role`
+ * (which users can self-edit). See migration `*_app_admins.sql`.
+ *
+ * Fail-closed: an empty email, no matching row, or any query error all return
+ * false — an unconfigured environment grants admin to no one.
  */
-export const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "admin@example.com").toLowerCase();
-
-export function isAdmin(email?: string | null): boolean {
-  return !!email && email.toLowerCase() === ADMIN_EMAIL;
+export async function isAdmin(email?: string | null): Promise<boolean> {
+  if (!email) return false;
+  try {
+    const { createAdminSupabase } = await import("@/lib/supabase/admin");
+    const { data, error } = await createAdminSupabase()
+      .from("app_admins")
+      .select("email")
+      .eq("email", email.toLowerCase())
+      .maybeSingle();
+    return !error && !!data;
+  } catch {
+    return false;
+  }
 }
 
 /**

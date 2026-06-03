@@ -5,6 +5,11 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createServerSupabase: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminSupabase: vi.fn() }));
 vi.mock("@/lib/github/issues", () => ({ createIssue: vi.fn() }));
+// The admin gate is exercised in admin.test.ts; here we stub it so these tests
+// focus on the feedback flow. Only ADMIN's email is treated as an admin.
+vi.mock("@/lib/modern/admin", () => ({
+  isAdmin: vi.fn(async (email?: string | null) => email === "admin@example.com"),
+}));
 
 import {
   submitFeedbackAction,

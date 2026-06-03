@@ -27,7 +27,7 @@ export default async function FeedbackPage() {
     .order("created_at", { ascending: false })
     .limit(50);
 
-  const admin = isAdmin(user.email);
+  const admin = await isAdmin(user.email);
   let pending: PendingFeedback[] = [];
   if (admin) {
     try {

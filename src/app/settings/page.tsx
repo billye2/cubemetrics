@@ -28,7 +28,7 @@ export default async function SettingsPage() {
     .single();
 
   const themePref: ThemePref = isThemePref(profile?.theme) ? profile.theme : "auto";
-  const admin = isAdmin(user.email);
+  const admin = await isAdmin(user.email);
 
   return (
     <Shell back={{ href: "/today", label: "Today" }} title="Settings" right={<SignOutButton />}>

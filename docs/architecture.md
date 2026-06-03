@@ -26,7 +26,7 @@ Browser (React)  ──Server Action / fetch──>  Next.js (RSC)  ──SQL─
 - **Reads** — Server Components call `createServerSupabase()` and query directly. RLS enforces the per-user filter at the DB layer.
 - **Writes** — Server Actions live in `actions.ts` files colocated with their pages. They re-validate the relevant path with `revalidatePath()` so the RSC re-renders fresh data.
 - **No client-side Supabase** — all DB access is server-side; the browser never sees the anon key beyond the public env var.
-- **Admin** — the feedback review queue uses a service-role client (`createAdminSupabase()`, bypasses RLS) gated by `isAdmin()` (`src/lib/modern/admin.ts`).
+- **Admin** — the feedback review queue uses a service-role client (`createAdminSupabase()`, bypasses RLS) gated by `isAdmin()` (`src/lib/modern/admin.ts`). `isAdmin()` checks the `app_admins` allowlist table (RLS-locked to the service role; no admin email lives in source) and is fail-closed — empty/unknown email or any error ⇒ not admin.
 
 ## UI primitives
 `src/components/modern/`

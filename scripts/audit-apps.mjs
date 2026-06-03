@@ -23,7 +23,7 @@ const CATALOG_DIR = join(ROOT, "src/lib/modern/catalog/apps");
 const TEST_EMAIL =
   process.argv.includes("--email")
     ? process.argv[process.argv.indexOf("--email") + 1]
-    : "admin@example.com";
+    : process.env.ADMIN_EMAIL || "admin@example.com";
 
 // ── load env ────────────────────────────────────────────────────────────────
 const env = {};

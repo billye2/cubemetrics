@@ -93,7 +93,7 @@ export default async function AdminHealthPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/");
   // Hard gate: only the admin account may view this page.
-  if (!isAdmin(user.email)) redirect("/apps");
+  if (!(await isAdmin(user.email))) redirect("/apps");
 
   const sb = createAdminSupabase();
   const groups = await Promise.all(

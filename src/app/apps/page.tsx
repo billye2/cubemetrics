@@ -36,7 +36,7 @@ export default async function AppsPage() {
   }
 
   const favoriteIds = new Set(await getFavoriteIds().catch(() => []));
-  const admin = isAdmin(user.email);
+  const admin = await isAdmin(user.email);
 
   // System/admin tools are pulled out of the normal grid; they live in the
   // admins-only Administrator section below so they don't look like empty apps.

@@ -17,7 +17,7 @@ async function requireUser() {
 async function requireAdmin() {
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user || !isAdmin(user.email)) throw new Error("Not authorized");
+  if (!user || !(await isAdmin(user.email))) throw new Error("Not authorized");
   return user;
 }
 

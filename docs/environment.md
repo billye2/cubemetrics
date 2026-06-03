@@ -15,7 +15,13 @@
 | `SUPABASE_SERVICE_ROLE_KEY` | Server | Service-role key. Used only by the admin feedback-review queue to read/update feedback across users (bypasses RLS). |
 | `GITHUB_TOKEN` | Server | Token with `issues:write` (push) access. Used when an admin approves feedback to open an issue. |
 | `GITHUB_REPO` | Server | `owner/repo` approved feedback opens issues in (defaults to `billye2/xpbbs`). |
-| `ADMIN_EMAIL` | Server | The account allowed to review/approve feedback (defaults to the project owner). |
+
+Admin access is **not** an env var. Who may review/approve feedback and see the
+admin UI is the `app_admins` allowlist table in Supabase (RLS-locked to the
+service role); `isAdmin()` queries it and is fail-closed (empty table ⇒ no
+admins). Grant admin by inserting a row:
+`insert into public.app_admins (email, note) values (lower('you@example.com'), 'why');`
+(`ADMIN_EMAIL` in `.env.local` is now only read by the local `scripts/audit-apps.mjs` seed/audit helper, not by the app.)
 
 When feedback is approved, an issue is opened in `GITHUB_REPO` containing an
 `@claude` mention so the Claude Code GitHub app picks it up.
