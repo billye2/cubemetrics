@@ -20,10 +20,15 @@ import { join } from "node:path";
 const ROOT = process.cwd();
 const APP_DIR = join(ROOT, "src/app/app");
 const CATALOG_DIR = join(ROOT, "src/lib/modern/catalog/apps");
-const TEST_EMAIL =
-  process.argv.includes("--email")
-    ? process.argv[process.argv.indexOf("--email") + 1]
-    : process.env.ADMIN_EMAIL || "admin@example.com";
+// Target user for the audit/seed. Pass it explicitly — no email is baked into
+// source or required in committed config. An optional ADMIN_EMAIL in the local
+// (gitignored) .env.local works as a convenience override.
+const emailArgIdx = process.argv.indexOf("--email");
+const TEST_EMAIL = emailArgIdx !== -1 ? process.argv[emailArgIdx + 1] : process.env.ADMIN_EMAIL;
+if (!TEST_EMAIL) {
+  console.error("Usage: node scripts/audit-apps.mjs --email you@example.com");
+  process.exit(1);
+}
 
 // ── load env ────────────────────────────────────────────────────────────────
 const env = {};

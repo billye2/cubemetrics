@@ -21,7 +21,8 @@ admin UI is the `app_admins` allowlist table in Supabase (RLS-locked to the
 service role); `isAdmin()` queries it and is fail-closed (empty table ⇒ no
 admins). Grant admin by inserting a row:
 `insert into public.app_admins (email, note) values (lower('you@example.com'), 'why');`
-(`ADMIN_EMAIL` in `.env.local` is now only read by the local `scripts/audit-apps.mjs` seed/audit helper, not by the app.)
+No email — personal or placeholder — is requested in committed config. The local
+`scripts/audit-apps.mjs` helper takes its target via `--email you@example.com`.
 
 When feedback is approved, an issue is opened in `GITHUB_REPO` containing an
 `@claude` mention so the Claude Code GitHub app picks it up.
