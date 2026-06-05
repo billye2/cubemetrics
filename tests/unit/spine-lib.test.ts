@@ -10,6 +10,8 @@ import {
   billsToday,
   scheduleToday,
   goalsToday,
+  keepInTouchToday,
+  plantcareToday,
 } from "@/lib/spine/lib";
 import { ITEM_CAP, type TodayItem, type SpineToday, type SpineCtx } from "@/lib/spine/types";
 import { adapter as todoAdapter } from "@/lib/spine/adapters/todo";
@@ -21,6 +23,8 @@ import { adapter as billsAdapter } from "@/lib/spine/adapters/bills";
 import { adapter as medicationAdapter } from "@/lib/spine/adapters/medication";
 import { adapter as carcareAdapter } from "@/lib/spine/adapters/carcare";
 import { adapter as goalsAdapter } from "@/lib/spine/adapters/goals";
+import { adapter as keepintouchAdapter } from "@/lib/spine/adapters/keepintouch";
+import { adapter as plantcareAdapter } from "@/lib/spine/adapters/plantcare";
 
 const TODAY = "2026-05-31";
 
@@ -197,6 +201,41 @@ describe("per-app builders", () => {
       goalsToday([{ id: 1, title: "X", target_value: 5, current_value: 5, due_date: null, status: "completed" }], TODAY),
     ).toBeNull();
   });
+
+  it("keepInTouchToday skips no-cadence, flags overdue/due, drops far-future", () => {
+    const card = keepInTouchToday(
+      [
+        { id: 1, name: "Mom", cadence_days: 7, last_contacted: null }, // never → due
+        { id: 2, name: "Sam", cadence_days: 7, last_contacted: "2026-05-20" }, // next 05-27 → overdue
+        { id: 3, name: "Lee", cadence_days: 30, last_contacted: "2026-05-30" }, // next 06-29 → dropped
+        { id: 4, name: "Pat", cadence_days: null, last_contacted: "2026-01-01" }, // no cadence → skipped
+      ],
+      TODAY,
+      "2026-06-07",
+    );
+    expect(card.count).toBe(2);
+    expect(card.summary).toBe("1 overdue · 1 due");
+    expect(card.severity).toBe("overdue");
+    expect(card.items.map((i) => i.id)).toEqual(expect.arrayContaining(["keepintouch:1", "keepintouch:2"]));
+    invariants(card);
+  });
+
+  it("plantcareToday: never-watered due, overdue/today flagged, far-future dropped", () => {
+    const card = plantcareToday(
+      [
+        { id: 1, name: "Fern", frequency_days: 7, last_watered: null }, // never → due
+        { id: 2, name: "Cactus", frequency_days: 3, last_watered: "2026-05-25" }, // next 05-28 → overdue
+        { id: 3, name: "Pothos", frequency_days: 1, last_watered: "2026-05-30" }, // next 05-31 → due today
+        { id: 4, name: "Palm", frequency_days: 30, last_watered: "2026-05-31" }, // next 06-30 → dropped
+      ],
+      TODAY,
+      "2026-06-07",
+    );
+    expect(card.count).toBe(3);
+    expect(card.summary).toBe("1 overdue · 2 due");
+    expect(card.severity).toBe("overdue");
+    invariants(card);
+  });
 });
 
 // ── Security Finding 1: every adapter today() MUST filter by user_id. Under the
@@ -219,7 +258,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {

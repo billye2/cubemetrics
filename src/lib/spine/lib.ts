@@ -151,6 +151,45 @@ export function scheduleToday(
  * (a reached target counts as done; no deadline = upcoming). Card-level progress is the
  * average % across goals that have a target — mirrors GoalView's "Avg progress" stat.
  */
+/**
+ * Keep-in-touch builder (contacts): people overdue/due to reach out to. Same computed-due
+ * shape as scheduleToday — next_due = last_contacted + cadence_days; never-contacted = due now.
+ * Contacts with no cadence (null/0) aren't on a schedule and are skipped.
+ */
+export function keepInTouchToday(
+  rows: { id: number; name: string; cadence_days: number | null; last_contacted: string | null }[],
+  today: string,
+  soon: string,
+): SpineToday {
+  const scheduled = rows
+    .filter((c) => (c.cadence_days ?? 0) > 0)
+    .map((c) => ({
+      id: c.id,
+      title: c.name,
+      interval_days: c.cadence_days as number,
+      last_done: c.last_contacted,
+    }));
+  return scheduleToday("keepintouch", scheduled, today, soon);
+}
+
+/**
+ * Plant-care builder (plants): plants needing water now/soon. next_due = last_watered +
+ * frequency_days; never-watered = due now. frequency_days is NOT NULL, so all plants apply.
+ */
+export function plantcareToday(
+  rows: { id: number; name: string; frequency_days: number; last_watered: string | null }[],
+  today: string,
+  soon: string,
+): SpineToday {
+  const scheduled = rows.map((p) => ({
+    id: p.id,
+    title: p.name,
+    interval_days: p.frequency_days,
+    last_done: p.last_watered,
+  }));
+  return scheduleToday("plantcare", scheduled, today, soon);
+}
+
 export function goalsToday(
   rows: {
     id: number;
