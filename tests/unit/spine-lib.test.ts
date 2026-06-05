@@ -12,6 +12,7 @@ import {
   goalsToday,
   keepInTouchToday,
   plantcareToday,
+  presenceToday,
 } from "@/lib/spine/lib";
 import { ITEM_CAP, type TodayItem, type SpineToday, type SpineCtx } from "@/lib/spine/types";
 import { adapter as todoAdapter } from "@/lib/spine/adapters/todo";
@@ -25,6 +26,9 @@ import { adapter as carcareAdapter } from "@/lib/spine/adapters/carcare";
 import { adapter as goalsAdapter } from "@/lib/spine/adapters/goals";
 import { adapter as keepintouchAdapter } from "@/lib/spine/adapters/keepintouch";
 import { adapter as plantcareAdapter } from "@/lib/spine/adapters/plantcare";
+import { adapter as moodAdapter } from "@/lib/spine/adapters/mood";
+import { adapter as energyAdapter } from "@/lib/spine/adapters/energy";
+import { adapter as sleepAdapter } from "@/lib/spine/adapters/sleep";
 
 const TODAY = "2026-05-31";
 
@@ -236,6 +240,21 @@ describe("per-app builders", () => {
     expect(card.severity).toBe("overdue");
     invariants(card);
   });
+
+  it("presenceToday: due when not logged, done when logged (journal-style count)", () => {
+    const due = presenceToday("mood", false, "Log today's mood", "Mood logged");
+    expect(due.severity).toBe("due");
+    expect(due.count).toBe(1);
+    expect(due.summary).toBe("Log today's mood");
+    expect(due.items[0]).toMatchObject({ id: "mood:today", status: "due", href: "/app/mood" });
+    expect(due.href).toBe("/app/mood");
+
+    const done = presenceToday("mood", true, "Log today's mood", "Mood logged");
+    expect(done.severity).toBe("done");
+    expect(done.count).toBe(0); // nothing pending once logged (mirrors journal)
+    expect(done.summary).toBe("Mood logged");
+    expect(done.items[0].status).toBe("done");
+  });
 });
 
 // ── Security Finding 1: every adapter today() MUST filter by user_id. Under the
@@ -258,7 +277,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {
