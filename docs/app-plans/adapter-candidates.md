@@ -130,5 +130,6 @@ collision-free shape the spine registry was built for. Per spine governance, eac
 `src/lib/spine/adapters/<id>.ts` + `npm run build:spine`.
 
 > **Worked example:** a complete, drop-in reference adapter (builder + adapter + registry + tests) for
-> `medication` — the `schedule_items` due/recurring pattern that also covers `carcare`/`petcare`/
-> `homemaint` — is in **[adapter-reference-medication.md](adapter-reference-medication.md)**.
+> `medication` — the `schedule_items` due/recurring pattern, shared with `carcare` (the only other
+> `ui: "schedule"` app) — is in **[adapter-reference-medication.md](adapter-reference-medication.md)**.
+> **Shipped:** `medication`, `carcare`, `goals`.

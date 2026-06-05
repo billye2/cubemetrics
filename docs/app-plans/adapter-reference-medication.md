@@ -24,8 +24,8 @@ existing `bucketStatus` helper:
 | beyond the horizon | *(filtered out — not surfaced)* | — |
 
 ## 1. Pure builder — add to `src/lib/spine/lib.ts`
-Generic over any `schedule_items`-backed app (medication, carcare, petcare, homemaint), so the same
-helper serves several adapters.
+Generic over any `schedule_items`-backed app — currently `medication` and `carcare` (the only two
+apps with `ui: "schedule"`) — so the same helper serves both adapters.
 
 ```ts
 import { addDays } from "@/lib/xp/tz"; // add to the existing imports at the top of lib.ts
@@ -144,9 +144,11 @@ describe("scheduleToday (medication)", () => {
 ## Notes
 - **RLS invariant:** the `.eq("user_id", ctx.userId)` filter is mandatory — under the digest cron's
   service-role client a missing filter would cross tenants (the spine has a unit test enforcing this).
-- **Generalizes for free:** `carcare`, `petcare`, `homemaint` (any `schedule_items` app) get an
-  adapter by copying §2 and changing only `appId` + the `schedule_type` value — `scheduleToday` is
-  shared. That's ~4 apps from one builder.
+- **Generalizes for free:** `carcare` (the only other `ui: "schedule"` app) gets an adapter by
+  copying §2 and changing only `appId` + the `schedule_type` value — `scheduleToday` is shared.
+  (`petcare`/`homemaint` are `checklist`-ui, not `schedule_items`; they need the Tier-2 `due_date`
+  migration in [adapter-candidates.md](adapter-candidates.md), not this builder.) **Both medication
+  and carcare are shipped.**
 - **No migration:** everything above reads existing columns; this is a pure Tier-1 add per
   [adapter-candidates.md](adapter-candidates.md).
 - **Governance:** per spine rules, an adapter is one file under `adapters/` + `build:spine`;
