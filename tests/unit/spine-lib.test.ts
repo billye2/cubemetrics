@@ -8,6 +8,8 @@ import {
   sumToday,
   budgetToday,
   billsToday,
+  financeDueToday,
+  srsDueToday,
   scheduleToday,
   goalsToday,
   keepInTouchToday,
@@ -29,6 +31,9 @@ import { adapter as plantcareAdapter } from "@/lib/spine/adapters/plantcare";
 import { adapter as moodAdapter } from "@/lib/spine/adapters/mood";
 import { adapter as energyAdapter } from "@/lib/spine/adapters/energy";
 import { adapter as sleepAdapter } from "@/lib/spine/adapters/sleep";
+import { adapter as invoicesAdapter } from "@/lib/spine/adapters/invoices";
+import { adapter as flashcardsAdapter } from "@/lib/spine/adapters/flashcards";
+import { adapter as vocabularyAdapter } from "@/lib/spine/adapters/vocabulary";
 
 const TODAY = "2026-05-31";
 
@@ -255,6 +260,31 @@ describe("per-app builders", () => {
     expect(done.summary).toBe("Mood logged");
     expect(done.items[0].status).toBe("done");
   });
+
+  it("financeDueToday namespaces to the given app (invoices)", () => {
+    const card = financeDueToday(
+      "invoices",
+      [{ id: 7, name: "Acme", amount: 500, due_date: "2026-05-28" }], // overdue
+      TODAY,
+      "2026-06-07",
+    );
+    expect(card.appId).toBe("invoices");
+    expect(card.href).toBe("/app/invoices");
+    expect(card.items[0].id).toBe("invoices:7");
+    expect(card.summary).toBe("1 due soon");
+    expect(card.severity).toBe("overdue");
+    invariants(card);
+  });
+
+  it("srsDueToday: count card, pluralizes, null when nothing due", () => {
+    const card = srsDueToday("flashcards", 12, "card")!;
+    expect(card.count).toBe(12);
+    expect(card.summary).toBe("12 cards due");
+    expect(card.severity).toBe("due");
+    invariants(card);
+    expect(srsDueToday("vocabulary", 1, "word")!.summary).toBe("1 word due");
+    expect(srsDueToday("flashcards", 0, "card")).toBeNull();
+  });
 });
 
 // ── Security Finding 1: every adapter today() MUST filter by user_id. Under the
@@ -277,7 +307,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {

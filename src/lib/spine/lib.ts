@@ -98,20 +98,43 @@ export function sumToday(rows: { value: number | null }[], goal: number): SpineT
   });
 }
 
-export function billsToday(
+/**
+ * Generic finance_items "due soon" builder — unpaid items with a due date on/before the
+ * horizon, severity by due date. Powers bills, invoices, and any due-dated finance app.
+ */
+export function financeDueToday(
+  appId: string,
   rows: { id: number; name: string; amount: number; due_date: string | null }[],
   today: string,
   soon: string,
 ): SpineToday {
   const kept = rows.filter((r) => r.due_date != null && r.due_date.slice(0, 10) <= soon);
   const items: TodayItem[] = kept.map((r) => ({
-    id: `bill:${r.id}`,
+    id: `${appId}:${r.id}`,
     label: `${r.name} — $${money(Number(r.amount) || 0)}`,
     status: bucketStatus(r.due_date, today),
     due: r.due_date ?? undefined,
-    href: "/app/bills",
+    href: `/app/${appId}`,
   }));
-  return card("bills", items, kept.length, `${kept.length} due soon`);
+  return card(appId, items, kept.length, `${kept.length} due soon`);
+}
+
+export function billsToday(
+  rows: { id: number; name: string; amount: number; due_date: string | null }[],
+  today: string,
+  soon: string,
+): SpineToday {
+  return financeDueToday("bills", rows, today, soon);
+}
+
+/**
+ * Spaced-repetition "due for review" builder (flashcards, vocabulary): a single count card
+ * for cards whose review date has arrived. null when nothing is due (no nag).
+ */
+export function srsDueToday(appId: string, dueCount: number, noun: string): SpineToday | null {
+  if (dueCount <= 0) return null;
+  const label = `${dueCount} ${noun}${dueCount === 1 ? "" : "s"} due`;
+  return card(appId, [{ id: `${appId}:due`, label, status: "due", href: `/app/${appId}` }], dueCount, label);
 }
 
 /**
