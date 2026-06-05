@@ -146,6 +146,53 @@ export function scheduleToday(
   return card(appId, items, items.length, summary);
 }
 
+/**
+ * Goals builder: surfaces active (not completed) goals as a list, severity by deadline
+ * (a reached target counts as done; no deadline = upcoming). Card-level progress is the
+ * average % across goals that have a target — mirrors GoalView's "Avg progress" stat.
+ */
+export function goalsToday(
+  rows: {
+    id: number;
+    title: string;
+    target_value: number | null;
+    current_value: number | null;
+    due_date: string | null;
+    status: string;
+  }[],
+  today: string,
+): SpineToday | null {
+  const active = rows.filter((g) => g.status !== "completed");
+  if (active.length === 0) return null;
+  const items: TodayItem[] = active.map((g) => {
+    const target = g.target_value ?? 0;
+    const reached = target > 0 && (g.current_value ?? 0) >= target;
+    return {
+      id: `goal:${g.id}`,
+      label: g.title,
+      status: reached ? "done" : bucketStatus(g.due_date, today),
+      due: g.due_date ?? undefined,
+      href: "/app/goals",
+    };
+  });
+  const withTarget = active.filter((g) => (g.target_value ?? 0) > 0);
+  const avgPct = withTarget.length
+    ? Math.round(
+        withTarget.reduce(
+          (acc, g) => acc + Math.min(100, ((g.current_value ?? 0) / (g.target_value ?? 1)) * 100),
+          0,
+        ) / withTarget.length,
+      )
+    : null;
+  const overdue = items.filter((i) => i.status === "overdue").length;
+  const summary =
+    `${active.length} active` +
+    (overdue ? ` · ${overdue} overdue` : avgPct !== null ? ` · ${avgPct}% avg` : "");
+  return card("goals", items, active.length, summary, {
+    progress: avgPct !== null ? { current: avgPct, target: 100, unit: "%" } : undefined,
+  });
+}
+
 export function budgetToday(planned: number, spent: number): SpineToday {
   const pct = planned > 0 ? spent / planned : null;
   const severity: TodayStatus = pct != null && pct > 1 ? "overdue" : "upcoming";

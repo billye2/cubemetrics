@@ -9,6 +9,7 @@ import {
   budgetToday,
   billsToday,
   scheduleToday,
+  goalsToday,
 } from "@/lib/spine/lib";
 import { ITEM_CAP, type TodayItem, type SpineToday, type SpineCtx } from "@/lib/spine/types";
 import { adapter as todoAdapter } from "@/lib/spine/adapters/todo";
@@ -18,6 +19,8 @@ import { adapter as journalAdapter } from "@/lib/spine/adapters/journal";
 import { adapter as budgetAdapter } from "@/lib/spine/adapters/budget";
 import { adapter as billsAdapter } from "@/lib/spine/adapters/bills";
 import { adapter as medicationAdapter } from "@/lib/spine/adapters/medication";
+import { adapter as carcareAdapter } from "@/lib/spine/adapters/carcare";
+import { adapter as goalsAdapter } from "@/lib/spine/adapters/goals";
 
 const TODAY = "2026-05-31";
 
@@ -158,6 +161,42 @@ describe("per-app builders", () => {
     expect(card.items.find((i) => i.id === "medication:3")?.status).toBe("upcoming");
     invariants(card);
   });
+
+  it("goalsToday excludes completed, flags overdue, shows avg progress", () => {
+    const card = goalsToday(
+      [
+        { id: 1, title: "Run 100mi", target_value: 100, current_value: 40, due_date: "2026-05-20", status: "active" }, // overdue
+        { id: 2, title: "Read 12", target_value: 12, current_value: 6, due_date: null, status: "active" }, // upcoming, 50%
+        { id: 3, title: "Old", target_value: 5, current_value: 5, due_date: null, status: "completed" }, // excluded
+      ],
+      TODAY,
+    )!;
+    expect(card.count).toBe(2);
+    expect(card.summary).toBe("2 active · 1 overdue");
+    expect(card.severity).toBe("overdue");
+    expect(card.progress).toEqual({ current: 45, target: 100, unit: "%" }); // (40 + 50) / 2
+    invariants(card);
+  });
+
+  it("goalsToday: reached target = done item; no overdue shows avg", () => {
+    const card = goalsToday(
+      [
+        { id: 1, title: "A", target_value: 10, current_value: 5, due_date: null, status: "active" }, // 50%, upcoming
+        { id: 2, title: "B", target_value: 10, current_value: 10, due_date: null, status: "active" }, // reached -> done
+      ],
+      TODAY,
+    )!;
+    expect(card.summary).toBe("2 active · 75% avg");
+    expect(card.severity).toBe("upcoming");
+    expect(card.items.find((i) => i.id === "goal:2")?.status).toBe("done");
+    invariants(card);
+  });
+
+  it("goalsToday returns null when nothing is active", () => {
+    expect(
+      goalsToday([{ id: 1, title: "X", target_value: 5, current_value: 5, due_date: null, status: "completed" }], TODAY),
+    ).toBeNull();
+  });
 });
 
 // ── Security Finding 1: every adapter today() MUST filter by user_id. Under the
@@ -180,7 +219,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {
