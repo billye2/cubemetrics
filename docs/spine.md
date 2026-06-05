@@ -47,6 +47,13 @@ free. That is the whole argument for building the substrate first: **everything 
 
 ### Layer 0 — The App Contract (keystone)
 
+> **⚠️ Drift note (2026-06-05):** the **shipped** `SpineAdapter` (`src/lib/spine/types.ts`) is
+> **read-only** — `appId` + `today()` only. The `quickLog?`/`match?` write hooks below, and the
+> Layer-2 `<QuickCapture>` bar, were **never built / were removed** (Quick Capture was cut in the
+> 2026-06-01 UX overhaul). They are retained here as design intent: the agent **write hook** revives
+> them — see [app-plans/agent-hooks.md](app-plans/agent-hooks.md) (Hook 1 "Act") and
+> [app-plans/agent-layer.md](app-plans/agent-layer.md).
+
 A thin, **optional** per-app adapter that exposes an app to shared surfaces. Because the catalog
 `AppEntry` is generated from data-only JSON (no functions), adapters live in a parallel registry —
 **one file per app**, so parallel-build never collides (see [agent-orchestration.md](agent-orchestration.md)).
@@ -124,6 +131,11 @@ throttled (skip if `last_used_at` within ~10 min) to avoid write storms. Powers:
 "apps you actually use," a recency-ordered home grid, and capture suggestions.
 
 ### Layer 2 — Universal Quick Capture (input spine)
+
+> **⚠️ Not live (2026-06-05):** `<QuickCapture>`, `capture()`, `registry.route()` and adapter
+> `match()`/`quickLog()` are **not in the codebase** (Quick Capture was removed in the 2026-06-01 UX
+> overhaul). The section below is preserved as design intent; the capture/route hook is planned as
+> agent Hook 9 ("Route") — [app-plans/agent-hooks-build.md](app-plans/agent-hooks-build.md).
 
 One `<QuickCapture>` in the `Shell` header, present on **every** page. Posts to a `capture(input)`
 server action → `registry.route(input)` runs each adapter's `match()` → highest-confidence app's

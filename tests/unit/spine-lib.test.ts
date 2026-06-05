@@ -8,6 +8,7 @@ import {
   sumToday,
   budgetToday,
   billsToday,
+  scheduleToday,
 } from "@/lib/spine/lib";
 import { ITEM_CAP, type TodayItem, type SpineToday, type SpineCtx } from "@/lib/spine/types";
 import { adapter as todoAdapter } from "@/lib/spine/adapters/todo";
@@ -16,6 +17,7 @@ import { adapter as waterAdapter } from "@/lib/spine/adapters/water";
 import { adapter as journalAdapter } from "@/lib/spine/adapters/journal";
 import { adapter as budgetAdapter } from "@/lib/spine/adapters/budget";
 import { adapter as billsAdapter } from "@/lib/spine/adapters/bills";
+import { adapter as medicationAdapter } from "@/lib/spine/adapters/medication";
 
 const TODAY = "2026-05-31";
 
@@ -120,6 +122,42 @@ describe("per-app builders", () => {
     expect(card.severity).toBe("overdue");
     invariants(card);
   });
+
+  // scheduleToday: next_due = last_done + interval_days; null last_done = due now.
+  // TODAY = 2026-05-31, soon (= TODAY + 7) = 2026-06-07.
+  it("scheduleToday treats a never-done item as due now", () => {
+    const card = scheduleToday(
+      "medication",
+      [{ id: 1, title: "Vitamin D", interval_days: 1, last_done: null }],
+      TODAY,
+      "2026-06-07",
+    );
+    expect(card.count).toBe(1);
+    expect(card.items[0].status).toBe("due");
+    expect(card.summary).toBe("1 due");
+    expect(card.severity).toBe("due");
+    invariants(card);
+  });
+
+  it("scheduleToday flags overdue, due-today, and keeps due-soon; drops far-future", () => {
+    const card = scheduleToday(
+      "medication",
+      [
+        { id: 1, title: "Antibiotic", interval_days: 1, last_done: "2026-05-29" }, // next 05-30 → overdue
+        { id: 2, title: "Statin", interval_days: 1, last_done: "2026-05-30" }, // next 05-31 → due
+        { id: 3, title: "Refill", interval_days: 6, last_done: "2026-05-30" }, // next 06-05 → upcoming (kept)
+        { id: 4, title: "Quarterly shot", interval_days: 30, last_done: "2026-05-31" }, // next 06-30 → dropped
+      ],
+      TODAY,
+      "2026-06-07",
+    );
+    expect(card.count).toBe(3); // far-future shot dropped
+    expect(card.summary).toBe("1 overdue · 1 due");
+    expect(card.severity).toBe("overdue");
+    expect(card.items.map((i) => i.id)).toContain("medication:3");
+    expect(card.items.find((i) => i.id === "medication:3")?.status).toBe("upcoming");
+    invariants(card);
+  });
 });
 
 // ── Security Finding 1: every adapter today() MUST filter by user_id. Under the
@@ -142,7 +180,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {
