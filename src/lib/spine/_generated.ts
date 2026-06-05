@@ -8,8 +8,10 @@ import { adapter as carcare } from "./adapters/carcare";
 import { adapter as goals } from "./adapters/goals";
 import { adapter as habits } from "./adapters/habits";
 import { adapter as journal } from "./adapters/journal";
+import { adapter as keepintouch } from "./adapters/keepintouch";
 import { adapter as medication } from "./adapters/medication";
+import { adapter as plantcare } from "./adapters/plantcare";
 import { adapter as todo } from "./adapters/todo";
 import { adapter as water } from "./adapters/water";
 
-export const ADAPTERS: SpineAdapter[] = [bills, budget, carcare, goals, habits, journal, medication, todo, water];
+export const ADAPTERS: SpineAdapter[] = [bills, budget, carcare, goals, habits, journal, keepintouch, medication, plantcare, todo, water];
