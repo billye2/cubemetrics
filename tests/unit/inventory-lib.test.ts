@@ -17,6 +17,8 @@ function row(over: Partial<InventoryRow>): InventoryRow {
     location: null,
     category: null,
     photo_url: null,
+    receipt_url: null,
+    warranty_url: null,
     created_at: "2026-01-01T00:00:00Z",
     ...over,
   };
