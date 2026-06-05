@@ -15,6 +15,7 @@ import {
   keepInTouchToday,
   plantcareToday,
   presenceToday,
+  projectsToday,
 } from "@/lib/spine/lib";
 import { ITEM_CAP, type TodayItem, type SpineToday, type SpineCtx } from "@/lib/spine/types";
 import { adapter as todoAdapter } from "@/lib/spine/adapters/todo";
@@ -34,6 +35,7 @@ import { adapter as sleepAdapter } from "@/lib/spine/adapters/sleep";
 import { adapter as invoicesAdapter } from "@/lib/spine/adapters/invoices";
 import { adapter as flashcardsAdapter } from "@/lib/spine/adapters/flashcards";
 import { adapter as vocabularyAdapter } from "@/lib/spine/adapters/vocabulary";
+import { adapter as projecttrackerAdapter } from "@/lib/spine/adapters/projecttracker";
 
 const TODAY = "2026-05-31";
 
@@ -285,6 +287,25 @@ describe("per-app builders", () => {
     expect(srsDueToday("vocabulary", 1, "word")!.summary).toBe("1 word due");
     expect(srsDueToday("flashcards", 0, "card")).toBeNull();
   });
+
+  it("projectsToday excludes done, flags overdue", () => {
+    const card = projectsToday(
+      [
+        { id: 1, title: "Launch", status: "active", due_date: "2026-05-20" }, // overdue
+        { id: 2, title: "Redesign", status: "planning", due_date: null }, // upcoming
+        { id: 3, title: "Old", status: "done", due_date: null }, // excluded
+      ],
+      TODAY,
+    )!;
+    expect(card.count).toBe(2);
+    expect(card.summary).toBe("2 active · 1 overdue");
+    expect(card.severity).toBe("overdue");
+    invariants(card);
+  });
+
+  it("projectsToday returns null when all projects are done", () => {
+    expect(projectsToday([{ id: 1, title: "X", status: "done", due_date: null }], TODAY)).toBeNull();
+  });
 });
 
 // ── Security Finding 1: every adapter today() MUST filter by user_id. Under the
@@ -307,7 +328,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {

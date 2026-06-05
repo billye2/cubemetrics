@@ -278,6 +278,28 @@ export function goalsToday(
   });
 }
 
+/**
+ * Project tracker builder: active (not done) projects as a list, severity by deadline.
+ * Projects without a deadline are upcoming. Mirrors the app's status pipeline + dueLabel.
+ */
+export function projectsToday(
+  rows: { id: number; title: string; status: string; due_date: string | null }[],
+  today: string,
+): SpineToday | null {
+  const active = rows.filter((p) => p.status !== "done");
+  if (active.length === 0) return null;
+  const items: TodayItem[] = active.map((p) => ({
+    id: `projecttracker:${p.id}`,
+    label: p.title,
+    status: bucketStatus(p.due_date, today),
+    due: p.due_date ?? undefined,
+    href: "/app/projecttracker",
+  }));
+  const overdue = items.filter((i) => i.status === "overdue").length;
+  const summary = `${active.length} active${overdue ? ` · ${overdue} overdue` : ""}`;
+  return card("projecttracker", items, active.length, summary);
+}
+
 export function budgetToday(planned: number, spent: number): SpineToday {
   const pct = planned > 0 ? spent / planned : null;
   const severity: TodayStatus = pct != null && pct > 1 ? "overdue" : "upcoming";

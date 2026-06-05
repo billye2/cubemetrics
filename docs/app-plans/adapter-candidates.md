@@ -133,4 +133,5 @@ collision-free shape the spine registry was built for. Per spine governance, eac
 > `medication` — the `schedule_items` due/recurring pattern, shared with `carcare` (the only other
 > `ui: "schedule"` app) — is in **[adapter-reference-medication.md](adapter-reference-medication.md)**.
 > **Shipped:** `medication`, `carcare`, `goals`, `keepintouch`, `plantcare`, `mood`, `energy`, `sleep`,
-> `invoices`, `flashcards`, `vocabulary`. (`subscriptions` skipped — no `due_date`, so no actionable card.)
+> `invoices`, `flashcards`, `vocabulary`, `projecttracker`. (`subscriptions` skipped — no `due_date`.
+> `expenses` skipped — the `budget` adapter already surfaces spend-vs-budget from the same table.)

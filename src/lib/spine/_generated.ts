@@ -15,9 +15,10 @@ import { adapter as keepintouch } from "./adapters/keepintouch";
 import { adapter as medication } from "./adapters/medication";
 import { adapter as mood } from "./adapters/mood";
 import { adapter as plantcare } from "./adapters/plantcare";
+import { adapter as projecttracker } from "./adapters/projecttracker";
 import { adapter as sleep } from "./adapters/sleep";
 import { adapter as todo } from "./adapters/todo";
 import { adapter as vocabulary } from "./adapters/vocabulary";
 import { adapter as water } from "./adapters/water";
 
-export const ADAPTERS: SpineAdapter[] = [bills, budget, carcare, energy, flashcards, goals, habits, invoices, journal, keepintouch, medication, mood, plantcare, sleep, todo, vocabulary, water];
+export const ADAPTERS: SpineAdapter[] = [bills, budget, carcare, energy, flashcards, goals, habits, invoices, journal, keepintouch, medication, mood, plantcare, projecttracker, sleep, todo, vocabulary, water];
