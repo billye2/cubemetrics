@@ -1,5 +1,6 @@
 // Pure, DB-free helpers for the spine. All branchy logic lives here (like
 // xp/rules.ts::scoreDay) so adapters stay thin and the logic is unit-tested.
+import { addDays } from "@/lib/xp/tz";
 import { type TodayItem, type TodayStatus, type SpineToday, STATUS_ORDER, ITEM_CAP } from "./types";
 
 // ── Today shaping ───────────────────────────────────────────────────────────
@@ -111,6 +112,38 @@ export function billsToday(
     href: "/app/bills",
   }));
   return card("bills", items, kept.length, `${kept.length} due soon`);
+}
+
+/**
+ * Schedule/recurring builder (schedule_items): next_due = last_done + interval_days;
+ * a never-done item (last_done = null) is due now. Surfaces items due/overdue or within
+ * the `soon` horizon; far-future items are dropped. Generic over any schedule_items app
+ * (medication, carcare, …). Mirrors the app's own ScheduleView due computation.
+ */
+export function scheduleToday(
+  appId: string,
+  rows: { id: number; title: string; interval_days: number; last_done: string | null }[],
+  today: string,
+  soon: string,
+): SpineToday {
+  const items: TodayItem[] = [];
+  for (const r of rows) {
+    const nextDue = r.last_done ? addDays(r.last_done.slice(0, 10), r.interval_days) : null;
+    if (nextDue && nextDue > soon) continue; // not relevant yet — don't nag
+    items.push({
+      id: `${appId}:${r.id}`,
+      label: r.title,
+      status: nextDue ? bucketStatus(nextDue, today) : "due", // null = never done = due now
+      due: nextDue ?? undefined,
+      href: `/app/${appId}`,
+    });
+  }
+  const overdue = items.filter((i) => i.status === "overdue").length;
+  const due = items.filter((i) => i.status === "due").length;
+  const summary =
+    [overdue ? `${overdue} overdue` : "", due ? `${due} due` : ""].filter(Boolean).join(" · ") ||
+    `${items.length} upcoming`;
+  return card(appId, items, items.length, summary);
 }
 
 export function budgetToday(planned: number, spent: number): SpineToday {
