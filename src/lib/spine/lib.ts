@@ -152,6 +152,29 @@ export function scheduleToday(
  * average % across goals that have a target — mirrors GoalView's "Avg progress" stat.
  */
 /**
+ * Daily presence builder (journal-style): "did you log this today?" — done when a row
+ * exists for today, else due. count follows journal's convention (0 done, 1 due). Used by
+ * the daily check-in trackers (mood, energy, sleep, …) where the nudge is the logging itself.
+ */
+export function presenceToday(
+  appId: string,
+  logged: boolean,
+  dueLabel: string,
+  doneLabel: string,
+): SpineToday {
+  const status: TodayStatus = logged ? "done" : "due";
+  const label = logged ? doneLabel : dueLabel;
+  return {
+    appId,
+    severity: status,
+    count: logged ? 0 : 1,
+    summary: label,
+    items: [{ id: `${appId}:today`, label, status, href: `/app/${appId}` }],
+    href: `/app/${appId}`,
+  };
+}
+
+/**
  * Keep-in-touch builder (contacts): people overdue/due to reach out to. Same computed-due
  * shape as scheduleToday — next_due = last_contacted + cadence_days; never-contacted = due now.
  * Contacts with no cadence (null/0) aren't on a schedule and are skipped.
