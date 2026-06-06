@@ -54,7 +54,11 @@ Rules:
 
 ${catalogDigest()}
 
-You can also add a to-do with add_todo.`;
+You can also:
+- add a to-do with add_todo.
+- mark a habit done for today with mark_habit_done (match the user's habit by name; it's idempotent).
+- add a reflection with add_journal_entry, or save a quick reference note with add_note.
+- bump a named tally counter with adjust_counter (defaults to its step; pass amount for a specific number).`;
 
 const TOOLS: Anthropic.Tool[] = [
   {
@@ -152,10 +156,74 @@ const TOOLS: Anthropic.Tool[] = [
       required: ["appId", "title", "intervalDays"],
     },
   },
+  {
+    name: "mark_habit_done",
+    description:
+      "Mark one of the user's habits as done for today. Match the habit by name (e.g. 'meditate', 'floss'). Idempotent: if it's already checked off today, it stays done.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "The habit's name, as the user refers to it" },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "add_journal_entry",
+    description: "Add a dated entry to the journal. Use for reflections or diary-style writing.",
+    input_schema: {
+      type: "object",
+      properties: {
+        body: { type: "string", description: "The entry text" },
+        title: { type: "string", description: "Optional short title" },
+        mood: { type: "string", description: "Optional one-word mood" },
+      },
+      required: ["body"],
+    },
+  },
+  {
+    name: "add_note",
+    description: "Save a quick note. Use for reference snippets the user wants to keep.",
+    input_schema: {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "Optional title" },
+        body: { type: "string", description: "The note text" },
+      },
+      required: ["body"],
+    },
+  },
+  {
+    name: "adjust_counter",
+    description:
+      "Increment (or decrement) one of the user's tally counters. Match the counter by name. Defaults to the counter's own step size; pass amount to add a specific number (negative to subtract).",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "The counter's name, as the user refers to it" },
+        amount: {
+          type: "number",
+          description: "How much to add (negative to subtract). Omit to use the counter's step.",
+        },
+      },
+      required: ["name"],
+    },
+  },
 ];
 
+/** Case-insensitive exact-then-substring match against a named row set. */
+export function matchByName<T extends { name: string }>(rows: T[], query: string): T | null {
+  const q = query.trim().toLowerCase();
+  if (!q) return null;
+  return (
+    rows.find((r) => r.name.toLowerCase() === q) ??
+    rows.find((r) => r.name.toLowerCase().includes(q)) ??
+    null
+  );
+}
+
 /** Execute one tool call against the user's session (RLS-safe). Returns a result string. */
-async function runTool(
+export async function runTool(
   supabase: Supabase,
   userId: string,
   name: string,
@@ -283,12 +351,89 @@ async function runTool(
     entries.push(label);
     return label;
   }
+  if (name === "mark_habit_done") {
+    const query = String(input.name ?? "").trim();
+    if (!query) return "Which habit?";
+    const { data: habits } = await supabase
+      .from("habits")
+      .select("id, name, active")
+      .eq("user_id", userId);
+    const active = (habits ?? []).filter((h) => h.active !== false);
+    if (active.length === 0) return "You have no habits set up yet.";
+    const habit = matchByName(active, query);
+    if (!habit) return `No habit matches "${query}".`;
+    const today = new Date().toISOString().split("T")[0];
+    const { data: existing } = await supabase
+      .from("habit_checkins")
+      .select("id")
+      .eq("habit_id", habit.id)
+      .eq("user_id", userId)
+      .eq("checkin_date", today)
+      .limit(1);
+    if (existing && existing.length > 0) return `"${habit.name}" is already done today.`;
+    const { error } = await supabase
+      .from("habit_checkins")
+      .insert({ habit_id: habit.id, user_id: userId, checkin_date: today });
+    if (error) return `Couldn't check off "${habit.name}".`;
+    const label = `Marked "${habit.name}" done for today`;
+    entries.push(label);
+    return label;
+  }
+  if (name === "add_journal_entry") {
+    const body = String(input.body ?? "").trim();
+    if (!body) return "Need the entry text.";
+    const title = input.title ? String(input.title).trim() : "";
+    const mood = input.mood ? String(input.mood).trim() : null;
+    const { error } = await supabase
+      .from("journal_entries")
+      .insert({ user_id: userId, body, title, mood });
+    if (error) return "Couldn't add the journal entry.";
+    const label = "Added a journal entry";
+    entries.push(label);
+    return label;
+  }
+  if (name === "add_note") {
+    const title = input.title ? String(input.title).trim() : "";
+    const body = input.body ? String(input.body).trim() : "";
+    if (!title && !body) return "Need the note text.";
+    const { error } = await supabase.from("notes").insert({ user_id: userId, title, body });
+    if (error) return "Couldn't save the note.";
+    const label = title ? `Saved note: ${title}` : "Saved a note";
+    entries.push(label);
+    return label;
+  }
+  if (name === "adjust_counter") {
+    const query = String(input.name ?? "").trim();
+    if (!query) return "Which counter?";
+    const { data: counters } = await supabase
+      .from("counters")
+      .select("id, name, value, step")
+      .eq("user_id", userId);
+    if (!counters || counters.length === 0) return "You have no counters yet.";
+    const counter = matchByName(counters, query);
+    if (!counter) return `No counter matches "${query}".`;
+    const raw = Number(input.amount);
+    const delta = Number.isFinite(raw) && raw !== 0 ? Math.trunc(raw) : Number(counter.step);
+    const newValue = Number(counter.value) + delta;
+    const { error } = await supabase
+      .from("counter_events")
+      .insert({ user_id: userId, counter_id: counter.id, delta });
+    if (error) return `Couldn't update "${counter.name}".`;
+    await supabase
+      .from("counters")
+      .update({ value: newValue })
+      .eq("id", counter.id)
+      .eq("user_id", userId);
+    const label = `${delta >= 0 ? "+" : ""}${delta} to "${counter.name}" (now ${newValue})`;
+    entries.push(label);
+    return label;
+  }
   return `Unknown tool: ${name}`;
 }
 
 /**
  * One assistant turn: a manual tool-use loop (claude-api docs) over Haiku, with the
- * three quick-capture write tools. Runs in the caller's Supabase session, so every
+ * full set of quick-capture write tools. Runs in the caller's Supabase session, so every
  * write is RLS-scoped to the user. No fabrication: the system prompt forbids inventing data.
  */
 export async function runAgentTurn(opts: {
