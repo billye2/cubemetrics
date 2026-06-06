@@ -3,6 +3,7 @@
     <a class="brand"><span class="brand-mark"><span></span></span> XP Boost</a>
     <nav>
       <a class="lnk" href="#loop">The loop</a>
+      <a class="lnk" href="#assistant">Assistant</a>
       <a class="lnk" href="#apps">Apps</a>
       <a class="lnk" href="#progress">Progress</a>
       <a class="btn btn-primary" style="padding:9px 16px;font-size:14px" href="/api/auth/login"><span class="g-logo">G</span> Sign in</a>
@@ -88,7 +89,7 @@
 <div class="stat-band">
   <div class="wrap">
     <div class="stat-grid">
-      <div class="stat reveal"><div class="n"><span data-count="50" data-suffix="+">0</span></div><div class="l">tiny apps, one account</div></div>
+      <div class="stat reveal"><div class="n"><span data-count="80" data-suffix="+">0</span></div><div class="l">tiny apps, one account</div></div>
       <div class="stat reveal reveal-d1"><div class="n"><em><span data-count="3">0</span></em> a day</div><div class="l">quests to keep the streak</div></div>
       <div class="stat reveal reveal-d2"><div class="n"><span data-count="4850" data-dur="1500">0</span></div><div class="l">XP and counting</div></div>
       <div class="stat reveal reveal-d3"><div class="n">L<span data-count="10">0</span></div><div class="l">levels of momentum</div></div>
@@ -112,7 +113,38 @@
   </div>
 </section>
 
-<section class="block stat-band">
+<section class="block stat-band" id="assistant">
+  <div class="wrap split">
+    <div class="copy reveal">
+      <div class="eyebrow">New · the +XP assistant</div>
+      <h2 style="margin-top:8px">Just say what you did. It logs the rest.</h2>
+      <p class="ptext">Talk or type in plain words — "drank two glasses of water, walked 3,000 steps, mark floss done" — and the +XP assistant files each one into the right app. It shows you exactly what it'll save and waits for your okay: nothing is logged until you confirm, and one tap undoes it.</p>
+      <ul class="feat-list">
+        <li><span class="feat-ico" data-ico="journal"></span><div><h4>Capture by voice or text</h4><p>One quick message instead of opening five apps.</p></div></li>
+        <li><span class="feat-ico" data-ico="todo"></span><div><h4>Confirm before it saves</h4><p>Review the proposed entries, uncheck any, then confirm — with undo on every one.</p></div></li>
+        <li><span class="feat-ico" data-ico="focus"></span><div><h4>Reshape your day</h4><p>"Focus on fitness and bills, hide journaling" — and your dashboard rearranges to match.</p></div></li>
+      </ul>
+    </div>
+    <div class="reveal reveal-d2">
+      <div class="mock-window" style="max-width:360px;margin:0 auto">
+        <div class="mock-bar">
+          <a class="brand" style="font-size:14px"><span class="brand-mark" style="width:22px;height:22px"><span style="width:7px;height:11px"></span></span> +XP</a>
+        </div>
+        <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
+          <div style="align-self:flex-end;max-width:82%;background:var(--teal);color:#fff;border-radius:14px;padding:9px 13px;font-size:13.5px;font-weight:500">I drank two glasses of water and walked 3,000 steps</div>
+          <div style="align-self:flex-start;max-width:90%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;font-size:13.5px;color:var(--ink)">
+            Here's what I'll log:
+            <div style="display:flex;align-items:center;gap:7px;margin-top:8px"><span style="width:15px;height:15px;border-radius:4px;background:var(--teal);display:inline-block"></span> Log 2 glasses to Water</div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:5px"><span style="width:15px;height:15px;border-radius:4px;background:var(--teal);display:inline-block"></span> Log 3,000 steps to Steps</div>
+            <span style="display:inline-block;margin-top:11px;background:var(--teal);color:#fff;font-weight:600;font-size:12px;padding:6px 14px;border-radius:999px">Confirm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block">
   <div class="wrap split rev">
     <div class="copy reveal reveal-d1">
       <div class="eyebrow">Everything counts</div>
@@ -128,11 +160,11 @@
   </div>
 </section>
 
-<section class="block" id="apps">
+<section class="block stat-band" id="apps">
   <div class="wrap">
     <div class="sec-head reveal">
       <div class="eyebrow">The library</div>
-      <h2>50+ tiny apps. Pick the few that fit your life.</h2>
+      <h2>80+ tiny apps. Pick the few that fit your life.</h2>
       <p>Each one does a single thing well — and every one of them feeds the same XP, the same streak, the same dashboard. Start with two, add more when you're ready.</p>
     </div>
     <div id="appgrid"></div>
@@ -140,7 +172,7 @@
   </div>
 </section>
 
-<section class="block stat-band" id="progress">
+<section class="block" id="progress">
   <div class="wrap split">
     <div class="copy reveal">
       <div class="eyebrow">Look back</div>
@@ -169,7 +201,7 @@
 <footer class="site">
   <div class="wrap row">
     <a class="brand" style="font-size:16px"><span class="brand-mark" style="width:26px;height:26px"><span style="width:8px;height:12px"></span></span> XP Boost</a>
-    <div class="links"><a href="#loop">The loop</a><a href="#apps">Apps</a><a href="#progress">Progress</a><a href="/api/auth/login">Sign in</a></div>
+    <div class="links"><a href="#loop">The loop</a><a href="#assistant">Assistant</a><a href="#apps">Apps</a><a href="#progress">Progress</a><a href="/api/auth/login">Sign in</a></div>
     <small>© 2026 XP Boost — a calm place to make it count.</small>
   </div>
 </footer>
