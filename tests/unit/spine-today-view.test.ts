@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { pickMode, chooseApps, groupBySeverity, sortCards } from "@/lib/spine/today-view";
+import { pickMode, chooseApps, resolveTodayApps, groupBySeverity, sortCards } from "@/lib/spine/today-view";
 import type { SpineToday, TodayStatus } from "@/lib/spine/types";
 
 const card = (appId: string, severity: TodayStatus, count = 0): SpineToday => ({
@@ -38,6 +38,37 @@ describe("chooseApps", () => {
   it("empty usage → all registered (capped)", () => {
     expect(chooseApps([], registered, 8)).toEqual(registered);
     expect(chooseApps([], registered, 3)).toEqual(["todo", "habits", "water"]);
+  });
+});
+
+describe("resolveTodayApps", () => {
+  const registered = ["todo", "habits", "water", "journal", "budget", "bills"];
+  const usage = [
+    { app_id: "water", pinned: true },
+    { app_id: "todo", pinned: false },
+  ];
+
+  it("null prefs ≡ chooseApps (back-compat)", () => {
+    expect(resolveTodayApps(null, usage, registered, 8)).toEqual(chooseApps(usage, registered, 8));
+    expect(resolveTodayApps(null, [], registered, 3)).toEqual(chooseApps([], registered, 3));
+  });
+
+  it("explicit order wins, filtered to registered + non-hidden, deduped, capped", () => {
+    const prefs = { ordered_app_ids: ["bills", "journal", "ghost", "bills"], hidden_app_ids: ["journal"] };
+    expect(resolveTodayApps(prefs, usage, registered, 8)).toEqual(["bills"]); // journal hidden, ghost/dup dropped
+    const p2 = { ordered_app_ids: ["budget", "bills", "todo"], hidden_app_ids: [] };
+    expect(resolveTodayApps(p2, usage, registered, 2)).toEqual(["budget", "bills"]); // capped
+  });
+
+  it("hidden apps are filtered out of the usage fallback too", () => {
+    const prefs = { ordered_app_ids: [], hidden_app_ids: ["water"] };
+    expect(resolveTodayApps(prefs, usage, registered, 8)).not.toContain("water");
+    expect(resolveTodayApps(prefs, usage, registered, 8)[0]).toBe("todo");
+  });
+
+  it("a degenerate explicit order (all invalid) falls back instead of blanking Today", () => {
+    const prefs = { ordered_app_ids: ["ghost", "phantom"], hidden_app_ids: [] };
+    expect(resolveTodayApps(prefs, usage, registered, 8)).toEqual(chooseApps(usage, registered, 8));
   });
 });
 

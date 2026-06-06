@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { sendToAssistant, applyProposals, undoAppliedEntry } from "./actions";
+import { sendToAssistant, applyProposals, undoAppliedEntry, resetTodayLayout } from "./actions";
 import type { ChatMessage, Proposal, AppliedEntry } from "@/lib/agent/run";
 
 interface Msg extends ChatMessage {
   proposals?: Proposal[]; // pending writes awaiting confirmation
   applied?: AppliedEntry[]; // confirmed + written this turn
   undone?: boolean[]; // per-applied-entry undo state
+  layoutChanges?: { summary: string }[]; // live Today reshapes applied this turn
+  reverted?: boolean; // Today reverted to automatic
 }
 
 // Minimal shape for the browser SpeechRecognition API (not in the standard DOM lib types).
@@ -73,7 +75,10 @@ export function AssistantChat() {
     setInput("");
     start(async () => {
       const res = await sendToAssistant(history.map((m) => ({ role: m.role, content: m.content })));
-      setMessages((m) => [...m, { role: "assistant", content: res.reply, proposals: res.proposals }]);
+      setMessages((m) => [
+        ...m,
+        { role: "assistant", content: res.reply, proposals: res.proposals, layoutChanges: res.layoutChanges },
+      ]);
       say(res.reply);
     });
   }
@@ -97,6 +102,13 @@ export function AssistantChat() {
 
   function dismissMsg(msgIdx: number) {
     setMessages((ms) => ms.map((m, i) => (i === msgIdx ? { ...m, proposals: undefined } : m)));
+  }
+
+  function revertToday(msgIdx: number) {
+    startBusy(async () => {
+      const ok = await resetTodayLayout();
+      if (ok) setMessages((ms) => ms.map((m, i) => (i === msgIdx ? { ...m, reverted: true } : m)));
+    });
   }
 
   function undoMsg(msgIdx: number, entryIdx: number, entry: AppliedEntry) {
@@ -254,6 +266,34 @@ export function AssistantChat() {
                         </button>
                       </span>
                     ),
+                  )}
+                </div>
+              )}
+
+              {/* Live Today reshapes (Capability A) — reversible. */}
+              {m.layoutChanges && m.layoutChanges.length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  <div className="flex flex-wrap gap-1.5">
+                    {m.layoutChanges.map((c, j) => (
+                      <span
+                        key={j}
+                        className="rounded-full bg-cyan-500/15 px-2 py-0.5 text-xs font-medium text-cyan-300 ring-1 ring-cyan-500/30"
+                      >
+                        ✦ {c.summary}
+                      </span>
+                    ))}
+                  </div>
+                  {m.reverted ? (
+                    <p className="px-1 text-xs text-zinc-500">Today reverted to automatic.</p>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => revertToday(i)}
+                      className="px-1 text-xs text-zinc-500 underline-offset-2 hover:text-zinc-300 hover:underline disabled:opacity-50"
+                    >
+                      Revert Today to automatic
+                    </button>
                   )}
                 </div>
               )}

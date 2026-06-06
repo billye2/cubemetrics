@@ -13,6 +13,7 @@ import {
   type AppliedEntry,
   type UndoHandle,
 } from "@/lib/agent/run";
+import { clearTodayPrefs } from "@/lib/agent/layout";
 
 const HISTORY_CAP = 16; // keep the prompt small — recent turns only
 
@@ -32,16 +33,28 @@ export async function sendToAssistant(messages: ChatMessage[]): Promise<AgentRes
       reply:
         "The +XP assistant isn't configured yet. Set ANTHROPIC_API_KEY in the environment to enable it.",
       proposals: [],
+      layoutChanges: [],
     };
   }
 
   const { supabase, userId } = await requireUser();
   const trimmed = messages.slice(-HISTORY_CAP);
   try {
-    return await runAgentTurn({ supabase, userId, messages: trimmed });
+    const result = await runAgentTurn({ supabase, userId, messages: trimmed });
+    // Layout tools apply live → reflect them on Today immediately.
+    if (result.layoutChanges.length) revalidatePath("/today");
+    return result;
   } catch {
-    return { reply: "Something went wrong reaching the assistant. Try again.", proposals: [] };
+    return { reply: "Something went wrong reaching the assistant. Try again.", proposals: [], layoutChanges: [] };
   }
+}
+
+/** Revert Today to its automatic layout (clears the agent/user override). */
+export async function resetTodayLayout(): Promise<boolean> {
+  const { supabase, userId } = await requireUser();
+  const ok = await clearTodayPrefs(supabase, userId);
+  if (ok) revalidatePath("/today");
+  return ok;
 }
 
 /** Apply the user-confirmed proposals; returns the applied entries with undo handles. */

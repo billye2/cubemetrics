@@ -11,11 +11,27 @@ const GREETING: Record<Mode, string> = {
   evening: "Close out your day",
 };
 
-export function TodayHeader({ mode, name, xp }: { mode: Mode; name: string; xp: Xp | null }) {
+export function TodayHeader({
+  mode,
+  name,
+  xp,
+  focus,
+}: {
+  mode: Mode;
+  name: string;
+  xp: Xp | null;
+  focus?: string | null;
+}) {
   return (
     <div className="mb-5">
       <p className="text-sm text-zinc-400">{GREETING[mode]}</p>
       <h2 className="mt-0.5 text-2xl font-bold tracking-tight">{name}</h2>
+      {focus && (
+        <p className="mt-1 text-sm text-cyan-400">
+          <span aria-hidden>✦ </span>
+          Focused on {focus}
+        </p>
+      )}
       <TodayInsight />
 
       {xp && (
