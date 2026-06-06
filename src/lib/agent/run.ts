@@ -28,10 +28,11 @@ export interface Proposal {
     | { kind: "counter"; counterId: number; delta: number };
 }
 
-/** One write that was actually applied, with the handle to undo it. */
+/** One write that was actually applied. `actionId` is its agent_actions row (the undo
+ *  handle clients pass back); null if audit logging failed (the write still happened). */
 export interface AppliedEntry {
   label: string;
-  undo: UndoHandle;
+  actionId: number | null;
 }
 
 export interface AgentResult {
