@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { isOverLimit, clampContent, MAX_MESSAGE_CHARS } from "@/lib/agent/limits";
+import {
+  isOverLimit,
+  clampContent,
+  MAX_MESSAGE_CHARS,
+  RATE_PER_HOUR,
+  RATE_PER_DAY,
+} from "@/lib/agent/limits";
 
 describe("agent input limits", () => {
   it("isOverLimit flags messages past the cap", () => {
@@ -16,5 +22,11 @@ describe("agent input limits", () => {
 
   it("the cap is small enough to bound per-turn token cost", () => {
     expect(MAX_MESSAGE_CHARS).toBeLessThanOrEqual(2000);
+  });
+
+  it("rate limits are sane: positive and hourly ≤ daily", () => {
+    expect(RATE_PER_HOUR).toBeGreaterThan(0);
+    expect(RATE_PER_DAY).toBeGreaterThan(0);
+    expect(RATE_PER_HOUR).toBeLessThanOrEqual(RATE_PER_DAY);
   });
 });

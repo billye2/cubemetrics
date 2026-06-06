@@ -13,7 +13,7 @@ import {
 } from "@/lib/agent/run";
 import { clearTodayPrefs } from "@/lib/agent/layout";
 import { logAgentAction, undoActionById, getRecentActions, type RecentAction } from "@/lib/agent/audit";
-import { isOverLimit, MAX_MESSAGE_CHARS } from "@/lib/agent/limits";
+import { isOverLimit, MAX_MESSAGE_CHARS, RATE_PER_HOUR, RATE_PER_DAY } from "@/lib/agent/limits";
 
 const HISTORY_CAP = 16; // keep the prompt small — recent turns only
 
@@ -49,6 +49,21 @@ export async function sendToAssistant(messages: ChatMessage[]): Promise<AgentRes
   }
 
   const { supabase, userId } = await requireUser();
+
+  // Volume cap: atomic per-user rate limit (hourly + daily) BEFORE any model call.
+  // Fail-open — a limiter error never blocks a legitimate user (input/history caps still bound cost).
+  const { data: allowed } = await supabase.rpc("bump_agent_rate", {
+    p_hour_limit: RATE_PER_HOUR,
+    p_day_limit: RATE_PER_DAY,
+  });
+  if (allowed === false) {
+    return {
+      reply: "You've reached the assistant's usage limit for now — please try again later.",
+      proposals: [],
+      layoutChanges: [],
+    };
+  }
+
   const trimmed = messages.slice(-HISTORY_CAP);
   try {
     const result = await runAgentTurn({ supabase, userId, messages: trimmed });

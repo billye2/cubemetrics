@@ -10,6 +10,12 @@ export const MAX_MESSAGE_CHARS = 1000;
 /** Hard stop for one voice capture (ms) — caps how much a single dictation can produce. */
 export const MAX_VOICE_MS = 30_000;
 
+/** Per-user turn budget (volume cap). Generous for real quick-capture use; bounds abuse
+ *  and runaway loops so the assistant can't burn unbounded Anthropic tokens. A "turn" can
+ *  fan out to a few model calls (MAX_STEPS), so these bound total API spend per user. */
+export const RATE_PER_HOUR = 30;
+export const RATE_PER_DAY = 150;
+
 /** True when a message exceeds the per-message cap. */
 export function isOverLimit(text: string): boolean {
   return text.length > MAX_MESSAGE_CHARS;

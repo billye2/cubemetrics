@@ -409,6 +409,23 @@ confirmed proposal the +XP assistant applies is recorded here with its undo hand
 **across sessions** (the assistant loads recent un-undone rows on mount). Owner-only RLS; indexed
 `(user_id, created_at DESC)`.
 
+### agent_rate
+| Column | Type | Notes |
+|--------|------|-------|
+| user_id | UUID | PK part |
+| window_key | TEXT | PK part — `h:YYYY-MM-DDTHH` (UTC) or `d:YYYY-MM-DD` |
+| count | INT | turns in that window |
+| created_at | TIMESTAMPTZ | for self-cleaning stale windows |
+
+Per-user **rate limiter** for the +XP assistant (migration `20260606T1000_agent_rate.sql`). Fixed-window
+counters (hourly + daily) incremented atomically by **`bump_agent_rate(p_hour_limit, p_day_limit)`** —
+a `SECURITY DEFINER` fn scoped to `auth.uid()` that upserts-increments both windows and returns whether
+the turn is within both limits (`sendToAssistant` calls it before any model call; fail-open). The fn
+self-cleans windows older than 2 days. **RLS enabled, no policy** ⇒ only the definer fn / service role
+touches the table. EXECUTE revoked from `PUBLIC` **and `anon`** (Supabase default-privileges grant anon
+EXECUTE on new public fns — `REVOKE … FROM PUBLIC` alone is insufficient), granted to `authenticated`.
+Limits live in `src/lib/agent/limits.ts` (`RATE_PER_HOUR`/`RATE_PER_DAY`).
+
 ## RLS Policy Pattern
 ```sql
 ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;
