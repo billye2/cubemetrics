@@ -31,6 +31,37 @@ export function chooseApps(
   return chosen.length > 0 ? chosen : registered.slice(0, cap);
 }
 
+/**
+ * Resolve which apps Today shows, honoring an agent/user layout override (`today_prefs`).
+ * An explicit `ordered_app_ids` wins (filtered to registered + non-hidden, deduped, capped);
+ * otherwise fall back to the usage-based `chooseApps` over the non-hidden registered set.
+ * Null prefs ⇒ identical to `chooseApps(usage, registered, cap)` (back-compatible).
+ */
+export function resolveTodayApps(
+  prefs: { ordered_app_ids?: string[]; hidden_app_ids?: string[] } | null,
+  usage: { app_id: string; pinned: boolean }[],
+  registered: string[],
+  cap: number,
+): string[] {
+  const hidden = new Set(prefs?.hidden_app_ids ?? []);
+  const visible = registered.filter((r) => !hidden.has(r));
+  const ordered = prefs?.ordered_app_ids ?? [];
+  if (ordered.length) {
+    const reg = new Set(visible);
+    const seen = new Set<string>();
+    const chosen: string[] = [];
+    for (const id of ordered) {
+      if (reg.has(id) && !seen.has(id)) {
+        seen.add(id);
+        chosen.push(id);
+        if (chosen.length >= cap) break;
+      }
+    }
+    if (chosen.length) return chosen; // else fall through (degenerate order → don't blank Today)
+  }
+  return chooseApps(usage, visible, cap);
+}
+
 export interface TodayGroups {
   attention: SpineToday[]; // overdue | due
   upcoming: SpineToday[];

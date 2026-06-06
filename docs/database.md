@@ -376,6 +376,22 @@ Digest send ledger — idempotency (claim-before-send) + audit. Unique `(user_id
 digest is sent once per user per local day. `kind` ∈ `morning`/`evening`/`streak_save`. RLS **enabled
 with no policy** ⇒ users see nothing; only the service role (cron / unsubscribe routes) touches it.
 
+### today_prefs
+| Column | Type | Notes |
+|--------|------|-------|
+| user_id | UUID | PK |
+| focus | TEXT | the user's stated "what matters most"; shown on the Today header |
+| ordered_app_ids | TEXT[] | explicit Today order; empty ⇒ usage-based fallback |
+| hidden_app_ids | TEXT[] | apps hidden from Today |
+| updated_by | TEXT | `'user'` \| `'agent'` (provenance) |
+| updated_at | TIMESTAMPTZ | |
+
+Agent Layer **Capability A** — the +XP assistant's writable Today layout override (migration
+`20260606T0820_today_prefs.sql`). The assistant's live layout tools upsert this row from natural
+language ("focus on fitness, hide journaling"); `resolveTodayApps` reads it (an explicit order wins,
+hidden filtered, else the usual `chooseApps`). **Empty/absent ⇒ identical to the pre-existing
+usage-based selection**, so it's additive and safe before the migration is applied. Owner-only RLS.
+
 ## RLS Policy Pattern
 ```sql
 ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;

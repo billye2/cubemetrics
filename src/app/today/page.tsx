@@ -8,7 +8,7 @@ import { ensureXp } from "@/lib/xp/compute";
 import { localHour } from "@/lib/xp/tz";
 import { buildSpineCtx } from "@/lib/spine/ctx";
 import { getToday, REGISTERED_APP_IDS } from "@/lib/spine/registry";
-import { pickMode, chooseApps, groupBySeverity, type Mode } from "@/lib/spine/today-view";
+import { pickMode, resolveTodayApps, groupBySeverity, type Mode } from "@/lib/spine/today-view";
 import { TodayHeader } from "@/components/modern/today/TodayHeader";
 import { TodayBody } from "@/components/modern/today/TodayBody";
 
@@ -32,15 +32,28 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   const now = new Date();
   const ctx = buildSpineCtx(supabase, user.id, tz, now);
 
-  // Which apps to show: pinned → recent, filtered to those with an adapter.
-  const { data: usage } = await supabase
-    .from("app_usage")
-    .select("app_id, pinned")
-    .eq("user_id", user.id)
-    .order("pinned", { ascending: false })
-    .order("last_used_at", { ascending: false })
-    .limit(12);
-  const chosen = chooseApps((usage ?? []) as { app_id: string; pinned: boolean }[], REGISTERED_APP_IDS, 8);
+  // Which apps to show: an agent/user layout override (today_prefs) wins; else pinned →
+  // recent, filtered to those with an adapter. Both reads best-effort (force-dynamic page).
+  const [{ data: usage }, { data: prefs }] = await Promise.all([
+    supabase
+      .from("app_usage")
+      .select("app_id, pinned")
+      .eq("user_id", user.id)
+      .order("pinned", { ascending: false })
+      .order("last_used_at", { ascending: false })
+      .limit(12),
+    supabase
+      .from("today_prefs")
+      .select("focus, ordered_app_ids, hidden_app_ids")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
+  const chosen = resolveTodayApps(
+    prefs ?? null,
+    (usage ?? []) as { app_id: string; pinned: boolean }[],
+    REGISTERED_APP_IDS,
+    8,
+  );
 
   // Fan out — both best-effort so one slow/broken source never blanks the page.
   const [today, xp] = await Promise.all([
@@ -55,7 +68,7 @@ export default async function TodayPage({ searchParams }: { searchParams: Promis
   return (
     <Shell right={<SignOutButton />}>
       <TimezoneSync knownTz={prof?.timezone ?? null} />
-      <TodayHeader mode={mode} name={prof?.handle ?? "Friend"} xp={xp} />
+      <TodayHeader mode={mode} name={prof?.handle ?? "Friend"} xp={xp} focus={prefs?.focus ?? null} />
       <TodayBody mode={mode} groups={groups} />
       <Link href="/apps" className="mt-2 block text-center text-sm text-cyan-400 hover:text-cyan-300">
         Browse all apps →

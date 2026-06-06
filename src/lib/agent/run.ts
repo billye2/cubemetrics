@@ -1,6 +1,8 @@
 import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { APPS, getApp } from "@/lib/modern/catalog";
+import { REGISTERED_APP_IDS } from "@/lib/spine/registry";
+import { LAYOUT_TOOLS, LAYOUT_TOOL_NAMES, applyLayoutTool } from "./layout";
 import type { createServerSupabase } from "@/lib/supabase/server";
 
 type Supabase = Awaited<ReturnType<typeof createServerSupabase>>;
@@ -36,6 +38,8 @@ export interface AgentResult {
   reply: string;
   /** Proposed writes awaiting the user's confirmation (nothing written yet). */
   proposals: Proposal[];
+  /** Live, reversible /today layout changes already applied this turn (Capability A). */
+  layoutChanges: { summary: string }[];
 }
 
 /** Tables the assistant is allowed to insert into / undo from — the write boundary. */
@@ -84,23 +88,32 @@ function catalogDigest(): string {
   ].join("\n");
 }
 
-const SYSTEM = `You are the +XP quick-capture assistant for XP Boost, a personal productivity hub. The user tells you — by text or voice — what they did or want to track, and you choose the right mini-app to log it in by calling tools.
+// Apps eligible to appear on the Today dashboard (those with a spine adapter) — the
+// valid ids for the layout tools. Computed once; catalog + registry are static.
+const todayEligible = REGISTERED_APP_IDS.map((id) => `${id} — ${getApp(id)?.name ?? id}`);
 
-How it works: your tool calls do NOT write anything directly. They PROPOSE entries that the user reviews and confirms before they're saved. So propose freely, but be accurate.
+const SYSTEM = `You are the +XP assistant for XP Boost, a personal productivity hub. You do two jobs by calling tools: (1) capture what the user did into the right mini-app, and (2) reshape their Today dashboard around what matters to them.
+
+CAPTURE (propose→confirm): your capture tool calls do NOT write anything directly — they PROPOSE entries the user reviews and confirms before they're saved. Propose freely, but be accurate.
+
+RESHAPE TODAY (applies immediately, reversible): the layout tools change the Today page right away (the user can revert to automatic any time). Use them when the user says what to focus on, what to show/hide, or how to order Today.
 
 Rules:
-- Only propose what the user explicitly states. Never invent quantities, items, or activities.
+- Only act on what the user explicitly states. Never invent quantities, items, or activities.
 - Choose the best-matching app from the lists below. If nothing fits, say so plainly; do not force a match.
 - For a tracker, if the amount is missing or ambiguous, ask one short clarifying question instead of guessing.
-- After choosing your tools, tell the user in one short, friendly line what you've lined up for them to confirm.
+- After choosing your tools, tell the user in one short, friendly line what you've done / lined up.
 
 ${catalogDigest()}
 
-You can also:
+Capture also supports:
 - add a to-do with add_todo.
 - mark a habit done for today with mark_habit_done (match the user's habit by name; it's idempotent).
 - add a reflection with add_journal_entry, or save a quick reference note with add_note.
-- bump a named tally counter with adjust_counter (defaults to its step; pass amount for a specific number).`;
+- bump a named tally counter with adjust_counter (defaults to its step; pass amount for a specific number).
+
+Reshape Today tools: set_today_focus, set_today_layout, hide_today_app, show_today_app, reset_today_layout. Apps eligible to appear on Today (use these ids for layout tools):
+${todayEligible.map((t) => `  • ${t}`).join("\n")}`;
 
 const TOOLS: Anthropic.Tool[] = [
   {
@@ -531,6 +544,7 @@ export async function runAgentTurn(opts: {
 }): Promise<AgentResult> {
   const client = new Anthropic();
   const proposals: Proposal[] = [];
+  const layoutChanges: { summary: string }[] = [];
   const msgs: Anthropic.MessageParam[] = opts.messages.map((m) => ({
     role: m.role,
     content: m.content,
@@ -541,7 +555,7 @@ export async function runAgentTurn(opts: {
       model: MODEL,
       max_tokens: 1024,
       system: SYSTEM,
-      tools: TOOLS,
+      tools: [...TOOLS, ...LAYOUT_TOOLS],
       messages: msgs,
     });
     msgs.push({ role: "assistant", content: res.content });
@@ -555,17 +569,31 @@ export async function runAgentTurn(opts: {
         .map((b) => b.text)
         .join("\n")
         .trim();
-      return { reply: text || (proposals.length ? "Here's what I'll log:" : "Okay."), proposals };
+      const fallback = proposals.length
+        ? "Here's what I'll log:"
+        : layoutChanges.length
+          ? "Done."
+          : "Okay.";
+      return { reply: text || fallback, proposals, layoutChanges };
     }
 
     const results: Anthropic.ToolResultBlockParam[] = [];
     for (const tu of toolUses) {
-      const out = await planTool(opts.supabase, opts.userId, tu.name, (tu.input ?? {}) as Record<string, unknown>);
-      if (out.proposal) proposals.push({ ...out.proposal, id: `p${proposals.length}` });
-      results.push({ type: "tool_result", tool_use_id: tu.id, content: out.message });
+      const input = (tu.input ?? {}) as Record<string, unknown>;
+      if (LAYOUT_TOOL_NAMES.has(tu.name)) {
+        // Live (Capability A): applies immediately, reversible.
+        const out = await applyLayoutTool(opts.supabase, opts.userId, tu.name, input, REGISTERED_APP_IDS);
+        if (out.change) layoutChanges.push(out.change);
+        results.push({ type: "tool_result", tool_use_id: tu.id, content: out.message });
+      } else {
+        // Plan (Capability B): proposes, nothing written until confirmed.
+        const out = await planTool(opts.supabase, opts.userId, tu.name, input);
+        if (out.proposal) proposals.push({ ...out.proposal, id: `p${proposals.length}` });
+        results.push({ type: "tool_result", tool_use_id: tu.id, content: out.message });
+      }
     }
     msgs.push({ role: "user", content: results });
   }
 
-  return { reply: "That took too many steps — try rephrasing.", proposals };
+  return { reply: "That took too many steps — try rephrasing.", proposals, layoutChanges };
 }

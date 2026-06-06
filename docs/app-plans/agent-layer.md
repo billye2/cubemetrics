@@ -13,6 +13,16 @@ most, and (B) **makes entries into the relevant mini-apps** based on what it lea
 > **North star:** the spine made the product *reach out and bring you back*; the agent makes the
 > product *reshape itself to you and do the busywork for you* — you describe your life in plain
 > words, and your dashboard and your apps rearrange themselves to match.
+>
+> **Update 2026-06-06: both capabilities now ship in the +XP assistant.** Capability B (auto-entries)
+> is propose→confirm + in-session undo (PR #161). **Capability A (reshape Today)** landed too —
+> built **into the +XP assistant chat (text-first)** rather than a separate `/today` Tune panel: live
+> layout tools (`set_today_focus`/`set_today_layout`/`hide_today_app`/`show_today_app`/
+> `reset_today_layout`) write the new `today_prefs` table; `/today` reads it via `resolveTodayApps`
+> (back-compatible). Deviations from the Phase-A spec: no separate Tune panel/route; no extra
+> `AGENT_ENABLED`/`agent_enabled` opt-in (the assistant is already an opt-in surface gated by
+> `ANTHROPIC_API_KEY`); model stays Haiku via the direct SDK. Voice reshaping is deferred (voice is
+> Safari-only); text works everywhere.
 
 ---
 
