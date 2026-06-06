@@ -88,12 +88,43 @@ export function habitsToday(
   });
 }
 
-export function sumToday(rows: { value: number | null }[], goal: number): SpineToday {
+/**
+ * Generic daily-sum-toward-goal builder: sums today's tracker values and shows progress
+ * toward `goal`. Under goal = "due" (the zero-state IS the nudge), at/over = "done". A
+ * single summary item carries the headline; the ring carries the detail. Powers water,
+ * meditation, and any aggregate-sum tracker with a daily goal.
+ */
+export function trackerSumToday(
+  appId: string,
+  rows: { value: number | null }[],
+  goal: number,
+  unit: string,
+): SpineToday {
   const total = rows.reduce((acc, r) => acc + (Number(r.value) || 0), 0);
   const status: TodayStatus = total >= goal ? "done" : "due";
-  const items: TodayItem[] = [{ id: "water:today", label: `${total}/${goal} glasses`, status, href: "/app/water" }];
-  return card("water", items, total, `${total}/${goal} glasses`, {
-    progress: { current: total, target: goal, unit: "glasses" },
+  const label = `${total}/${goal} ${unit}`;
+  const items: TodayItem[] = [{ id: `${appId}:today`, label, status, href: `/app/${appId}` }];
+  return card(appId, items, total, label, {
+    progress: { current: total, target: goal, unit },
+    severity: status,
+  });
+}
+
+export function sumToday(rows: { value: number | null }[], goal: number): SpineToday {
+  return trackerSumToday("water", rows, goal, "glasses");
+}
+
+/**
+ * Weekly-activity builder: how many sessions were logged in the trailing week toward a
+ * soft `target`. Encouragement, not a nag — under target is "upcoming" (no rest-day red),
+ * at/over is "done". No items (it's a headline metric); the ring carries the detail.
+ * Powers workout and any "N times a week" cadence app.
+ */
+export function weeklyCountToday(appId: string, count: number, target: number, noun: string): SpineToday {
+  const status: TodayStatus = count >= target ? "done" : "upcoming";
+  const summary = `${count} ${noun}${count === 1 ? "" : "s"} this week`;
+  return card(appId, [], count, summary, {
+    progress: { current: count, target, unit: noun },
     severity: status,
   });
 }
@@ -298,6 +329,89 @@ export function projectsToday(
   const overdue = items.filter((i) => i.status === "overdue").length;
   const summary = `${active.length} active${overdue ? ` · ${overdue} overdue` : ""}`;
   return card("projecttracker", items, active.length, summary);
+}
+
+/**
+ * Kanban builder: surfaces work-in-flight. "doing" cards become items (what to push on
+ * today); "todo" feeds the count/summary. null when the board has nothing active (empty
+ * or everything in done). Severity is "due" when something's in progress, else "upcoming"
+ * — kanban cards carry no dates, so this is the actionable signal, not a deadline.
+ */
+export function kanbanToday(
+  rows: { id: number; title: string; column_name: string | null }[],
+): SpineToday | null {
+  const lane = (c: string | null) => (c || "todo").toLowerCase();
+  const doing = rows.filter((r) => lane(r.column_name) === "doing");
+  const todo = rows.filter((r) => lane(r.column_name) === "todo");
+  if (doing.length === 0 && todo.length === 0) return null;
+  const items: TodayItem[] = doing.map((c) => ({
+    id: `kanban:${c.id}`,
+    label: c.title,
+    status: "due" as TodayStatus,
+    href: "/app/kanban",
+  }));
+  const summary =
+    [doing.length ? `${doing.length} doing` : "", todo.length ? `${todo.length} to-do` : ""]
+      .filter(Boolean)
+      .join(" · ");
+  return card("kanban", items, doing.length + todo.length, summary, {
+    severity: doing.length ? "due" : "upcoming",
+  });
+}
+
+/**
+ * Countdown builder: dated targets whose next occurrence falls within the horizon.
+ * recurring_yearly rolls the MM-DD to this year (or next, if already past); one-off
+ * past dates are dropped. Far-future targets are out of scope for Today. null when none soon.
+ */
+export function countdownToday(
+  rows: { id: number; title: string; target_date: string; recurring_yearly: boolean }[],
+  today: string,
+  soon: string,
+): SpineToday | null {
+  const todayYear = Number(today.slice(0, 4));
+  const items: TodayItem[] = [];
+  for (const r of rows) {
+    let next: string;
+    if (r.recurring_yearly) {
+      const md = r.target_date.slice(5, 10); // MM-DD
+      next = `${todayYear}-${md}`;
+      if (next < today) next = `${todayYear + 1}-${md}`;
+    } else {
+      next = r.target_date.slice(0, 10);
+    }
+    if (next < today || next > soon) continue; // past one-off, or too far to matter today
+    items.push({ id: `countdown:${r.id}`, label: r.title, status: bucketStatus(next, today), due: next, href: "/app/countdown" });
+  }
+  if (items.length === 0) return null;
+  const todayCount = items.filter((i) => i.status === "due").length;
+  return card("countdown", items, items.length, todayCount ? `${todayCount} today` : `${items.length} soon`);
+}
+
+/**
+ * Calendar builder: events starting within [today, soon]. Recurrence expansion is out of
+ * scope (recurring events still surface on their stored start_date). null when none soon.
+ */
+export function calendarToday(
+  rows: { id: number; title: string; start_date: string; start_time: string | null }[],
+  today: string,
+  soon: string,
+): SpineToday | null {
+  const items: TodayItem[] = [];
+  for (const r of rows) {
+    const d = r.start_date.slice(0, 10);
+    if (d < today || d > soon) continue;
+    items.push({
+      id: `calendar:${r.id}`,
+      label: r.title,
+      status: bucketStatus(d, today),
+      due: r.start_time ? `${d}T${r.start_time}` : d,
+      href: "/app/calendar",
+    });
+  }
+  if (items.length === 0) return null;
+  const todayCount = items.filter((i) => i.status === "due").length;
+  return card("calendar", items, items.length, todayCount ? `${todayCount} today` : `${items.length} upcoming`);
 }
 
 export function budgetToday(planned: number, spent: number): SpineToday {
