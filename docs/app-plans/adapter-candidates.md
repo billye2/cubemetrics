@@ -2,10 +2,11 @@
 
 A grounded audit of which mini-apps can get a Spine `today()` adapter, backing the roadmap in
 [the seed-archetype spec](agent-phase-d-seed-archetypes.md) §4 and the [Agent Layer](agent-layer.md).
-**Update 2026-06-06: 30 apps now have adapters** (registry grew 6 → 30 over the 06-05/06 sessions).
-Most recently shipped: `steps`, `caffeine`, `stress`, `brag` — `caffeine` introduced the
-`trackerLimitToday` "at-most" builder (over the daily limit = overdue; nothing logged = no card).
-The list below remains the prioritized backlog for the apps still uncovered.
+**Update 2026-06-06: 35 apps now have adapters** (registry grew 6 → 35 over the 06-05/06 sessions).
+Recently shipped: `steps`, `caffeine`, `stress`, `brag`, then `productivity`, `screentime`,
+`writingtracker`, `gratitude`, `grocery`. `caffeine`/`screentime` use the `trackerLimitToday`
+"at-most" builder (over the daily limit = overdue; nothing logged = no card). The list below remains
+the prioritized backlog for the apps still uncovered.
 
 ## The bar (important: you don't need a numeric target)
 A `SpineToday` card needs only to compute a **`severity`** (`overdue/due/upcoming/done`) and a

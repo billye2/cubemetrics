@@ -55,6 +55,11 @@ import { adapter as stepsAdapter } from "@/lib/spine/adapters/steps";
 import { adapter as stressAdapter } from "@/lib/spine/adapters/stress";
 import { adapter as caffeineAdapter } from "@/lib/spine/adapters/caffeine";
 import { adapter as bragAdapter } from "@/lib/spine/adapters/brag";
+import { adapter as productivityAdapter } from "@/lib/spine/adapters/productivity";
+import { adapter as screentimeAdapter } from "@/lib/spine/adapters/screentime";
+import { adapter as writingtrackerAdapter } from "@/lib/spine/adapters/writingtracker";
+import { adapter as gratitudeAdapter } from "@/lib/spine/adapters/gratitude";
+import { adapter as groceryAdapter } from "@/lib/spine/adapters/grocery";
 
 const TODAY = "2026-05-31";
 
@@ -457,7 +462,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter, weightAdapter, meditationAdapter, workoutAdapter, kanbanAdapter, countdownAdapter, calendarAdapter, dailyplannerAdapter, routinesAdapter, stepsAdapter, stressAdapter, caffeineAdapter, bragAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter, weightAdapter, meditationAdapter, workoutAdapter, kanbanAdapter, countdownAdapter, calendarAdapter, dailyplannerAdapter, routinesAdapter, stepsAdapter, stressAdapter, caffeineAdapter, bragAdapter, productivityAdapter, screentimeAdapter, writingtrackerAdapter, gratitudeAdapter, groceryAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {
