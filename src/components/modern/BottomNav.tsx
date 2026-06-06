@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
  * is its own page.
  */
 
-const TAB_ROUTES = new Set(["/today", "/apps", "/app/xp", "/settings"]);
+const TAB_ROUTES = new Set(["/today", "/apps", "/assistant", "/app/xp", "/settings"]);
 
 function shouldShow(pathname: string): boolean {
   return TAB_ROUTES.has(pathname) || pathname.startsWith("/app/");
@@ -37,6 +37,7 @@ export function BottomNav() {
         <div className="mx-auto flex h-16 max-w-3xl items-stretch justify-around px-1">
           <Tab href="/today" label="Today" active={pathname === "/today"} icon={<IconToday />} />
           <Tab href="/apps" label="Apps" active={pathname === "/apps" || inApp} icon={<IconApps />} />
+          <PlusTab href="/assistant" active={pathname === "/assistant"} />
           <Tab href="/app/xp" label="Progress" active={pathname === "/app/xp"} icon={<IconProgress />} />
           <Tab href="/settings" label="Settings" active={pathname === "/settings"} icon={<IconSettings />} />
         </div>
@@ -66,6 +67,33 @@ function Tab({
     >
       <span className="flex h-6 w-6 items-center justify-center">{icon}</span>
       <span>{label}</span>
+    </Link>
+  );
+}
+
+/**
+ * The +XP center action — a raised FAB-style tab opening the AI quick-capture
+ * assistant (chat/voice → logs entries into the mini-apps). Visually distinct
+ * from the flat nav tabs so it reads as the primary "add" action.
+ */
+function PlusTab({ href, active }: { href: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      aria-label="+XP assistant"
+      className="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition active:scale-95"
+    >
+      <span
+        className={`-mt-3 flex h-9 w-9 items-center justify-center rounded-full text-zinc-950 shadow-lg ring-4 ring-zinc-950 transition ${
+          active ? "bg-cyan-400" : "bg-cyan-500 hover:bg-cyan-400"
+        }`}
+      >
+        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </span>
+      <span className={active ? "text-cyan-400" : "text-zinc-500"}>+XP</span>
     </Link>
   );
 }
