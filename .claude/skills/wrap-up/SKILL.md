@@ -45,7 +45,26 @@ Persist what changed so the next session starts informed:
 - **`docs/database.md`** — add columns/tables if the schema changed.
 - **`CLAUDE.md` / `docs/*.md`** — only if conventions or structure changed.
 
-## 4. Gates before committing (non-negotiable)
+## 4. Write the session handoff doc
+
+Create `docs/app-plans/handoff-<YYYY-MM-DD>.md` (today's date) — the durable record
+the next session reads to get a running start. Match the existing handoffs in that
+folder; don't invent a new shape.
+
+- **Opening paragraph** — the session's arcs in 3–5 sentences: the PR range, the
+  major themes, and the green/red status of tests + build.
+- **Shipped** — sectioned by theme; one entry per feature/fix with the concrete
+  artifacts (file paths, new builders/tables/columns, migration filenames, PR #s).
+- **Still open** — the numbered next-session punch list (carry forward anything left
+  P2/P3 or parked, with enough context to resume cold).
+- **Provenance** (last line) — `Continues [[handoff-<prev-date>]]`, the `master`
+  commit range, and `[[wikilinks]]` to the memory files touched this session.
+
+If a same-day handoff already exists (a continued session), extend it rather than
+creating a second file. This doc is the source the step-1 summary and step-2 memory
+update both condense from — write it once, here, and keep the three consistent.
+
+## 5. Gates before committing (non-negotiable)
 
 - `npm test` — green.
 - `npm run build` — green.
@@ -54,7 +73,7 @@ Persist what changed so the next session starts informed:
 
 Never proceed past a red gate. If something fails, fix it or report it and stop.
 
-## 5. Commit
+## 6. Commit
 
 - Stage everything: `git add -A`.
 - One honest commit message: what shipped, what's still P2/P3. If on the default
@@ -63,14 +82,14 @@ Never proceed past a red gate. If something fails, fix it or report it and stop.
 - End the message with:
   `Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>`
 
-## 6. Merge
+## 7. Merge
 
 - If on a **feature branch**: integrate into `master` (fast-forward/merge, or open
-  and merge a PR if the user prefers review). Resolve conflicts; re-run step 4 if
+  and merge a PR if the user prefers review). Resolve conflicts; re-run step 5 if
   the merge changed code.
 - If already on **`master`**: nothing to merge — note it and move on.
 
-## 7. Deploy
+## 8. Deploy
 
 - Apply any pending Supabase migration to the remote project (builder autonomy).
 - `git push origin master` — this auto-deploys production via the Vercel GitHub App.
@@ -78,7 +97,7 @@ Never proceed past a red gate. If something fails, fix it or report it and stop.
   (production deploy). If it does, surface that to the user and wait for their go-
   ahead rather than working around it.
 
-## 8. Call it a night
+## 9. Call it a night
 
 Final sign-off:
 - Confirm the commit hash(es) pushed and that the deploy is triggered.
