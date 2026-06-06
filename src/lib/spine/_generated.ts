@@ -3,7 +3,9 @@
 // `npm run build:spine`. See docs/app-plans/spine-phase1.md.
 import type { SpineAdapter } from "./types";
 import { adapter as bills } from "./adapters/bills";
+import { adapter as brag } from "./adapters/brag";
 import { adapter as budget } from "./adapters/budget";
+import { adapter as caffeine } from "./adapters/caffeine";
 import { adapter as calendar } from "./adapters/calendar";
 import { adapter as carcare } from "./adapters/carcare";
 import { adapter as countdown } from "./adapters/countdown";
@@ -23,10 +25,12 @@ import { adapter as plantcare } from "./adapters/plantcare";
 import { adapter as projecttracker } from "./adapters/projecttracker";
 import { adapter as routines } from "./adapters/routines";
 import { adapter as sleep } from "./adapters/sleep";
+import { adapter as steps } from "./adapters/steps";
+import { adapter as stress } from "./adapters/stress";
 import { adapter as todo } from "./adapters/todo";
 import { adapter as vocabulary } from "./adapters/vocabulary";
 import { adapter as water } from "./adapters/water";
 import { adapter as weight } from "./adapters/weight";
 import { adapter as workout } from "./adapters/workout";
 
-export const ADAPTERS: SpineAdapter[] = [bills, budget, calendar, carcare, countdown, dailyplanner, energy, flashcards, goals, habits, invoices, journal, kanban, keepintouch, medication, meditation, mood, plantcare, projecttracker, routines, sleep, todo, vocabulary, water, weight, workout];
+export const ADAPTERS: SpineAdapter[] = [bills, brag, budget, caffeine, calendar, carcare, countdown, dailyplanner, energy, flashcards, goals, habits, invoices, journal, kanban, keepintouch, medication, meditation, mood, plantcare, projecttracker, routines, sleep, steps, stress, todo, vocabulary, water, weight, workout];

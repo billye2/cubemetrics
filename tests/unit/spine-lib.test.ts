@@ -7,6 +7,7 @@ import {
   habitsToday,
   sumToday,
   trackerSumToday,
+  trackerLimitToday,
   weeklyCountToday,
   budgetToday,
   billsToday,
@@ -50,6 +51,10 @@ import { adapter as countdownAdapter } from "@/lib/spine/adapters/countdown";
 import { adapter as calendarAdapter } from "@/lib/spine/adapters/calendar";
 import { adapter as dailyplannerAdapter } from "@/lib/spine/adapters/dailyplanner";
 import { adapter as routinesAdapter } from "@/lib/spine/adapters/routines";
+import { adapter as stepsAdapter } from "@/lib/spine/adapters/steps";
+import { adapter as stressAdapter } from "@/lib/spine/adapters/stress";
+import { adapter as caffeineAdapter } from "@/lib/spine/adapters/caffeine";
+import { adapter as bragAdapter } from "@/lib/spine/adapters/brag";
 
 const TODAY = "2026-05-31";
 
@@ -151,6 +156,19 @@ describe("per-app builders", () => {
     expect(weeklyCountToday("workout", 1, 4, "workout").summary).toBe("1 workout this week");
     expect(weeklyCountToday("workout", 4, 4, "workout").severity).toBe("done");
     expect(weeklyCountToday("workout", 0, 4, "workout").summary).toBe("0 workouts this week");
+  });
+
+  it("trackerLimitToday (caffeine): at-most limit, over=overdue, empty=null", () => {
+    const under = trackerLimitToday("caffeine", [{ value: 95 }, { value: 150 }], 400, "mg")!;
+    expect(under.appId).toBe("caffeine");
+    expect(under.count).toBe(245);
+    expect(under.summary).toBe("245/400 mg");
+    expect(under.severity).toBe("upcoming"); // within limit = neutral, not a green "done"
+    expect(under.progress).toEqual({ current: 245, target: 400, unit: "mg" });
+    expect(under.items).toHaveLength(0);
+    expect(trackerLimitToday("caffeine", [{ value: 500 }], 400, "mg")!.severity).toBe("overdue");
+    expect(trackerLimitToday("caffeine", [], 400, "mg")).toBeNull();
+    expect(trackerLimitToday("caffeine", [{ value: 0 }], 400, "mg")).toBeNull();
   });
 
   it("budgetToday: pct + over-budget severity", () => {
@@ -439,7 +457,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter, weightAdapter, meditationAdapter, workoutAdapter, kanbanAdapter, countdownAdapter, calendarAdapter, dailyplannerAdapter, routinesAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter, weightAdapter, meditationAdapter, workoutAdapter, kanbanAdapter, countdownAdapter, calendarAdapter, dailyplannerAdapter, routinesAdapter, stepsAdapter, stressAdapter, caffeineAdapter, bragAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {

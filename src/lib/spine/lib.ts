@@ -115,6 +115,28 @@ export function sumToday(rows: { value: number | null }[], goal: number): SpineT
 }
 
 /**
+ * Daily "at-most" limit builder (caffeine, …): sums today's intake against a `limit` you
+ * want to stay under. Inverse of trackerSumToday — here MORE is worse. Nothing logged today
+ * → null (being under a limit isn't a nudge to consume; an empty card would just be noise).
+ * Within limit = "upcoming" (neutral info, not a green "done"); over = "overdue" (the signal).
+ * Headline metric only (no items); the ring carries the detail.
+ */
+export function trackerLimitToday(
+  appId: string,
+  rows: { value: number | null }[],
+  limit: number,
+  unit: string,
+): SpineToday | null {
+  const total = rows.reduce((acc, r) => acc + (Number(r.value) || 0), 0);
+  if (total <= 0) return null;
+  const summary = `${total}/${limit} ${unit}`;
+  return card(appId, [], total, summary, {
+    progress: { current: total, target: limit, unit },
+    severity: total > limit ? "overdue" : "upcoming",
+  });
+}
+
+/**
  * Weekly-activity builder: how many sessions were logged in the trailing week toward a
  * soft `target`. Encouragement, not a nag — under target is "upcoming" (no rest-day red),
  * at/over is "done". No items (it's a headline metric); the ring carries the detail.
