@@ -365,9 +365,11 @@ the agent by construction.
   `proposals`, the `/assistant` chat shows them as a Confirm checklist, and only `applyProposals`
   (user-confirmed) executes via `executeProposal`. Each applied entry carries an **in-session undo
   handle** (`{kind:"row",table,id}` or a counter delta) that `undoEntry` reverts — allowlisted tables
-  (`INSERT_TABLES`) + user-scoped. **Deviation from spec:** the persistent `agent_actions` audit table
-  was **deferred** (it'd be a prod migration on a live feature); in-session undo delivers the same
-  user-facing safety. The `agent_actions` log remains a clean follow-up for cross-session undo/audit.
+  (`INSERT_TABLES`) + user-scoped. **The persistent `agent_actions` audit log SHIPPED 2026-06-06**
+  (migration `20260606T0900`, applied to prod): every applied write is logged with its undo handle, so
+  undo is now **server-authoritative** (the client passes back only the row id — `undoActionById` looks
+  up the handle, reverts, stamps `undone_at`) and works **across sessions** (the assistant loads recent
+  un-undone rows on mount via `recentAgentActions` → a "Recent entries" panel). `src/lib/agent/audit.ts`.
 - ✅ **v1 disposition — spec only for now.** This document is the plan; no build is scheduled yet.
   Phase A (reshape Today) remains the recommended first build whenever it kicks off.
 - ✅ **Model — swappable, default Haiku 4.5 (2026-06-06).** The model is an `AGENT_MODEL` env var (AI

@@ -5,15 +5,14 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import {
   runAgentTurn,
   executeProposal,
-  undoEntry,
   agentConfigured,
   type ChatMessage,
   type AgentResult,
   type Proposal,
   type AppliedEntry,
-  type UndoHandle,
 } from "@/lib/agent/run";
 import { clearTodayPrefs } from "@/lib/agent/layout";
+import { logAgentAction, undoActionById, getRecentActions, type RecentAction } from "@/lib/agent/audit";
 
 const HISTORY_CAP = 16; // keep the prompt small — recent turns only
 
@@ -57,22 +56,31 @@ export async function resetTodayLayout(): Promise<boolean> {
   return ok;
 }
 
-/** Apply the user-confirmed proposals; returns the applied entries with undo handles. */
+/** Apply the user-confirmed proposals; logs each to the audit log and returns the applied
+ *  entries with their agent_actions id (the cross-session undo handle). */
 export async function applyProposals(proposals: Proposal[]): Promise<AppliedEntry[]> {
   const { supabase, userId } = await requireUser();
   const applied: AppliedEntry[] = [];
   for (const p of proposals.slice(0, 25)) {
     const undo = await executeProposal(supabase, userId, p);
-    if (undo) applied.push({ label: p.label, undo });
+    if (!undo) continue;
+    const actionId = await logAgentAction(supabase, userId, { tool: p.tool, label: p.label, undo });
+    applied.push({ label: p.label, actionId });
   }
   if (applied.length) revalidatePath("/today");
   return applied;
 }
 
-/** Undo a single applied entry. Returns whether it reverted. */
-export async function undoAppliedEntry(undo: UndoHandle): Promise<boolean> {
+/** Undo a single applied entry by its audit-log id (server-authoritative). */
+export async function undoAppliedEntry(actionId: number): Promise<boolean> {
   const { supabase, userId } = await requireUser();
-  const ok = await undoEntry(supabase, userId, undo);
+  const ok = await undoActionById(supabase, userId, actionId);
   if (ok) revalidatePath("/today");
   return ok;
+}
+
+/** Recent still-undoable agent writes (for cross-session undo in the assistant). */
+export async function recentAgentActions(): Promise<RecentAction[]> {
+  const { supabase, userId } = await requireUser();
+  return getRecentActions(supabase, userId);
 }

@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { sendToAssistant, applyProposals, undoAppliedEntry, resetTodayLayout } from "./actions";
+import {
+  sendToAssistant,
+  applyProposals,
+  undoAppliedEntry,
+  resetTodayLayout,
+  recentAgentActions,
+} from "./actions";
 import type { ChatMessage, Proposal, AppliedEntry } from "@/lib/agent/run";
+import type { RecentAction } from "@/lib/agent/audit";
 
 interface Msg extends ChatMessage {
   proposals?: Proposal[]; // pending writes awaiting confirmation
@@ -45,6 +52,7 @@ export function AssistantChat() {
   const [pending, start] = useTransition();
   const [busy, startBusy] = useTransition(); // apply / undo
   const [deselected, setDeselected] = useState<Record<string, boolean>>({});
+  const [recent, setRecent] = useState<RecentAction[]>([]);
   const [listening, setListening] = useState(false);
   const [speak, setSpeak] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
@@ -55,6 +63,8 @@ export function AssistantChat() {
   // Detect support after mount (avoids SSR/hydration mismatch and per-render construction).
   useEffect(() => {
     setVoiceSupported(!!speechCtor());
+    // Load still-undoable writes from prior sessions (cross-session undo).
+    recentAgentActions().then(setRecent).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -112,8 +122,10 @@ export function AssistantChat() {
   }
 
   function undoMsg(msgIdx: number, entryIdx: number, entry: AppliedEntry) {
+    if (entry.actionId == null) return;
+    const actionId = entry.actionId;
     startBusy(async () => {
-      const ok = await undoAppliedEntry(entry.undo);
+      const ok = await undoAppliedEntry(actionId);
       if (!ok) return;
       setMessages((ms) =>
         ms.map((m, i) =>
@@ -122,6 +134,14 @@ export function AssistantChat() {
             : m,
         ),
       );
+      setRecent((r) => r.filter((a) => a.id !== actionId));
+    });
+  }
+
+  function undoRecent(id: number) {
+    startBusy(async () => {
+      const ok = await undoAppliedEntry(id);
+      if (ok) setRecent((r) => r.filter((a) => a.id !== id));
     });
   }
 
@@ -192,6 +212,30 @@ export function AssistantChat() {
 
   return (
     <div className="flex flex-col" style={{ minHeight: "60vh" }}>
+      {/* Cross-session undo: still-reversible writes from earlier (audit log). */}
+      {recent.length > 0 && (
+        <details className="mb-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 px-3.5 py-2.5">
+          <summary className="cursor-pointer text-xs font-medium text-zinc-400">
+            Recent entries — {recent.length} undoable
+          </summary>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {recent.map((a) => (
+              <div key={a.id} className="flex items-center justify-between gap-2 text-sm text-zinc-300">
+                <span className="min-w-0 truncate">{a.label}</span>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => undoRecent(a.id)}
+                  className="shrink-0 text-xs text-zinc-500 hover:text-zinc-200 disabled:opacity-50"
+                >
+                  ↶ Undo
+                </button>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
       <div className="flex-1 space-y-3">
         {messages.map((m, i) => (
           <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
@@ -255,15 +299,17 @@ export function AssistantChat() {
                         className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/30"
                       >
                         ✓ {e.label}
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={() => undoMsg(i, j, e)}
-                          className="text-emerald-400/70 hover:text-emerald-200 disabled:opacity-50"
-                          aria-label={`Undo ${e.label}`}
-                        >
-                          ↶
-                        </button>
+                        {e.actionId != null && (
+                          <button
+                            type="button"
+                            disabled={busy}
+                            onClick={() => undoMsg(i, j, e)}
+                            className="text-emerald-400/70 hover:text-emerald-200 disabled:opacity-50"
+                            aria-label={`Undo ${e.label}`}
+                          >
+                            ↶
+                          </button>
+                        )}
                       </span>
                     ),
                   )}

@@ -392,6 +392,23 @@ language ("focus on fitness, hide journaling"); `resolveTodayApps` reads it (an 
 hidden filtered, else the usual `chooseApps`). **Empty/absent ⇒ identical to the pre-existing
 usage-based selection**, so it's additive and safe before the migration is applied. Owner-only RLS.
 
+### agent_actions
+| Column | Type | Notes |
+|--------|------|-------|
+| id | BIGINT | PK (identity) |
+| user_id | UUID | owner |
+| tool | TEXT | e.g. `add_todo`, `log_tracker` |
+| label | TEXT | human summary (the applied chip) |
+| undo | JSONB | the UndoHandle — `{kind:"row",table,id}` or `{kind:"counter",counterId,delta,eventId}` |
+| created_at | TIMESTAMPTZ | |
+| undone_at | TIMESTAMPTZ | stamped on revert; non-null ⇒ already undone |
+
+Agent Layer **Capability B** audit + undo log (migration `20260606T0900_agent_actions.sql`). Every
+confirmed proposal the +XP assistant applies is recorded here with its undo handle, so undo is
+**server-authoritative** (the client passes back only the row id, never a forgeable handle) and works
+**across sessions** (the assistant loads recent un-undone rows on mount). Owner-only RLS; indexed
+`(user_id, created_at DESC)`.
+
 ## RLS Policy Pattern
 ```sql
 ALTER TABLE public.<table> ENABLE ROW LEVEL SECURITY;
