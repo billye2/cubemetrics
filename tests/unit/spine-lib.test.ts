@@ -21,6 +21,7 @@ import {
   kanbanToday,
   countdownToday,
   calendarToday,
+  checklistDueToday,
 } from "@/lib/spine/lib";
 import { ITEM_CAP, type TodayItem, type SpineToday, type SpineCtx } from "@/lib/spine/types";
 import { adapter as todoAdapter } from "@/lib/spine/adapters/todo";
@@ -47,6 +48,8 @@ import { adapter as workoutAdapter } from "@/lib/spine/adapters/workout";
 import { adapter as kanbanAdapter } from "@/lib/spine/adapters/kanban";
 import { adapter as countdownAdapter } from "@/lib/spine/adapters/countdown";
 import { adapter as calendarAdapter } from "@/lib/spine/adapters/calendar";
+import { adapter as dailyplannerAdapter } from "@/lib/spine/adapters/dailyplanner";
+import { adapter as routinesAdapter } from "@/lib/spine/adapters/routines";
 
 const TODAY = "2026-05-31";
 
@@ -397,6 +400,23 @@ describe("per-app builders", () => {
     expect(card!.items[0].due).toBe("2026-05-31T09:00:00"); // today, with time, sorts first
     expect(calendarToday([{ id: 9, title: "Far", start_date: "2026-09-01", start_time: null }], TODAY, soon)).toBeNull();
   });
+
+  it("checklistDueToday: undated open = due, dated past = overdue, null when empty", () => {
+    const card = checklistDueToday(
+      "dailyplanner",
+      [
+        { id: 1, title: "Email", due_date: null }, // undated open -> due
+        { id: 2, title: "Pay rent", due_date: "2026-05-29" }, // overdue
+        { id: 3, title: "Gym", due_date: "2026-05-31" }, // due today
+      ],
+      TODAY,
+    );
+    expect(card!.count).toBe(3);
+    expect(card!.summary).toBe("3 to do · 1 overdue");
+    expect(card!.severity).toBe("overdue");
+    expect(card!.items[0].id).toBe("dailyplanner:2"); // overdue floats first
+    expect(checklistDueToday("routines", [], TODAY)).toBeNull();
+  });
 });
 
 // ── Security Finding 1: every adapter today() MUST filter by user_id. Under the
@@ -419,7 +439,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter, weightAdapter, meditationAdapter, workoutAdapter, kanbanAdapter, countdownAdapter, calendarAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter, weightAdapter, meditationAdapter, workoutAdapter, kanbanAdapter, countdownAdapter, calendarAdapter, dailyplannerAdapter, routinesAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {
