@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { saveNotificationPrefs } from "./actions";
+import { saveNotificationPrefs, previewDigest } from "./actions";
 
 interface Prefs {
   email_enabled: boolean;
@@ -55,6 +55,14 @@ export function NotificationsView({ prefs }: { prefs: Prefs }) {
   const [state, setState] = useState<Prefs>(prefs);
   const [pending, start] = useTransition();
   const [saved, setSaved] = useState(false);
+  const [previewKind, setPreviewKind] = useState<"morning" | "evening">("morning");
+  const [preview, setPreview] = useState<{ subject: string; html: string } | null>(null);
+  const [previewPending, startPreview] = useTransition();
+
+  function runPreview(kind: "morning" | "evening") {
+    setPreviewKind(kind);
+    startPreview(async () => setPreview(await previewDigest(kind)));
+  }
 
   function set<K extends keyof Prefs>(key: K, value: Prefs[K]) {
     setState((s) => ({ ...s, [key]: value }));
@@ -153,6 +161,44 @@ export function NotificationsView({ prefs }: { prefs: Prefs }) {
       >
         {saved ? "Saved ✓" : pending ? "Saving…" : "Save"}
       </button>
+
+      <div className="space-y-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+        <div className="text-sm font-semibold text-zinc-200">Preview today&apos;s digest</div>
+        <p className="text-xs text-zinc-500">
+          Exactly what the next digest would contain, computed live from your day. Nothing is sent.
+        </p>
+        <div className="flex gap-1.5">
+          {(["morning", "evening"] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => runPreview(k)}
+              disabled={previewPending}
+              className={`rounded-full px-3 py-1 text-xs font-medium capitalize transition disabled:opacity-50 ${
+                previewKind === k && preview
+                  ? "bg-cyan-500/15 text-cyan-300 ring-1 ring-cyan-500/30"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              {k}
+            </button>
+          ))}
+        </div>
+        {previewPending && <p className="text-xs text-zinc-500">Building preview…</p>}
+        {preview && !previewPending && (
+          <div className="space-y-2">
+            <div className="text-xs text-zinc-400">
+              Subject: <span className="text-zinc-200">{preview.subject}</span>
+            </div>
+            <iframe
+              title="Digest preview"
+              srcDoc={preview.html}
+              sandbox=""
+              className="h-[460px] w-full rounded-xl border border-zinc-800"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
