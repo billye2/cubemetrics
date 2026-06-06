@@ -55,7 +55,7 @@ export default async function AppDispatch({
   if (app.ui === "checklist") {
     const { data } = await supabase
       .from("checklists")
-      .select("id, title, note, completed, sort_order, created_at")
+      .select("id, title, note, completed, sort_order, created_at, due_date")
       .eq("user_id", user.id)
       .eq("list_type", config.listType!)
       .order("completed", { ascending: true })

@@ -39,6 +39,7 @@ export async function checklistAddAction(
   listType: string,
   title: string,
   note: string = "",
+  dueDate: string = "",
 ) {
   if (!title.trim()) return;
   const { supabase, userId, path } = await ctx(appId);
@@ -47,7 +48,19 @@ export async function checklistAddAction(
     list_type: listType,
     title: title.trim(),
     note: note.trim() || null,
+    due_date: dueDate.trim() || null,
   });
+  revalidatePath(path);
+}
+
+/** Set or clear an item's due date (empty string clears it). */
+export async function checklistSetDueAction(appId: string, id: number, dueDate: string) {
+  const { supabase, userId, path } = await ctx(appId);
+  await supabase
+    .from("checklists")
+    .update({ due_date: dueDate.trim() || null })
+    .eq("id", id)
+    .eq("user_id", userId);
   revalidatePath(path);
 }
 
