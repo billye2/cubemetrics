@@ -414,6 +414,29 @@ export function calendarToday(
   return card("calendar", items, items.length, todayCount ? `${todayCount} today` : `${items.length} upcoming`);
 }
 
+/**
+ * Checklist builder (dailyplanner, routines, …): incomplete items as today's actionable
+ * list. A due_date refines urgency (overdue/due/upcoming via bucketStatus); undated items
+ * are plain "due" — for these day-scoped lists, an open item IS for today. null when the
+ * list is empty or fully checked.
+ */
+export function checklistDueToday(
+  appId: string,
+  rows: { id: number; title: string; due_date: string | null }[],
+  today: string,
+): SpineToday | null {
+  if (rows.length === 0) return null;
+  const items: TodayItem[] = rows.map((r) => ({
+    id: `${appId}:${r.id}`,
+    label: r.title,
+    status: r.due_date ? bucketStatus(r.due_date, today) : ("due" as TodayStatus),
+    due: r.due_date ?? undefined,
+    href: `/app/${appId}`,
+  }));
+  const overdue = items.filter((i) => i.status === "overdue").length;
+  return card(appId, items, rows.length, `${rows.length} to do${overdue ? ` · ${overdue} overdue` : ""}`);
+}
+
 export function budgetToday(planned: number, spent: number): SpineToday {
   const pct = planned > 0 ? spent / planned : null;
   const severity: TodayStatus = pct != null && pct > 1 ? "overdue" : "upcoming";
