@@ -29,14 +29,20 @@ dormant Phase-5 insight line, so we stay on one path):
 | **Vercel AI Gateway** *(recommended)* | `ai` SDK `generateText({ model: "anthropic/claude-sonnet-4-6", tools, ... })` | `AI_GATEWAY_API_KEY` | Unified provider access, observability, model fallback, zero-data-retention. Same path Phase 5 specced (`docs/app-plans/spine-phase5.md`). Tool-calling + streaming supported. |
 | **Direct Anthropic SDK** | `@anthropic-ai/sdk` with the Messages API | `ANTHROPIC_API_KEY` | The repo already holds `ANTHROPIC_API_KEY` — but as a **GitHub Actions** secret for the `@claude` code action (CI only), *not* a runtime/deployment secret. Adding it at runtime is an option but forks us off the gateway path. |
 
-**Dependencies to add:** `ai` + `zod` (Phase 5 already calls for these; this reuses them). The
-interactive agent needs real tool-use reasoning over the user's whole context, so the model default
-is **Sonnet 4.6**, not Haiku. Reserve Haiku (`anthropic/claude-haiku-4-5`) for cheap one-shot
-extraction passes (Capability B's "what did they tell me" parse) where reliability is less critical.
+**Dependencies to add:** `ai` + `zod` (Phase 5 already calls for these; this reuses them). The model
+is **swappable via an `AGENT_MODEL` env var** (AI Gateway `provider/model` string) so the tier is an
+ops decision, not a code change. **Default: `anthropic/claude-haiku-4-5`** — Phase A's job is bounded
+(read a compact snapshot → emit 1–3 tool calls), not a long-horizon loop, so Haiku is sufficient and
+~3× cheaper than Sonnet / 5× cheaper than Opus. Bump `AGENT_MODEL` to `anthropic/claude-sonnet-4-6`
+if dogfooding shows it stumble on many-entry Capability-B turns or vague focus statements. Reliability
+on a small model comes from **strict structured outputs** (every tool `strict: true` + zod schema),
+not from a bigger model. Note: `effort` is **not** supported on Haiku 4.5 — omit it (it's an Opus/
+Sonnet-4.6 parameter); only set `effort` if `AGENT_MODEL` is pointed at Sonnet/Opus.
 
 **Gating (mirror Phase 5's discipline):** a global kill switch `AGENT_ENABLED` + a per-user opt-in
-(reuse / extend `notification_prefs`; e.g. `agent_enabled boolean default false`). No key or flag ⇒
-the feature is invisible and the app behaves exactly as today (safe-without-secrets, like the digest).
+(reuse / extend `notification_prefs`; e.g. `agent_enabled boolean default false`) + the tier knob
+`AGENT_MODEL` (default `anthropic/claude-haiku-4-5`; see §1). No key or flag ⇒ the feature is
+invisible and the app behaves exactly as today (safe-without-secrets, like the digest).
 
 ---
 
@@ -176,7 +182,8 @@ src/app/today/_agent/   — the chat panel client component + its server action.
 ### 6.1 Runtime & provider
 - `runAgentTurn` = `generateText({ model, system, messages, tools, stopWhen: stepCountIs(N) })` via
   the AI Gateway. `N` (max tool steps) capped low (e.g. 6) to bound cost and runaway loops.
-- Model: `"anthropic/claude-sonnet-4-6"`. `maxOutputTokens` bounded. `abortSignal` timeout.
+- Model: `process.env.AGENT_MODEL ?? "anthropic/claude-haiku-4-5"` (swappable; see §1). `maxOutputTokens`
+  bounded. `abortSignal` timeout. Pass `effort` only when `AGENT_MODEL` is a Sonnet/Opus model — Haiku rejects it.
 - Runs in the **user's Supabase session** (RLS-enforced). Never service-role.
 - All gated by `guard.ts`; any failure (no key, flag off, over cap) ⇒ graceful "agent unavailable",
   never an error surface. The rest of `/today` is unaffected.
@@ -348,10 +355,15 @@ the agent by construction.
   logs may graduate to live auto-apply only after the confirm flow has earned trust.
 - ✅ **v1 disposition — spec only for now.** This document is the plan; no build is scheduled yet.
   Phase A (reshape Today) remains the recommended first build whenever it kicks off.
+- ✅ **Model — swappable, default Haiku 4.5 (2026-06-06).** The model is an `AGENT_MODEL` env var (AI
+  Gateway `provider/model` string), default `anthropic/claude-haiku-4-5`. Phase A's tool loop is
+  bounded (read a compact snapshot → emit 1–3 tool calls), so Haiku is sufficient at ~3× lower cost
+  than Sonnet / 5× lower than Opus; **strict structured outputs** (every tool `strict: true` + zod
+  schema), not a bigger model, carry reliability. Bump the env var to `anthropic/claude-sonnet-4-6`
+  if eval shows it stumble on many-entry Capability-B turns or vague focus statements — no code
+  change. `effort` is unsupported on Haiku 4.5; only set it when `AGENT_MODEL` points at Sonnet/Opus.
 
 **Still open (yours to make at build time):**
-2. **Model.** Recommend **Sonnet 4.6** for the interactive agent (reliable tool-use), Haiku for
-   cheap extraction. (Alt: Haiku-only to minimize cost — likely too weak for multi-step tool loops.)
 4. **Conversation persistence.** Recommend **ephemeral/stateless v1** (no `agent_threads`); add
    persistence if multi-turn memory proves valuable.
 5. **Surface placement.** Recommend a **slide-over panel on `/today`** (the thing it reshapes). (Alt:
