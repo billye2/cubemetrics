@@ -39,7 +39,8 @@ npm run test:watch
 src/app/
   page.tsx                  — "/" → Landing (logged-out) / redirect to /today (logged-in)
   today/page.tsx            — The Today anchor ritual (logged-in home; the Spine's destination)
-  apps/page.tsx             — The full searchable app grid (moved off "/")
+  apps/page.tsx             — The full searchable app grid (+ a "★ Favorites" section at the top)
+  assistant/                — The +XP AI quick-capture assistant (chat/voice → logs to mini-apps)
   layout.tsx                — Root layout, dark theme defaults
   globals.css               — Tailwind + base styles
   app/<id>/                 — Custom app pages (todo, journal, feedback, notifications, …)
@@ -55,6 +56,7 @@ src/lib/
   spine/                    — The cross-app contract: adapters/<id>.ts, generated registry, getToday()/route(),
                               capture actions, usage beacon, pure today/view helpers
   notify/                   — Proactive engine: select/policy/digest/email/tokens (Layer 4)
+  agent/                    — The +XP assistant runtime (run.ts): Haiku tool-loop → RLS-safe writes (Layer 7 v1)
   ai/                       — Today insight line (Layer 5; deterministic now, AI-ready)
   xp/                        — The XP layer (levels/streaks/quests/achievements)
   github/                   — GitHub issue creation for the feedback workflow
