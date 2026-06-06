@@ -37,7 +37,7 @@ export function BottomNav() {
         <div className="mx-auto flex h-16 max-w-3xl items-stretch justify-around px-1">
           <Tab href="/today" label="Today" active={pathname === "/today"} icon={<IconToday />} />
           <Tab href="/apps" label="Apps" active={pathname === "/apps" || inApp} icon={<IconApps />} />
-          <PlusTab href="/assistant" active={pathname === "/assistant"} />
+          <Tab href="/assistant" label="+XP" active={pathname === "/assistant"} icon={<IconNorthStar />} />
           <Tab href="/app/xp" label="Progress" active={pathname === "/app/xp"} icon={<IconProgress />} />
           <Tab href="/settings" label="Settings" active={pathname === "/settings"} icon={<IconSettings />} />
         </div>
@@ -71,34 +71,15 @@ function Tab({
   );
 }
 
-/**
- * The +XP center action — a raised FAB-style tab opening the AI quick-capture
- * assistant (chat/voice → logs entries into the mini-apps). Visually distinct
- * from the flat nav tabs so it reads as the primary "add" action.
- */
-function PlusTab({ href, active }: { href: string; active: boolean }) {
+// ── icons (stroke = currentColor) ───────────────────────────────────────────
+/** North star (four-pointed) — the +XP assistant tab. */
+function IconNorthStar() {
   return (
-    <Link
-      href={href}
-      aria-current={active ? "page" : undefined}
-      aria-label="+XP assistant"
-      className="flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium transition active:scale-95"
-    >
-      <span
-        className={`-mt-3 flex h-9 w-9 items-center justify-center rounded-full text-zinc-950 shadow-lg ring-4 ring-zinc-950 transition ${
-          active ? "bg-cyan-400" : "bg-cyan-500 hover:bg-cyan-400"
-        }`}
-      >
-        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-      </span>
-      <span className={active ? "text-cyan-400" : "text-zinc-500"}>+XP</span>
-    </Link>
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinejoin="round">
+      <path d="M12 2.5 13.9 10.1 21.5 12 13.9 13.9 12 21.5 10.1 13.9 2.5 12 10.1 10.1Z" />
+    </svg>
   );
 }
-
-// ── icons (stroke = currentColor) ───────────────────────────────────────────
 function IconToday() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
