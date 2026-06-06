@@ -11,7 +11,7 @@ import { usePathname } from "next/navigation";
  * is its own page.
  */
 
-const TAB_ROUTES = new Set(["/today", "/favorites", "/apps", "/app/xp", "/settings"]);
+const TAB_ROUTES = new Set(["/today", "/apps", "/app/xp", "/settings"]);
 
 function shouldShow(pathname: string): boolean {
   return TAB_ROUTES.has(pathname) || pathname.startsWith("/app/");
@@ -36,7 +36,6 @@ export function BottomNav() {
       >
         <div className="mx-auto flex h-16 max-w-3xl items-stretch justify-around px-1">
           <Tab href="/today" label="Today" active={pathname === "/today"} icon={<IconToday />} />
-          <Tab href="/favorites" label="Favorites" active={pathname === "/favorites"} icon={<IconStar />} />
           <Tab href="/apps" label="Apps" active={pathname === "/apps" || inApp} icon={<IconApps />} />
           <Tab href="/app/xp" label="Progress" active={pathname === "/app/xp"} icon={<IconProgress />} />
           <Tab href="/settings" label="Settings" active={pathname === "/settings"} icon={<IconSettings />} />
@@ -72,13 +71,6 @@ function Tab({
 }
 
 // ── icons (stroke = currentColor) ───────────────────────────────────────────
-function IconStar() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinejoin="round">
-      <path d="M12 3.5l2.6 5.27 5.82.85-4.21 4.1.99 5.78L12 16.77l-5.2 2.73.99-5.78-4.21-4.1 5.82-.85z" />
-    </svg>
-  );
-}
 function IconToday() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">

@@ -43,6 +43,8 @@ export default async function AppsPage() {
   const gridApps = APPS.filter((a) => !ADMIN_APP_IDS.has(a.id));
   // Search can find system apps for admins, but hides them from regular users.
   const searchApps = admin ? APPS : gridApps;
+  // Starred apps get their own section at the very top (catalog order preserved).
+  const favorites = gridApps.filter((a) => favoriteIds.has(a.id));
 
   return (
     <Shell back={{ href: "/today", label: "Today" }} right={<SignOutButton />}>
@@ -55,6 +57,19 @@ export default async function AppsPage() {
       {xp && <XpStrip xp={xp} />}
 
       <AppSearch apps={searchApps} />
+
+      {favorites.length > 0 && (
+        <section className="mb-8">
+          <h3 className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-400/90">
+            <span aria-hidden>★</span> Favorites
+          </h3>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {favorites.map((app) => (
+              <AppTile key={app.id} app={app} starred />
+            ))}
+          </div>
+        </section>
+      )}
 
       {CATEGORIES.map((cat) => {
         const apps = gridApps.filter((a) => a.category === cat.id);
