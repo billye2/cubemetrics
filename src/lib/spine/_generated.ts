@@ -4,15 +4,19 @@
 import type { SpineAdapter } from "./types";
 import { adapter as bills } from "./adapters/bills";
 import { adapter as budget } from "./adapters/budget";
+import { adapter as calendar } from "./adapters/calendar";
 import { adapter as carcare } from "./adapters/carcare";
+import { adapter as countdown } from "./adapters/countdown";
 import { adapter as energy } from "./adapters/energy";
 import { adapter as flashcards } from "./adapters/flashcards";
 import { adapter as goals } from "./adapters/goals";
 import { adapter as habits } from "./adapters/habits";
 import { adapter as invoices } from "./adapters/invoices";
 import { adapter as journal } from "./adapters/journal";
+import { adapter as kanban } from "./adapters/kanban";
 import { adapter as keepintouch } from "./adapters/keepintouch";
 import { adapter as medication } from "./adapters/medication";
+import { adapter as meditation } from "./adapters/meditation";
 import { adapter as mood } from "./adapters/mood";
 import { adapter as plantcare } from "./adapters/plantcare";
 import { adapter as projecttracker } from "./adapters/projecttracker";
@@ -20,5 +24,7 @@ import { adapter as sleep } from "./adapters/sleep";
 import { adapter as todo } from "./adapters/todo";
 import { adapter as vocabulary } from "./adapters/vocabulary";
 import { adapter as water } from "./adapters/water";
+import { adapter as weight } from "./adapters/weight";
+import { adapter as workout } from "./adapters/workout";
 
-export const ADAPTERS: SpineAdapter[] = [bills, budget, carcare, energy, flashcards, goals, habits, invoices, journal, keepintouch, medication, mood, plantcare, projecttracker, sleep, todo, vocabulary, water];
+export const ADAPTERS: SpineAdapter[] = [bills, budget, calendar, carcare, countdown, energy, flashcards, goals, habits, invoices, journal, kanban, keepintouch, medication, meditation, mood, plantcare, projecttracker, sleep, todo, vocabulary, water, weight, workout];

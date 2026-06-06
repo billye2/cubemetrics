@@ -6,6 +6,8 @@ import {
   todoToday,
   habitsToday,
   sumToday,
+  trackerSumToday,
+  weeklyCountToday,
   budgetToday,
   billsToday,
   financeDueToday,
@@ -16,6 +18,9 @@ import {
   plantcareToday,
   presenceToday,
   projectsToday,
+  kanbanToday,
+  countdownToday,
+  calendarToday,
 } from "@/lib/spine/lib";
 import { ITEM_CAP, type TodayItem, type SpineToday, type SpineCtx } from "@/lib/spine/types";
 import { adapter as todoAdapter } from "@/lib/spine/adapters/todo";
@@ -36,6 +41,12 @@ import { adapter as invoicesAdapter } from "@/lib/spine/adapters/invoices";
 import { adapter as flashcardsAdapter } from "@/lib/spine/adapters/flashcards";
 import { adapter as vocabularyAdapter } from "@/lib/spine/adapters/vocabulary";
 import { adapter as projecttrackerAdapter } from "@/lib/spine/adapters/projecttracker";
+import { adapter as weightAdapter } from "@/lib/spine/adapters/weight";
+import { adapter as meditationAdapter } from "@/lib/spine/adapters/meditation";
+import { adapter as workoutAdapter } from "@/lib/spine/adapters/workout";
+import { adapter as kanbanAdapter } from "@/lib/spine/adapters/kanban";
+import { adapter as countdownAdapter } from "@/lib/spine/adapters/countdown";
+import { adapter as calendarAdapter } from "@/lib/spine/adapters/calendar";
 
 const TODAY = "2026-05-31";
 
@@ -113,6 +124,30 @@ describe("per-app builders", () => {
     expect(under.progress).toEqual({ current: 5, target: 8, unit: "glasses" });
     expect(sumToday([{ value: 8 }], 8).severity).toBe("done");
     expect(sumToday([], 8).summary).toBe("0/8 glasses");
+  });
+
+  it("trackerSumToday (meditation): generic sum-toward-goal", () => {
+    const under = trackerSumToday("meditation", [{ value: 5 }, { value: 7 }], 20, "min");
+    expect(under.appId).toBe("meditation");
+    expect(under.count).toBe(12);
+    expect(under.summary).toBe("12/20 min");
+    expect(under.severity).toBe("due");
+    expect(under.progress).toEqual({ current: 12, target: 20, unit: "min" });
+    expect(under.items[0].href).toBe("/app/meditation");
+    expect(trackerSumToday("meditation", [{ value: 20 }], 20, "min").severity).toBe("done");
+    expect(trackerSumToday("meditation", [], 20, "min").summary).toBe("0/20 min");
+  });
+
+  it("weeklyCountToday (workout): trailing-week count, no rest-day nag", () => {
+    const under = weeklyCountToday("workout", 2, 4, "workout");
+    expect(under.count).toBe(2);
+    expect(under.summary).toBe("2 workouts this week");
+    expect(under.severity).toBe("upcoming"); // under target, but never "due"/"overdue"
+    expect(under.progress).toEqual({ current: 2, target: 4, unit: "workout" });
+    expect(under.items).toHaveLength(0);
+    expect(weeklyCountToday("workout", 1, 4, "workout").summary).toBe("1 workout this week");
+    expect(weeklyCountToday("workout", 4, 4, "workout").severity).toBe("done");
+    expect(weeklyCountToday("workout", 0, 4, "workout").summary).toBe("0 workouts this week");
   });
 
   it("budgetToday: pct + over-budget severity", () => {
@@ -306,6 +341,62 @@ describe("per-app builders", () => {
   it("projectsToday returns null when all projects are done", () => {
     expect(projectsToday([{ id: 1, title: "X", status: "done", due_date: null }], TODAY)).toBeNull();
   });
+
+  it("kanbanToday surfaces doing as items, todo in the count", () => {
+    const card = kanbanToday([
+      { id: 1, title: "Ship it", column_name: "doing" },
+      { id: 2, title: "Plan", column_name: "todo" },
+      { id: 3, title: "Old", column_name: "done" },
+    ]);
+    expect(card).not.toBeNull();
+    expect(card!.count).toBe(2); // doing + todo, not done
+    expect(card!.items.map((i) => i.id)).toEqual(["kanban:1"]);
+    expect(card!.summary).toBe("1 doing · 1 to-do");
+    expect(card!.severity).toBe("due");
+  });
+
+  it("kanbanToday: no doing -> upcoming severity; empty/all-done -> null", () => {
+    const todoOnly = kanbanToday([{ id: 1, title: "Plan", column_name: "todo" }]);
+    expect(todoOnly!.severity).toBe("upcoming");
+    expect(todoOnly!.summary).toBe("1 to-do");
+    expect(kanbanToday([{ id: 9, title: "Done", column_name: "done" }])).toBeNull();
+    expect(kanbanToday([])).toBeNull();
+  });
+
+  it("countdownToday: one-off in window, recurring rolls forward, far/past dropped", () => {
+    const soon = "2026-06-07";
+    const card = countdownToday(
+      [
+        { id: 1, title: "Launch", target_date: "2026-06-02", recurring_yearly: false }, // in window
+        { id: 2, title: "Birthday", target_date: "1990-05-31", recurring_yearly: true }, // rolls to TODAY
+        { id: 3, title: "Wedding", target_date: "2026-12-01", recurring_yearly: false }, // far future (dropped)
+        { id: 4, title: "Past", target_date: "2026-01-01", recurring_yearly: false }, // past (dropped)
+      ],
+      TODAY,
+      soon,
+    );
+    expect(card).not.toBeNull();
+    expect(card!.items.map((i) => i.id).sort()).toEqual(["countdown:1", "countdown:2"]);
+    expect(card!.summary).toBe("1 today"); // the birthday is due TODAY
+    expect(countdownToday([{ id: 5, title: "X", target_date: "2030-01-01", recurring_yearly: false }], TODAY, soon)).toBeNull();
+  });
+
+  it("calendarToday: events in [today, soon], null when none", () => {
+    const soon = "2026-06-07";
+    const card = calendarToday(
+      [
+        { id: 1, title: "Standup", start_date: "2026-05-31", start_time: "09:00:00" }, // today
+        { id: 2, title: "Review", start_date: "2026-06-03", start_time: null }, // upcoming
+        { id: 3, title: "Old", start_date: "2026-05-01", start_time: null }, // past (dropped)
+      ],
+      TODAY,
+      soon,
+    );
+    expect(card!.count).toBe(2);
+    expect(card!.summary).toBe("1 today");
+    expect(card!.items[0].due).toBe("2026-05-31T09:00:00"); // today, with time, sorts first
+    expect(calendarToday([{ id: 9, title: "Far", start_date: "2026-09-01", start_time: null }], TODAY, soon)).toBeNull();
+  });
 });
 
 // ── Security Finding 1: every adapter today() MUST filter by user_id. Under the
@@ -328,7 +419,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter, weightAdapter, meditationAdapter, workoutAdapter, kanbanAdapter, countdownAdapter, calendarAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {
