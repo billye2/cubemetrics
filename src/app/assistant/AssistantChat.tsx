@@ -74,7 +74,10 @@ export function AssistantChat() {
     });
   }
 
-  function toggleMic() {
+  const BLOCKED_MSG =
+    "Microphone blocked. Click the lock/ⓘ icon in the address bar → Site settings → Microphone → Allow, then reload.";
+
+  async function toggleMic() {
     setMicNote(null);
     if (listening) {
       recRef.current?.stop();
@@ -84,6 +87,18 @@ export function AssistantChat() {
     const Ctor = speechCtor();
     if (!Ctor) {
       setMicNote("Voice input isn't supported in this browser — try Chrome.");
+      return;
+    }
+    // Explicitly request mic permission first — SpeechRecognition alone often fails
+    // to surface the prompt and just reports "blocked". getUserMedia reliably prompts;
+    // once granted (persisted for the origin) recognition won't re-ask.
+    try {
+      if (navigator.mediaDevices?.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach((t) => t.stop()); // release; recognition opens its own
+      }
+    } catch {
+      setMicNote(BLOCKED_MSG);
       return;
     }
     let rec: Recognition;
@@ -106,7 +121,7 @@ export function AssistantChat() {
       const err = ev?.error;
       setMicNote(
         err === "not-allowed" || err === "service-not-allowed"
-          ? "Microphone blocked — allow mic access for this site in your browser."
+          ? BLOCKED_MSG
           : err === "no-speech"
             ? "Didn't catch anything — tap the mic and try again."
             : err === "audio-capture"
