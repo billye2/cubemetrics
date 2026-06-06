@@ -6,11 +6,51 @@ import type { createServerSupabase } from "@/lib/supabase/server";
 type Supabase = Awaited<ReturnType<typeof createServerSupabase>>;
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
+
+/** How a confirmed proposal is reverted. Allowlisted + user-scoped at execution. */
+export type UndoHandle =
+  | { kind: "row"; table: string; id: number }
+  | { kind: "counter"; counterId: number; delta: number; eventId: number };
+
+/**
+ * A pending write the assistant wants to make. Nothing is written until the user
+ * confirms (propose→confirm). `exec` is the execution descriptor; `label` is shown
+ * in the confirm checklist and again as the applied chip.
+ */
+export interface Proposal {
+  id: string;
+  tool: string;
+  label: string;
+  exec:
+    | { kind: "insert"; table: string; payload: Record<string, unknown> }
+    | { kind: "counter"; counterId: number; delta: number };
+}
+
+/** One write that was actually applied, with the handle to undo it. */
+export interface AppliedEntry {
+  label: string;
+  undo: UndoHandle;
+}
+
 export interface AgentResult {
   reply: string;
-  /** Human-readable list of entries actually written this turn. */
-  entries: string[];
+  /** Proposed writes awaiting the user's confirmation (nothing written yet). */
+  proposals: Proposal[];
 }
+
+/** Tables the assistant is allowed to insert into / undo from — the write boundary. */
+const INSERT_TABLES = new Set([
+  "daily_trackers",
+  "todos",
+  "checklists",
+  "logs",
+  "goals",
+  "finance_items",
+  "schedule_items",
+  "habit_checkins",
+  "journal_entries",
+  "notes",
+]);
 
 /** The +XP assistant only works with a runtime Anthropic key (spec decision #6 alt). */
 export function agentConfigured(): boolean {
@@ -44,13 +84,15 @@ function catalogDigest(): string {
   ].join("\n");
 }
 
-const SYSTEM = `You are the +XP quick-capture assistant for XP Boost, a personal productivity hub. The user tells you — by text or voice — what they did or want to track, and you log it into the right mini-app by calling tools.
+const SYSTEM = `You are the +XP quick-capture assistant for XP Boost, a personal productivity hub. The user tells you — by text or voice — what they did or want to track, and you choose the right mini-app to log it in by calling tools.
+
+How it works: your tool calls do NOT write anything directly. They PROPOSE entries that the user reviews and confirms before they're saved. So propose freely, but be accurate.
 
 Rules:
-- Only record what the user explicitly states. Never invent quantities, items, or activities.
+- Only propose what the user explicitly states. Never invent quantities, items, or activities.
 - Choose the best-matching app from the lists below. If nothing fits, say so plainly; do not force a match.
 - For a tracker, if the amount is missing or ambiguous, ask one short clarifying question instead of guessing.
-- After writing, confirm what you recorded in one short line. Keep replies brief and friendly.
+- After choosing your tools, tell the user in one short, friendly line what you've lined up for them to confirm.
 
 ${catalogDigest()}
 
@@ -222,101 +264,93 @@ export function matchByName<T extends { name: string }>(rows: T[], query: string
   );
 }
 
-/** Execute one tool call against the user's session (RLS-safe). Returns a result string. */
-export async function runTool(
+type PlanResult = { message: string; proposal?: Omit<Proposal, "id"> };
+
+const insert = (
+  tool: string,
+  label: string,
+  table: string,
+  payload: Record<string, unknown>,
+): PlanResult => ({
+  message: label,
+  proposal: { tool, label, exec: { kind: "insert", table, payload } },
+});
+
+/**
+ * Validate + resolve a tool call into a Proposal — WITHOUT writing. Name-based tools
+ * (habits, counters) do their lookups here; the returned `message` is what the model
+ * reads back, and `proposal` (when present) is the pending write to confirm.
+ */
+export async function planTool(
   supabase: Supabase,
   userId: string,
   name: string,
   input: Record<string, unknown>,
-  entries: string[],
-): Promise<string> {
+): Promise<PlanResult> {
   if (name === "log_tracker") {
     const appId = String(input.appId ?? "");
     const value = Number(input.value);
     const note = input.note ? String(input.note) : null;
     const app = getApp(appId);
-    if (!app || app.ui !== "tracker") return `No tracker app "${appId}" exists.`;
-    if (!Number.isFinite(value)) return `Need a numeric value for ${app.name}.`;
-    const trackerType = app.config?.trackerType ?? appId;
-    const { error } = await supabase
-      .from("daily_trackers")
-      .insert({ user_id: userId, tracker_type: trackerType, value, note });
-    if (error) return `Couldn't log to ${app.name}.`;
+    if (!app || app.ui !== "tracker") return { message: `No tracker app "${appId}" exists.` };
+    if (!Number.isFinite(value)) return { message: `Need a numeric value for ${app.name}.` };
     const unit = app.config?.unit ? ` ${app.config.unit}` : "";
-    const label = `Logged ${value}${unit} to ${app.name}`;
-    entries.push(label);
-    return label;
+    return insert("log_tracker", `Log ${value}${unit} to ${app.name}`, "daily_trackers", {
+      tracker_type: app.config?.trackerType ?? appId,
+      value,
+      note,
+    });
   }
   if (name === "add_todo") {
     const title = String(input.title ?? "").trim();
-    if (!title) return "Need the task text.";
-    const { error } = await supabase.from("todos").insert({ user_id: userId, title });
-    if (error) return "Couldn't add the to-do.";
-    const label = `Added to-do: ${title}`;
-    entries.push(label);
-    return label;
+    if (!title) return { message: "Need the task text." };
+    return insert("add_todo", `Add to-do: ${title}`, "todos", { title });
   }
   if (name === "add_checklist_item") {
     const appId = String(input.appId ?? "");
     const title = String(input.title ?? "").trim();
     const app = getApp(appId);
-    if (!app || app.ui !== "checklist") return `No checklist app "${appId}" exists.`;
-    if (!title) return "Need the item text.";
-    const listType = app.config?.listType ?? appId;
-    const { error } = await supabase
-      .from("checklists")
-      .insert({ user_id: userId, list_type: listType, title });
-    if (error) return `Couldn't add to ${app.name}.`;
-    const label = `Added "${title}" to ${app.name}`;
-    entries.push(label);
-    return label;
+    if (!app || app.ui !== "checklist") return { message: `No checklist app "${appId}" exists.` };
+    if (!title) return { message: "Need the item text." };
+    return insert("add_checklist_item", `Add "${title}" to ${app.name}`, "checklists", {
+      list_type: app.config?.listType ?? appId,
+      title,
+    });
   }
   if (name === "add_log") {
     const appId = String(input.appId ?? "");
     const body = String(input.body ?? "").trim();
     const title = input.title ? String(input.title).trim() : null;
     const app = getApp(appId);
-    if (!app || app.ui !== "logbook") return `No logbook app "${appId}" exists.`;
-    if (!body) return "Need the entry text.";
-    const logType = app.config?.logType ?? appId;
-    const { error } = await supabase
-      .from("logs")
-      .insert({ user_id: userId, log_type: logType, title, body });
-    if (error) return `Couldn't add to ${app.name}.`;
-    const label = `Logged an entry in ${app.name}`;
-    entries.push(label);
-    return label;
+    if (!app || app.ui !== "logbook") return { message: `No logbook app "${appId}" exists.` };
+    if (!body) return { message: "Need the entry text." };
+    return insert("add_log", `Add an entry to ${app.name}`, "logs", {
+      log_type: app.config?.logType ?? appId,
+      title,
+      body,
+    });
   }
   if (name === "add_goal") {
     const appId = String(input.appId ?? "");
     const title = String(input.title ?? "").trim();
     const app = getApp(appId);
-    if (!app || app.ui !== "goal") return `No goal app "${appId}" exists.`;
-    if (!title) return "Need the goal title.";
-    const payload: Record<string, unknown> = {
-      user_id: userId,
-      goal_type: app.config?.goalType ?? appId,
-      title,
-    };
+    if (!app || app.ui !== "goal") return { message: `No goal app "${appId}" exists.` };
+    if (!title) return { message: "Need the goal title." };
+    const payload: Record<string, unknown> = { goal_type: app.config?.goalType ?? appId, title };
     if (Number.isFinite(Number(input.target))) payload.target_value = Number(input.target);
     if (input.unit) payload.unit = String(input.unit).trim();
     if (input.dueDate) payload.due_date = String(input.dueDate);
-    const { error } = await supabase.from("goals").insert(payload);
-    if (error) return `Couldn't create the goal in ${app.name}.`;
-    const label = `Created goal "${title}" in ${app.name}`;
-    entries.push(label);
-    return label;
+    return insert("add_goal", `Create goal "${title}" in ${app.name}`, "goals", payload);
   }
   if (name === "add_finance_item") {
     const appId = String(input.appId ?? "");
     const itemName = String(input.name ?? "").trim();
     const amount = Number(input.amount);
     const app = getApp(appId);
-    if (!app || app.ui !== "finance") return `No finance app "${appId}" exists.`;
-    if (!itemName) return "Need the item name.";
-    if (!Number.isFinite(amount)) return "Need a numeric amount.";
+    if (!app || app.ui !== "finance") return { message: `No finance app "${appId}" exists.` };
+    if (!itemName) return { message: "Need the item name." };
+    if (!Number.isFinite(amount)) return { message: "Need a numeric amount." };
     const payload: Record<string, unknown> = {
-      user_id: userId,
       item_type: app.config?.itemType ?? appId,
       name: itemName,
       amount,
@@ -324,44 +358,36 @@ export async function runTool(
       category: input.category ? String(input.category).trim() : null,
     };
     if (input.dueDate) payload.due_date = String(input.dueDate);
-    const { error } = await supabase.from("finance_items").insert(payload);
-    if (error) return `Couldn't add to ${app.name}.`;
-    const label = `Added ${itemName} ($${amount}) to ${app.name}`;
-    entries.push(label);
-    return label;
+    return insert("add_finance_item", `Add ${itemName} ($${amount}) to ${app.name}`, "finance_items", payload);
   }
   if (name === "add_schedule_item") {
     const appId = String(input.appId ?? "");
     const title = String(input.title ?? "").trim();
     const intervalDays = Number(input.intervalDays);
     const app = getApp(appId);
-    if (!app || app.ui !== "schedule") return `No schedule app "${appId}" exists.`;
-    if (!title) return "Need the task title.";
+    if (!app || app.ui !== "schedule") return { message: `No schedule app "${appId}" exists.` };
+    if (!title) return { message: "Need the task title." };
     if (!Number.isFinite(intervalDays) || intervalDays <= 0)
-      return "Need how often to repeat, in days.";
-    const { error } = await supabase.from("schedule_items").insert({
-      user_id: userId,
-      schedule_type: app.config?.scheduleType ?? appId,
-      title: title.slice(0, 200),
-      interval_days: Math.min(Math.floor(intervalDays), 3650),
-      note: null,
-    });
-    if (error) return `Couldn't schedule in ${app.name}.`;
-    const label = `Scheduled "${title}" every ${Math.floor(intervalDays)}d in ${app.name}`;
-    entries.push(label);
-    return label;
+      return { message: "Need how often to repeat, in days." };
+    const days = Math.min(Math.floor(intervalDays), 3650);
+    return insert(
+      "add_schedule_item",
+      `Schedule "${title}" every ${days}d in ${app.name}`,
+      "schedule_items",
+      { schedule_type: app.config?.scheduleType ?? appId, title: title.slice(0, 200), interval_days: days, note: null },
+    );
   }
   if (name === "mark_habit_done") {
     const query = String(input.name ?? "").trim();
-    if (!query) return "Which habit?";
+    if (!query) return { message: "Which habit?" };
     const { data: habits } = await supabase
       .from("habits")
       .select("id, name, active")
       .eq("user_id", userId);
     const active = (habits ?? []).filter((h) => h.active !== false);
-    if (active.length === 0) return "You have no habits set up yet.";
+    if (active.length === 0) return { message: "You have no habits set up yet." };
     const habit = matchByName(active, query);
-    if (!habit) return `No habit matches "${query}".`;
+    if (!habit) return { message: `No habit matches "${query}".` };
     const today = new Date().toISOString().split("T")[0];
     const { data: existing } = await supabase
       .from("habit_checkins")
@@ -370,71 +396,133 @@ export async function runTool(
       .eq("user_id", userId)
       .eq("checkin_date", today)
       .limit(1);
-    if (existing && existing.length > 0) return `"${habit.name}" is already done today.`;
-    const { error } = await supabase
-      .from("habit_checkins")
-      .insert({ habit_id: habit.id, user_id: userId, checkin_date: today });
-    if (error) return `Couldn't check off "${habit.name}".`;
-    const label = `Marked "${habit.name}" done for today`;
-    entries.push(label);
-    return label;
+    if (existing && existing.length > 0) return { message: `"${habit.name}" is already done today.` };
+    return insert("mark_habit_done", `Mark "${habit.name}" done today`, "habit_checkins", {
+      habit_id: habit.id,
+      checkin_date: today,
+    });
   }
   if (name === "add_journal_entry") {
     const body = String(input.body ?? "").trim();
-    if (!body) return "Need the entry text.";
+    if (!body) return { message: "Need the entry text." };
     const title = input.title ? String(input.title).trim() : "";
     const mood = input.mood ? String(input.mood).trim() : null;
-    const { error } = await supabase
-      .from("journal_entries")
-      .insert({ user_id: userId, body, title, mood });
-    if (error) return "Couldn't add the journal entry.";
-    const label = "Added a journal entry";
-    entries.push(label);
-    return label;
+    return insert("add_journal_entry", "Add a journal entry", "journal_entries", { body, title, mood });
   }
   if (name === "add_note") {
     const title = input.title ? String(input.title).trim() : "";
     const body = input.body ? String(input.body).trim() : "";
-    if (!title && !body) return "Need the note text.";
-    const { error } = await supabase.from("notes").insert({ user_id: userId, title, body });
-    if (error) return "Couldn't save the note.";
-    const label = title ? `Saved note: ${title}` : "Saved a note";
-    entries.push(label);
-    return label;
+    if (!title && !body) return { message: "Need the note text." };
+    return insert("add_note", title ? `Save note: ${title}` : "Save a note", "notes", { title, body });
   }
   if (name === "adjust_counter") {
     const query = String(input.name ?? "").trim();
-    if (!query) return "Which counter?";
+    if (!query) return { message: "Which counter?" };
     const { data: counters } = await supabase
       .from("counters")
       .select("id, name, value, step")
       .eq("user_id", userId);
-    if (!counters || counters.length === 0) return "You have no counters yet.";
+    if (!counters || counters.length === 0) return { message: "You have no counters yet." };
     const counter = matchByName(counters, query);
-    if (!counter) return `No counter matches "${query}".`;
+    if (!counter) return { message: `No counter matches "${query}".` };
     const raw = Number(input.amount);
     const delta = Number.isFinite(raw) && raw !== 0 ? Math.trunc(raw) : Number(counter.step);
-    const newValue = Number(counter.value) + delta;
-    const { error } = await supabase
-      .from("counter_events")
-      .insert({ user_id: userId, counter_id: counter.id, delta });
-    if (error) return `Couldn't update "${counter.name}".`;
-    await supabase
-      .from("counters")
-      .update({ value: newValue })
-      .eq("id", counter.id)
-      .eq("user_id", userId);
-    const label = `${delta >= 0 ? "+" : ""}${delta} to "${counter.name}" (now ${newValue})`;
-    entries.push(label);
-    return label;
+    const label = `${delta >= 0 ? "+" : ""}${delta} to "${counter.name}"`;
+    return {
+      message: label,
+      proposal: { tool: "adjust_counter", label, exec: { kind: "counter", counterId: counter.id, delta } },
+    };
   }
-  return `Unknown tool: ${name}`;
+  return { message: `Unknown tool: ${name}` };
 }
 
 /**
- * One assistant turn: a manual tool-use loop (claude-api docs) over Haiku, with the
- * full set of quick-capture write tools. Runs in the caller's Supabase session, so every
- * write is RLS-scoped to the user. No fabrication: the system prompt forbids inventing data.
+ * Execute a confirmed proposal against the user's session (RLS-safe). Returns the undo
+ * handle, or null on failure. Re-checks the table allowlist defensively (the client sends
+ * the proposal back to apply), and re-reads counter state to avoid a stale-value race.
+ */
+export async function executeProposal(
+  supabase: Supabase,
+  userId: string,
+  proposal: Pick<Proposal, "exec">,
+): Promise<UndoHandle | null> {
+  const { exec } = proposal;
+  if (exec.kind === "insert") {
+    if (!INSERT_TABLES.has(exec.table)) return null;
+    // habit_checkins must stay idempotent even on apply (re-check today).
+    if (exec.table === "habit_checkins") {
+      const { data: dup } = await supabase
+        .from("habit_checkins")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("habit_id", exec.payload.habit_id)
+        .eq("checkin_date", exec.payload.checkin_date)
+        .limit(1);
+      if (dup && dup.length > 0) return { kind: "row", table: exec.table, id: dup[0].id };
+    }
+    const { data, error } = await supabase
+      .from(exec.table)
+      .insert({ ...exec.payload, user_id: userId })
+      .select("id")
+      .single();
+    if (error || !data) return null;
+    return { kind: "row", table: exec.table, id: data.id };
+  }
+  // counter: re-fetch current value, log the delta event, bump value.
+  const { data: counter } = await supabase
+    .from("counters")
+    .select("value")
+    .eq("id", exec.counterId)
+    .eq("user_id", userId)
+    .single();
+  if (!counter) return null;
+  const { data: ev, error: evErr } = await supabase
+    .from("counter_events")
+    .insert({ user_id: userId, counter_id: exec.counterId, delta: exec.delta })
+    .select("id")
+    .single();
+  if (evErr || !ev) return null;
+  await supabase
+    .from("counters")
+    .update({ value: Number(counter.value) + exec.delta })
+    .eq("id", exec.counterId)
+    .eq("user_id", userId);
+  return { kind: "counter", counterId: exec.counterId, delta: exec.delta, eventId: ev.id };
+}
+
+/** Revert a previously applied entry (allowlisted table + user-scoped). */
+export async function undoEntry(
+  supabase: Supabase,
+  userId: string,
+  undo: UndoHandle,
+): Promise<boolean> {
+  if (undo.kind === "row") {
+    if (!INSERT_TABLES.has(undo.table)) return false;
+    const { error } = await supabase.from(undo.table).delete().eq("id", undo.id).eq("user_id", userId);
+    return !error;
+  }
+  // counter: remove the event and subtract the delta back off the value.
+  await supabase.from("counter_events").delete().eq("id", undo.eventId).eq("user_id", userId);
+  const { data: counter } = await supabase
+    .from("counters")
+    .select("value")
+    .eq("id", undo.counterId)
+    .eq("user_id", userId)
+    .single();
+  if (!counter) return false;
+  const { error } = await supabase
+    .from("counters")
+    .update({ value: Number(counter.value) - undo.delta })
+    .eq("id", undo.counterId)
+    .eq("user_id", userId);
+  return !error;
+}
+
+/**
+ * One assistant turn: a manual tool-use loop (claude-api docs) over Haiku. Tools run in
+ * PLAN mode — they validate + resolve but do not write; the turn returns the proposed
+ * writes for the user to confirm (propose→confirm). Runs in the caller's Supabase session,
+ * so the later apply is RLS-scoped. No fabrication: the system prompt forbids inventing data.
  */
 export async function runAgentTurn(opts: {
   supabase: Supabase;
@@ -442,7 +530,7 @@ export async function runAgentTurn(opts: {
   messages: ChatMessage[];
 }): Promise<AgentResult> {
   const client = new Anthropic();
-  const entries: string[] = [];
+  const proposals: Proposal[] = [];
   const msgs: Anthropic.MessageParam[] = opts.messages.map((m) => ({
     role: m.role,
     content: m.content,
@@ -467,22 +555,17 @@ export async function runAgentTurn(opts: {
         .map((b) => b.text)
         .join("\n")
         .trim();
-      return { reply: text || (entries.length ? "Done." : "Okay."), entries };
+      return { reply: text || (proposals.length ? "Here's what I'll log:" : "Okay."), proposals };
     }
 
     const results: Anthropic.ToolResultBlockParam[] = [];
     for (const tu of toolUses) {
-      const out = await runTool(
-        opts.supabase,
-        opts.userId,
-        tu.name,
-        (tu.input ?? {}) as Record<string, unknown>,
-        entries,
-      );
-      results.push({ type: "tool_result", tool_use_id: tu.id, content: out });
+      const out = await planTool(opts.supabase, opts.userId, tu.name, (tu.input ?? {}) as Record<string, unknown>);
+      if (out.proposal) proposals.push({ ...out.proposal, id: `p${proposals.length}` });
+      results.push({ type: "tool_result", tool_use_id: tu.id, content: out.message });
     }
     msgs.push({ role: "user", content: results });
   }
 
-  return { reply: "That took too many steps — try rephrasing.", entries };
+  return { reply: "That took too many steps — try rephrasing.", proposals };
 }
