@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { sendToAssistant } from "./actions";
-import type { ChatMessage } from "@/lib/agent/run";
+import { sendToAssistant, applyProposals, undoAppliedEntry } from "./actions";
+import type { ChatMessage, Proposal, AppliedEntry } from "@/lib/agent/run";
 
 interface Msg extends ChatMessage {
-  entries?: string[];
+  proposals?: Proposal[]; // pending writes awaiting confirmation
+  applied?: AppliedEntry[]; // confirmed + written this turn
+  undone?: boolean[]; // per-applied-entry undo state
 }
 
 // Minimal shape for the browser SpeechRecognition API (not in the standard DOM lib types).
@@ -39,6 +41,8 @@ export function AssistantChat() {
   const [messages, setMessages] = useState<Msg[]>([{ role: "assistant", content: GREETING }]);
   const [input, setInput] = useState("");
   const [pending, start] = useTransition();
+  const [busy, startBusy] = useTransition(); // apply / undo
+  const [deselected, setDeselected] = useState<Record<string, boolean>>({});
   const [listening, setListening] = useState(false);
   const [speak, setSpeak] = useState(false);
   const [voiceSupported, setVoiceSupported] = useState(false);
@@ -69,8 +73,43 @@ export function AssistantChat() {
     setInput("");
     start(async () => {
       const res = await sendToAssistant(history.map((m) => ({ role: m.role, content: m.content })));
-      setMessages((m) => [...m, { role: "assistant", content: res.reply, entries: res.entries }]);
+      setMessages((m) => [...m, { role: "assistant", content: res.reply, proposals: res.proposals }]);
       say(res.reply);
+    });
+  }
+
+  // Proposals are checked by default; we only track explicit de-selections (keyed per message).
+  const key = (msgIdx: number, pid: string) => `${msgIdx}:${pid}`;
+  const isChecked = (msgIdx: number, pid: string) => !deselected[key(msgIdx, pid)];
+
+  function applyMsg(msgIdx: number, proposals: Proposal[]) {
+    const chosen = proposals.filter((p) => isChecked(msgIdx, p.id));
+    if (!chosen.length) return;
+    startBusy(async () => {
+      const applied = await applyProposals(chosen);
+      setMessages((ms) =>
+        ms.map((m, i) =>
+          i === msgIdx ? { ...m, proposals: undefined, applied, undone: applied.map(() => false) } : m,
+        ),
+      );
+    });
+  }
+
+  function dismissMsg(msgIdx: number) {
+    setMessages((ms) => ms.map((m, i) => (i === msgIdx ? { ...m, proposals: undefined } : m)));
+  }
+
+  function undoMsg(msgIdx: number, entryIdx: number, entry: AppliedEntry) {
+    startBusy(async () => {
+      const ok = await undoAppliedEntry(entry.undo);
+      if (!ok) return;
+      setMessages((ms) =>
+        ms.map((m, i) =>
+          i === msgIdx && m.undone
+            ? { ...m, undone: m.undone.map((u, j) => (j === entryIdx ? true : u)) }
+            : m,
+        ),
+      );
     });
   }
 
@@ -152,16 +191,70 @@ export function AssistantChat() {
               }`}
             >
               <div className="whitespace-pre-wrap break-words">{m.content}</div>
-              {m.entries && m.entries.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {m.entries.map((e, j) => (
-                    <span
-                      key={j}
-                      className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/30"
-                    >
-                      ✓ {e}
-                    </span>
+
+              {/* Proposed writes — confirm before anything is saved. */}
+              {m.proposals && m.proposals.length > 0 && (
+                <div className="mt-2.5 space-y-1.5">
+                  {m.proposals.map((p) => (
+                    <label key={p.id} className="flex items-center gap-2 text-sm text-zinc-200">
+                      <input
+                        type="checkbox"
+                        checked={isChecked(i, p.id)}
+                        onChange={(e) =>
+                          setDeselected((d) => ({ ...d, [key(i, p.id)]: !e.target.checked }))
+                        }
+                        className="h-4 w-4 accent-cyan-500"
+                      />
+                      <span>{p.label}</span>
+                    </label>
                   ))}
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      disabled={busy || !m.proposals.some((p) => isChecked(i, p.id))}
+                      onClick={() => applyMsg(i, m.proposals!)}
+                      className="rounded-full bg-cyan-500 px-3.5 py-1 text-xs font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
+                    >
+                      Confirm
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => dismissMsg(i)}
+                      className="rounded-full px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Applied entries — each undoable. */}
+              {m.applied && m.applied.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {m.applied.map((e, j) =>
+                    m.undone?.[j] ? (
+                      <span key={j} className="rounded-full px-2 py-0.5 text-xs text-zinc-500 line-through">
+                        {e.label}
+                      </span>
+                    ) : (
+                      <span
+                        key={j}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-300 ring-1 ring-emerald-500/30"
+                      >
+                        ✓ {e.label}
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => undoMsg(i, j, e)}
+                          className="text-emerald-400/70 hover:text-emerald-200 disabled:opacity-50"
+                          aria-label={`Undo ${e.label}`}
+                        >
+                          ↶
+                        </button>
+                      </span>
+                    ),
+                  )}
                 </div>
               )}
             </div>

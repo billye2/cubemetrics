@@ -350,9 +350,14 @@ the agent by construction.
 ## 10. Decisions
 
 **Settled (2026-06-05):**
-- ✅ **Autonomy for Capability B — propose→confirm.** All creates are queued and shown as a checklist;
-  nothing writes until the user taps Apply; every applied write still lands in the undo log. Low-risk
-  logs may graduate to live auto-apply only after the confirm flow has earned trust.
+- ✅ **Autonomy for Capability B — propose→confirm. SHIPPED 2026-06-06 in the +XP assistant.** Tool
+  calls run in **plan mode** (`planTool` validates/resolves but never writes); the turn returns
+  `proposals`, the `/assistant` chat shows them as a Confirm checklist, and only `applyProposals`
+  (user-confirmed) executes via `executeProposal`. Each applied entry carries an **in-session undo
+  handle** (`{kind:"row",table,id}` or a counter delta) that `undoEntry` reverts — allowlisted tables
+  (`INSERT_TABLES`) + user-scoped. **Deviation from spec:** the persistent `agent_actions` audit table
+  was **deferred** (it'd be a prod migration on a live feature); in-session undo delivers the same
+  user-facing safety. The `agent_actions` log remains a clean follow-up for cross-session undo/audit.
 - ✅ **v1 disposition — spec only for now.** This document is the plan; no build is scheduled yet.
   Phase A (reshape Today) remains the recommended first build whenever it kicks off.
 - ✅ **Model — swappable, default Haiku 4.5 (2026-06-06).** The model is an `AGENT_MODEL` env var (AI
