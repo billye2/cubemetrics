@@ -6,6 +6,7 @@ import {
   checklistToggleAction,
   checklistDeleteAction,
   checklistReorderAction,
+  checklistSetDueAction,
 } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
 
@@ -16,16 +17,35 @@ interface Item {
   completed: boolean;
   sort_order: number;
   created_at: string;
+  due_date: string | null;
 }
 
-type SortMode = "newest" | "alpha" | "active" | "manual";
+type SortMode = "newest" | "alpha" | "active" | "manual" | "due";
 
 const SORTS: { id: SortMode; label: string }[] = [
   { id: "active", label: "To do first" },
+  { id: "due", label: "Due" },
   { id: "newest", label: "Newest" },
   { id: "alpha", label: "A–Z" },
   { id: "manual", label: "Manual" },
 ];
+
+/** Local-today YYYY-MM-DD (en-CA renders ISO-like). */
+function todayKey(): string {
+  return new Date().toLocaleDateString("en-CA");
+}
+
+/** Relative label + tone for a due date, or null when undated. */
+function dueMeta(due: string | null): { label: string; tone: string } | null {
+  if (!due) return null;
+  const d = due.slice(0, 10);
+  const today = todayKey();
+  const date = new Date(d + "T00:00:00");
+  const short = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  if (d < today) return { label: `Overdue · ${short}`, tone: "text-red-400" };
+  if (d === today) return { label: "Today", tone: "text-amber-400" };
+  return { label: short, tone: "text-zinc-400" };
+}
 
 export function ChecklistView({
   appId,
@@ -53,6 +73,13 @@ export function ChecklistView({
     const copy = [...items];
     if (sort === "alpha") copy.sort((a, b) => a.title.localeCompare(b.title));
     else if (sort === "newest") copy.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    else if (sort === "due")
+      copy.sort((a, b) => {
+        if (a.due_date === b.due_date) return a.created_at < b.created_at ? 1 : -1;
+        if (!a.due_date) return 1; // undated last
+        if (!b.due_date) return -1;
+        return a.due_date < b.due_date ? -1 : 1; // soonest first
+      });
     else if (sort === "manual")
       copy.sort((a, b) => a.sort_order - b.sort_order || (a.created_at < b.created_at ? -1 : 1));
     return copy;
@@ -65,8 +92,9 @@ export function ChecklistView({
     const title = String(formData.get("title") || "");
     if (!title.trim()) return;
     const note = String(formData.get("note") || "");
+    const due = String(formData.get("due_date") || "");
     start(async () => {
-      await checklistAddAction(appId, listType, title, note);
+      await checklistAddAction(appId, listType, title, note, due);
       formRef.current?.reset();
       setShowNote(false);
     });
@@ -127,13 +155,23 @@ export function ChecklistView({
           </button>
         </div>
         {showNote && (
-          <input
-            ref={noteRef}
-            name="note"
-            autoComplete="off"
-            placeholder="Detail (link, quantity, phone…)"
-            className="mt-1 w-full bg-transparent px-2 py-1.5 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none"
-          />
+          <div className="mt-1 flex flex-col gap-1 sm:flex-row sm:items-center">
+            <input
+              ref={noteRef}
+              name="note"
+              autoComplete="off"
+              placeholder="Detail (link, quantity, phone…)"
+              className="flex-1 bg-transparent px-2 py-1.5 text-sm text-zinc-300 placeholder:text-zinc-600 outline-none"
+            />
+            <label className="flex items-center gap-1.5 px-2 text-xs text-zinc-500">
+              <span>Due</span>
+              <input
+                name="due_date"
+                type="date"
+                className="bg-transparent text-sm text-zinc-300 outline-none [color-scheme:dark]"
+              />
+            </label>
+          </div>
         )}
       </form>
 
@@ -215,6 +253,7 @@ function Row({
   onMove?: (direction: "up" | "down") => void;
 }) {
   const [pending, start] = useTransition();
+  const [editDue, setEditDue] = useState(false);
   function toggle() {
     start(() => checklistToggleAction(appId, item.id, !item.completed));
   }
@@ -222,8 +261,13 @@ function Row({
     if (!confirm("Delete?")) return;
     start(() => checklistDeleteAction(appId, item.id));
   }
+  function setDue(value: string) {
+    setEditDue(false);
+    start(() => checklistSetDueAction(appId, item.id, value));
+  }
 
   const isLink = item.note ? /^https?:\/\//i.test(item.note.trim()) : false;
+  const due = dueMeta(item.due_date);
 
   return (
     <li className={`flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 ${pending ? "opacity-50" : ""}`}>
@@ -280,6 +324,26 @@ function Row({
             <div className="break-words text-xs text-zinc-500">{item.note}</div>
           ))}
       </div>
+      {!item.completed &&
+        (editDue ? (
+          <input
+            type="date"
+            autoFocus
+            defaultValue={item.due_date ?? ""}
+            onChange={(e) => setDue(e.target.value)}
+            onBlur={() => setEditDue(false)}
+            className="shrink-0 bg-transparent text-xs text-zinc-300 outline-none [color-scheme:dark]"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditDue(true)}
+            className={`shrink-0 rounded-md px-1.5 py-0.5 text-xs ${due ? due.tone : "text-zinc-600 hover:text-zinc-400"}`}
+          >
+            {due ? due.label : "＋ due"}
+          </button>
+        ))}
+      {item.completed && due && <span className="shrink-0 text-xs text-zinc-600">{due.label}</span>}
       <button
         type="button"
         onClick={remove}
