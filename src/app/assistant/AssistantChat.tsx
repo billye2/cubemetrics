@@ -10,6 +10,7 @@ import {
 } from "./actions";
 import type { ChatMessage, Proposal, AppliedEntry } from "@/lib/agent/run";
 import type { RecentAction } from "@/lib/agent/audit";
+import { MAX_MESSAGE_CHARS, MAX_VOICE_MS } from "@/lib/agent/limits";
 
 interface Msg extends ChatMessage {
   proposals?: Proposal[]; // pending writes awaiting confirmation
@@ -58,6 +59,7 @@ export function AssistantChat() {
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [micNote, setMicNote] = useState<string | null>(null);
   const recRef = useRef<Recognition | null>(null);
+  const voiceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   // Detect support after mount (avoids SSR/hydration mismatch and per-render construction).
@@ -78,7 +80,7 @@ export function AssistantChat() {
   }
 
   function send(text: string) {
-    const trimmed = text.trim();
+    const trimmed = text.trim().slice(0, MAX_MESSAGE_CHARS); // cap (server re-checks)
     if (!trimmed || pending) return;
     const history: Msg[] = [...messages, { role: "user", content: trimmed }];
     setMessages(history);
@@ -148,9 +150,17 @@ export function AssistantChat() {
   const BLOCKED_MSG =
     "Microphone blocked. Click the lock/ⓘ icon in the address bar → Site settings → Microphone → Allow, then reload.";
 
+  function clearVoiceTimer() {
+    if (voiceTimer.current) {
+      clearTimeout(voiceTimer.current);
+      voiceTimer.current = null;
+    }
+  }
+
   async function toggleMic() {
     setMicNote(null);
     if (listening) {
+      clearVoiceTimer();
       recRef.current?.stop();
       setListening(false);
       return;
@@ -186,7 +196,10 @@ export function AssistantChat() {
       const transcript = Array.from({ length: e.results.length }, (_, i) => e.results[i][0].transcript).join(" ");
       if (transcript.trim()) send(transcript); // hands-free: speak → auto-send
     };
-    rec.onend = () => setListening(false);
+    rec.onend = () => {
+      clearVoiceTimer();
+      setListening(false);
+    };
     rec.onerror = (ev) => {
       setListening(false);
       const err = ev?.error;
@@ -204,6 +217,9 @@ export function AssistantChat() {
     setListening(true);
     try {
       rec.start();
+      // Hard cap one capture so a long dictation can't run unbounded.
+      clearVoiceTimer();
+      voiceTimer.current = setTimeout(() => recRef.current?.stop(), MAX_VOICE_MS);
     } catch {
       setListening(false);
       setMicNote("Couldn't start the mic — try again.");
@@ -392,6 +408,7 @@ export function AssistantChat() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          maxLength={MAX_MESSAGE_CHARS}
           placeholder="Log something…"
           className="h-11 flex-1 rounded-full border border-zinc-800 bg-zinc-900/60 px-4 text-base text-zinc-100 placeholder:text-zinc-500 outline-none focus:border-cyan-500/50"
         />

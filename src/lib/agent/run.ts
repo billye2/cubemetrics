@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { APPS, getApp } from "@/lib/modern/catalog";
 import { REGISTERED_APP_IDS } from "@/lib/spine/registry";
 import { LAYOUT_TOOLS, LAYOUT_TOOL_NAMES, applyLayoutTool } from "./layout";
+import { clampContent } from "./limits";
 import type { createServerSupabase } from "@/lib/supabase/server";
 
 type Supabase = Awaited<ReturnType<typeof createServerSupabase>>;
@@ -546,9 +547,12 @@ export async function runAgentTurn(opts: {
   const client = new Anthropic();
   const proposals: Proposal[] = [];
   const layoutChanges: { summary: string }[] = [];
+  // Defensive: clamp every message to the per-message cap so an oversized payload
+  // (pasted wall of text, runaway transcript) can't inflate token cost, even if the
+  // caller skipped the sendToAssistant guard.
   const msgs: Anthropic.MessageParam[] = opts.messages.map((m) => ({
     role: m.role,
-    content: m.content,
+    content: clampContent(m.content),
   }));
 
   for (let step = 0; step < MAX_STEPS; step++) {
