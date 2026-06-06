@@ -13,6 +13,7 @@ import {
 } from "@/lib/agent/run";
 import { clearTodayPrefs } from "@/lib/agent/layout";
 import { logAgentAction, undoActionById, getRecentActions, type RecentAction } from "@/lib/agent/audit";
+import { isOverLimit, MAX_MESSAGE_CHARS } from "@/lib/agent/limits";
 
 const HISTORY_CAP = 16; // keep the prompt small — recent turns only
 
@@ -31,6 +32,17 @@ export async function sendToAssistant(messages: ChatMessage[]): Promise<AgentRes
     return {
       reply:
         "The +XP assistant isn't configured yet. Set ANTHROPIC_API_KEY in the environment to enable it.",
+      proposals: [],
+      layoutChanges: [],
+    };
+  }
+
+  // Abuse guard: reject an oversized latest message BEFORE any model call (zero tokens
+  // spent). The client caps input too, so this only fires on a bypassed/abusive client.
+  const latest = messages[messages.length - 1];
+  if (latest && latest.role === "user" && isOverLimit(latest.content)) {
+    return {
+      reply: `That's too long for a quick capture — keep it under ${MAX_MESSAGE_CHARS} characters and send it in smaller pieces.`,
       proposals: [],
       layoutChanges: [],
     };
