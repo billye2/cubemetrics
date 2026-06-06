@@ -17,14 +17,19 @@ type Recognition = {
   stop: () => void;
   onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
   onend: (() => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((e: { error?: string }) => void) | null;
 };
 
-function getRecognition(): Recognition | null {
+type RecognitionCtor = new () => Recognition;
+
+/** The SpeechRecognition constructor if this browser has it (Chrome/Edge/Safari; not Firefox). */
+function speechCtor(): RecognitionCtor | null {
   if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: new () => Recognition; webkitSpeechRecognition?: new () => Recognition };
-  const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
-  return Ctor ? new Ctor() : null;
+  const w = window as unknown as {
+    SpeechRecognition?: RecognitionCtor;
+    webkitSpeechRecognition?: RecognitionCtor;
+  };
+  return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
 const GREETING =
@@ -36,9 +41,15 @@ export function AssistantChat() {
   const [pending, start] = useTransition();
   const [listening, setListening] = useState(false);
   const [speak, setSpeak] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState(false);
+  const [micNote, setMicNote] = useState<string | null>(null);
   const recRef = useRef<Recognition | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  const voiceSupported = typeof window !== "undefined" && !!getRecognition();
+
+  // Detect support after mount (avoids SSR/hydration mismatch and per-render construction).
+  useEffect(() => {
+    setVoiceSupported(!!speechCtor());
+  }, []);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,24 +75,53 @@ export function AssistantChat() {
   }
 
   function toggleMic() {
+    setMicNote(null);
     if (listening) {
       recRef.current?.stop();
+      setListening(false);
       return;
     }
-    const rec = getRecognition();
-    if (!rec) return;
+    const Ctor = speechCtor();
+    if (!Ctor) {
+      setMicNote("Voice input isn't supported in this browser — try Chrome.");
+      return;
+    }
+    let rec: Recognition;
+    try {
+      rec = new Ctor();
+    } catch {
+      setMicNote("Couldn't start voice input.");
+      return;
+    }
     rec.lang = "en-US";
     rec.interimResults = false;
     rec.continuous = false;
     rec.onresult = (e) => {
       const transcript = Array.from({ length: e.results.length }, (_, i) => e.results[i][0].transcript).join(" ");
-      send(transcript); // hands-free: speak → auto-send
+      if (transcript.trim()) send(transcript); // hands-free: speak → auto-send
     };
     rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
+    rec.onerror = (ev) => {
+      setListening(false);
+      const err = ev?.error;
+      setMicNote(
+        err === "not-allowed" || err === "service-not-allowed"
+          ? "Microphone blocked — allow mic access for this site in your browser."
+          : err === "no-speech"
+            ? "Didn't catch anything — tap the mic and try again."
+            : err === "audio-capture"
+              ? "No microphone found."
+              : "Voice input error — try again.",
+      );
+    };
     recRef.current = rec;
     setListening(true);
-    rec.start();
+    try {
+      rec.start();
+    } catch {
+      setListening(false);
+      setMicNote("Couldn't start the mic — try again.");
+    }
   }
 
   return (
@@ -122,12 +162,21 @@ export function AssistantChat() {
         <div ref={endRef} />
       </div>
 
+      {(listening || micNote) && (
+        <div
+          className={`mt-3 px-1 text-xs ${listening ? "text-cyan-400" : "text-amber-400/90"}`}
+          role="status"
+        >
+          {listening ? "Listening… speak now." : micNote}
+        </div>
+      )}
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
           send(input);
         }}
-        className="sticky bottom-0 mt-4 flex items-center gap-2 bg-gradient-to-t from-zinc-950 via-zinc-950 to-transparent pb-1 pt-2"
+        className="sticky bottom-0 mt-2 flex items-center gap-2 bg-gradient-to-t from-zinc-950 via-zinc-950 to-transparent pb-1 pt-2"
       >
         {voiceSupported && (
           <button
