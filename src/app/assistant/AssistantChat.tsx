@@ -225,7 +225,7 @@ export function AssistantChat() {
         </button>
       </form>
 
-      {voiceSupported && (
+      {voiceSupported ? (
         <label className="mt-2 flex items-center justify-end gap-2 px-1 text-xs text-zinc-500">
           <input
             type="checkbox"
@@ -235,6 +235,12 @@ export function AssistantChat() {
           />
           Speak responses
         </label>
+      ) : (
+        // No Web Speech API here (e.g. Chrome/Firefox on iPhone, which are WebKit-only and
+        // don't expose it). No server-side fallback by choice — just say where voice works.
+        <p className="mt-2 px-1 text-right text-xs text-zinc-600">
+          Voice input needs Safari on iPhone, or Chrome on desktop.
+        </p>
       )}
     </div>
   );
