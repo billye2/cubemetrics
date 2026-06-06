@@ -340,7 +340,7 @@ create policy "own agent_actions" on public.agent_actions for all
 |------:|-------|------|-----------|
 | **A — Reshape Today** | `src/lib/agent/` runtime + context + **layout tools** (live); `today_prefs` table + `resolveTodayApps`; the Tune panel; `ai`+`zod`; gateway wiring + flags. | Low (reversible writes) | Existing read substrate |
 | **B — Auto-entries** | **entries tools** (plan mode) + generated tool registry over template + custom actions; `agent_actions` audit/undo; propose→confirm→apply UI; dedup guards. | Medium (creates data; mitigated by confirm + undo) | Phase A |
-| **C — Proactive discovery** | background pass over the day that *suggests* layout/entry changes via the digest/Today (earned-only), reusing `src/lib/notify` selection + trust gate. | Medium | Phases A/B + provisioned notify infra |
+| **C — Proactive discovery** | background pass over the day that *suggests* layout/entry changes via the digest/Today (earned-only), reusing `src/lib/notify` selection + trust gate. → **build checklist: [agent-phase-c.md](agent-phase-c.md)** | Medium | Phases A/B + provisioned notify infra |
 | **D — Dashboard archive** | retrieve-before-generate: match the user's needs to an archive of layouts and load the best instantly; agent stitches + archives on a miss. **Ship curated-presets-first** (works at any scale); the crowd-sourced archive is the scale evolution. → [agent-phase-d-dashboard-archive.md](agent-phase-d-dashboard-archive.md) | Low (curated) / Med (crowd) | Phase A (`today_prefs`); crowd version needs a user base |
 
 **Start with Phase A.** It's the smallest island, the writes are reversible, and it proves the whole
