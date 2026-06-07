@@ -1,3 +1,6 @@
+/* Cubemetrics landing — assembled from the design hand-off. */
+/* Order matters: icons/catalog → icon wiring → section mocks → motion. */
+
 /* ============================================================
    XP Boost — shared icon set + app catalog
    Minimal geometric glyphs (stroke = currentColor)
@@ -36,11 +39,11 @@
 
   // Bottom-nav icons
   var NAV = {
-    today:    s('<path d="M4 11l8-6 8 6"/><path d="M6 10v9h12v-9"/>'),
-    favorites:s('<path d="M12 4l2.3 4.8 5.2.7-3.8 3.6.9 5.1L12 15.8 7.4 18.2l.9-5.1L4.5 9.5l5.2-.7z"/>'),
-    apps:     s('<rect x="4" y="4" width="6" height="6" rx="1.4"/><rect x="14" y="4" width="6" height="6" rx="1.4"/><rect x="4" y="14" width="6" height="6" rx="1.4"/><rect x="14" y="14" width="6" height="6" rx="1.4"/>'),
+    today:    s('<path d="M5 12l7-6 7 6v6.4a1.1 1.1 0 0 1-1.1 1.1H6.1A1.1 1.1 0 0 1 5 18.4z"/>'),
+    apps:     s('<rect x="4.5" y="4.5" width="6" height="6" rx="1.6"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.6"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.6"/><rect x="13.5" y="13.5" width="6" height="6" rx="1.6"/>'),
+    xp:       s('<path d="M12 3.4c.7 4.4 2.5 6.2 6.6 6.6-4.1.4-5.9 2.2-6.6 6.6-.7-4.4-2.5-6.2-6.6-6.6 4.1-.4 5.9-2.2 6.6-6.6z"/>'),
     progress: s('<path d="M5 19V11M10 19V6M15 19v-5M20 19v-9"/>'),
-    settings: s('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/>')
+    settings: s('<circle cx="12" cy="12" r="3.6"/><path d="M12 3.4v2.2M12 18.4v2.2M3.4 12h2.2M18.4 12h2.2M5.8 5.8l1.5 1.5M16.7 16.7l1.5 1.5M18.2 5.8l-1.5 1.5M7.3 16.7l-1.5 1.5"/>')
   };
 
   var STAR = '<svg class="tile-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 4l2.2 4.6 5 .7-3.6 3.5.85 5L12 15.5 7.55 17.8l.85-5L4.8 9.3l5-.7z"/></svg>';
@@ -106,30 +109,52 @@
 
   // Render a bottom nav
   window.renderNav = function (active) {
-    var order = [['today','Today'],['favorites','Favorites'],['apps','Apps'],['progress','Progress'],['settings','Settings']];
+    var order = [['today','Today'],['apps','Apps'],['xp','+XP'],['progress','Progress'],['settings','Settings']];
     return '<nav class="app-nav">' + order.map(function (o) {
       return '<a class="' + (o[0] === active ? 'active' : '') + '">' + NAV[o[0]] + '<span>' + o[1] + '</span></a>';
     }).join('') + '</nav>';
   };
 })();
 
+
+/* ---- icon wiring (index.html inline #1) ---- */
 (function(){
   var FLAME = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2 3 .4 4.6 1.8 6.4C15.6 8 16.4 6 16.4 6c1.4 2 2 4 2 6a6.4 6.4 0 1 1-12.8 0c0-3 1.8-5 3-6 .4 2 1.4 2.6 2 1 .5-1.6 0-3-.6-4z"/></svg>';
+  var MIC = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v3M9 20h6"/></svg>';
   document.querySelectorAll('[data-ico]').forEach(function(el){
     var k = el.getAttribute('data-ico');
     if (k === 'flame') { el.innerHTML = FLAME; el.style.color = 'var(--amber)'; el.style.background = 'color-mix(in srgb, var(--amber) 13%, var(--card))'; return; }
+    if (k === 'mic') { el.innerHTML = MIC; return; }
     el.innerHTML = (window.XPI[k] || window.XPNAV[k] || '');
   });
   document.querySelectorAll('[data-nav]').forEach(function(el){ el.outerHTML = window.renderNav(el.getAttribute('data-nav')); });
 })();
 
-;
-
+/* ---- section mockups (index.html inline #2) ---- */
 (function(){
   var NAV = window.renderNav;
+  var MICSVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v3M9 20h6"/></svg>';
+  function aiMock(){
+    return '<div class="mock-window">'+
+      '<div class="mock-bar"><span style="font-size:13px;color:var(--teal);font-weight:600">← Today</span><span style="font-weight:700;font-family:var(--display)">+XP</span><span style="width:18px"></span></div>'+
+      '<div class="chat">'+
+        '<div class="cap">Quick-capture by chat or voice — tell it what you did and it logs to the right app.</div>'+
+        '<div class="recent">▸ Recent entries — <b style="color:var(--ink-2)">3 undoable</b></div>'+
+        '<div class="bub ai">Hi — tell me what to log. Try “I drank two glasses of water”, “add milk to my grocery list”, or “remind me to call the dentist”.</div>'+
+        '<div class="bub me">i just ran 2 miles</div>'+
+        '<div class="bub ai" style="max-width:92%">Got it — I’ve logged <span class="hl">2 miles (~5,000 steps)</span> to your Steps tracker. Nice work! 🏃'+
+          '<div class="cc-row"><span class="cc-box">✓</span> Log 5,000 steps to Steps</div>'+
+          '<div class="cc-actions"><button class="cc-confirm">Confirm</button><span class="cc-dismiss">Dismiss</span></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="chat-input"><span class="mic">'+MICSVG+'</span><span class="field">Log something…</span><button class="send">Send</button></div>'+
+      '<div class="speak"><i></i> Speak responses</div>'+
+    '</div>';
+  }
+  var am=document.getElementById('aiMock'); if(am) am.innerHTML=aiMock();
   function dashMock(){
     return '<div class="mock-window">'+
-      '<div class="mock-bar"><a class="brand" style="font-size:14px"><span class="brand-mark" style="width:22px;height:22px"><span style="width:7px;height:11px"></span></span> XP Boost</a><span style="font-size:12px;color:var(--muted)">Evening</span></div>'+
+      '<div class="mock-bar"><a class="brand" style="font-size:14px"><img src="/brand-mark.png" alt="" style="width:22px;height:22px;border-radius:6px;display:block" /> Cubemetrics</a><span style="font-size:12px;color:var(--muted)">Evening</span></div>'+
       '<div class="dash">'+
         '<div class="greet-sm">Close out your day</div>'+
         '<div class="greet-lg">Billy Ye</div>'+
@@ -177,6 +202,8 @@
   });
   var ag=document.getElementById('appgrid'); if(ag) window.renderAppGrid(ag,{cols:3});
 })();
+
+/* ---- motion ---- */
 /* ============================================================
    XP Boost landing — shared motion
    IntersectionObserver driven: reveals, count-ups, bar fills
@@ -299,3 +326,4 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
+
