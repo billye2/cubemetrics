@@ -3,12 +3,13 @@ import { writeFileSync } from "fs";
 
 const SRC = process.argv[2] || "C:/Users/billy/Desktop/m3_logo2.png";
 
-await sharp(SRC).resize(144, 144).png().toFile("public/brand-mark.png");
-await sharp(SRC).resize(144, 144).png().toFile("src/app/icon.png");
-await sharp(SRC).resize(180, 180).png().toFile("src/app/apple-icon.png");
+// ensureAlpha(): the source is RGB; Next's Turbopack ICO/icon decoder requires RGBA.
+await sharp(SRC).resize(144, 144).ensureAlpha().png().toFile("public/brand-mark.png");
+await sharp(SRC).resize(144, 144).ensureAlpha().png().toFile("src/app/icon.png");
+await sharp(SRC).resize(180, 180).ensureAlpha().png().toFile("src/app/apple-icon.png");
 
 const sizes = [16, 32, 48];
-const pngs = await Promise.all(sizes.map((s) => sharp(SRC).resize(s, s).png().toBuffer()));
+const pngs = await Promise.all(sizes.map((s) => sharp(SRC).resize(s, s).ensureAlpha().png().toBuffer()));
 const header = Buffer.alloc(6);
 header.writeUInt16LE(0, 0);
 header.writeUInt16LE(1, 2);
