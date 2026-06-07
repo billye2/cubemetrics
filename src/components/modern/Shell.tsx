@@ -30,7 +30,8 @@ export function Shell({ title, back, right, children }: ShellProps) {
                 href="/"
                 className="flex items-center gap-2 text-zinc-100 font-semibold tracking-tight"
               >
-                <span className="inline-block h-6 w-6 rounded bg-cyan-500/20 ring-1 ring-cyan-500/40 text-center text-cyan-400 leading-6 text-xs">◧</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/brand-mark.png" alt="" aria-hidden className="h-6 w-6 rounded" />
                 <span>XP Boost</span>
               </Link>
             )}

@@ -7,6 +7,9 @@ import { isThemePref, type ThemePref } from "@/lib/theme";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
+  // Makes the auto-generated icon/opengraph-image URLs absolute (cubemetrics.com)
+  // so social scrapers resolve them; falls back to the deploy URL in preview.
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://cubemetrics.com"),
   title: "XP Boost",
   description: "Your personal productivity hub",
 };
