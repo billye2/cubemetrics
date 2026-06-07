@@ -142,7 +142,7 @@ export function buildDigest(
   // ── Assemble ────────────────────────────────────────────────────────────────
   const html = `<!doctype html><html><body style="margin:0;padding:0;background:${BG};">
   <div style="max-width:560px;margin:0 auto;padding:28px 20px;background:${BG};color:${TEXT};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-    <div style="font-size:20px;font-weight:700;color:${ACCENT};">XP Boost</div>
+    <div style="font-size:20px;font-weight:700;color:${ACCENT};">Cubemetrics</div>
     <div style="font-size:17px;font-weight:600;margin-top:4px;">${esc(subject)}</div>
     ${htmlParts.join("\n")}
     ${button(todayUrl)}
@@ -154,7 +154,7 @@ export function buildDigest(
   </body></html>`;
 
   const text = [
-    "XP Boost",
+    "Cubemetrics",
     subject,
     "",
     ...textParts,
