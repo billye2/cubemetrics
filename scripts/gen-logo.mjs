@@ -45,7 +45,7 @@ const og = `
   </defs>
   <rect width="${OG_W}" height="${OG_H}" fill="url(#glow)"/>
   <rect x="0" y="${OG_H - 10}" width="${OG_W}" height="10" fill="#06b6d4"/>
-  <text x="470" y="296" font-family="Segoe UI, Arial, sans-serif" font-size="84" font-weight="800" fill="#fafafa">XP Boost</text>
+  <text x="470" y="296" font-family="Segoe UI, Arial, sans-serif" font-size="76" font-weight="800" fill="#fafafa">Cubemetrics</text>
   <text x="472" y="356" font-family="Segoe UI, Arial, sans-serif" font-size="34" fill="#a1a1aa">Your personal productivity hub</text>
   <text x="472" y="416" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="600" fill="#22d3ee">cubemetrics.com</text>
 </svg>`;

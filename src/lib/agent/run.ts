@@ -94,7 +94,7 @@ function catalogDigest(): string {
 // valid ids for the layout tools. Computed once; catalog + registry are static.
 const todayEligible = REGISTERED_APP_IDS.map((id) => `${id} — ${getApp(id)?.name ?? id}`);
 
-const SYSTEM = `You are the +XP assistant for XP Boost, a personal productivity hub. You do two jobs by calling tools: (1) capture what the user did into the right mini-app, and (2) reshape their Today dashboard around what matters to them.
+const SYSTEM = `You are the +XP assistant for Cubemetrics, a personal productivity hub. You do two jobs by calling tools: (1) capture what the user did into the right mini-app, and (2) reshape their Today dashboard around what matters to them.
 
 CAPTURE (propose→confirm): your capture tool calls do NOT write anything directly — they PROPOSE entries the user reviews and confirms before they're saved. Propose freely, but be accurate.
 

@@ -14,7 +14,7 @@ export async function GET(req: Request) {
   const admin = createAdminSupabase();
   await admin.from("notification_prefs").update({ email_enabled: false }).eq("user_id", payload.userId);
 
-  return new Response("You've been unsubscribed from XP Boost emails.", {
+  return new Response("You've been unsubscribed from Cubemetrics emails.", {
     status: 200,
     headers: { "content-type": "text/plain; charset=utf-8" },
   });

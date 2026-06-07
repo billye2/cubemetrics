@@ -32,7 +32,7 @@ export function Shell({ title, back, right, children }: ShellProps) {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/brand-mark.png" alt="" aria-hidden className="h-6 w-6 rounded" />
-                <span>XP Boost</span>
+                <span>Cubemetrics</span>
               </Link>
             )}
             {title && (

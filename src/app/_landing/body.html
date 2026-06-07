@@ -1,12 +1,11 @@
 <header class="site">
   <div class="wrap bar">
-    <a class="brand"><span class="brand-mark"><span></span></span> XP Boost</a>
+    <a class="brand"><img class="brand-logo" src="/brand-mark.png" alt="Cubemetrics m³ logo" /> Cubemetrics</a>
     <nav>
       <a class="lnk" href="#loop">The loop</a>
-      <a class="lnk" href="#assistant">Assistant</a>
       <a class="lnk" href="#apps">Apps</a>
       <a class="lnk" href="#progress">Progress</a>
-      <a class="btn btn-primary" style="padding:9px 16px;font-size:14px" href="/api/auth/login"><span class="g-logo">G</span> Sign in</a>
+      <a class="btn btn-primary" href="/api/auth/login" style="padding:9px 16px;font-size:14px"><span class="g-logo">G</span> Sign in</a>
     </nav>
   </div>
 </header>
@@ -16,7 +15,7 @@
     <div class="hero-copy reveal in">
       <div class="eyebrow" style="margin-bottom:18px">A personal productivity hub</div>
       <h1>The little things you do all day, <em>finally add up.</em></h1>
-      <p class="lead">XP Boost folds your todos, habits, focus sessions and journaling into one calm dashboard — then turns the momentum into XP, levels and streaks you can actually see.</p>
+      <p class="lead">Cubemetrics folds your todos, habits, focus sessions and journaling into one calm dashboard — then turns the momentum into XP, levels and streaks you can actually see.</p>
       <div class="cta-row">
         <a class="btn btn-primary" href="/api/auth/login"><span class="g-logo">G</span> Sign in with Google</a>
         <a class="btn btn-ghost" href="#loop">See what's inside ↓</a>
@@ -38,7 +37,7 @@
       </div>
       <div class="mock-window">
         <div class="mock-bar">
-          <a class="brand" style="font-size:14px"><span class="brand-mark" style="width:22px;height:22px"><span style="width:7px;height:11px"></span></span> XP Boost</a>
+          <a class="brand" style="font-size:14px"><img src="/brand-mark.png" alt="" style="width:22px;height:22px;border-radius:6px;display:block" /> Cubemetrics</a>
           <span style="font-size:12px;color:var(--muted)">Sign out</span>
         </div>
         <div class="dash">
@@ -89,7 +88,7 @@
 <div class="stat-band">
   <div class="wrap">
     <div class="stat-grid">
-      <div class="stat reveal"><div class="n"><span data-count="80" data-suffix="+">0</span></div><div class="l">tiny apps, one account</div></div>
+      <div class="stat reveal"><div class="n"><span data-count="50" data-suffix="+">0</span></div><div class="l">tiny apps, one account</div></div>
       <div class="stat reveal reveal-d1"><div class="n"><em><span data-count="3">0</span></em> a day</div><div class="l">quests to keep the streak</div></div>
       <div class="stat reveal reveal-d2"><div class="n"><span data-count="4850" data-dur="1500">0</span></div><div class="l">XP and counting</div></div>
       <div class="stat reveal reveal-d3"><div class="n">L<span data-count="10">0</span></div><div class="l">levels of momentum</div></div>
@@ -102,7 +101,7 @@
     <div class="copy reveal">
       <div class="eyebrow">Your day, at a glance</div>
       <h2 style="margin-top:8px">One screen that asks: what's left today?</h2>
-      <p class="ptext">No app-hopping. Open XP Boost and the day sorts itself — what needs attention now, what's coming up, and the three quests standing between you and your streak.</p>
+      <p class="ptext">No app-hopping. Open Cubemetrics and the day sorts itself — what needs attention now, what's coming up, and the three quests standing between you and your streak.</p>
       <ul class="feat-list">
         <li><span class="feat-ico" data-ico="water"></span><div><h4>Needs attention, first</h4><p>Water, habits and anything due float to the top so nothing slips.</p></div></li>
         <li><span class="feat-ico" data-ico="todo"></span><div><h4>Upcoming, in line</h4><p>The next tasks queue up underneath — glance, don't dig.</p></div></li>
@@ -113,39 +112,28 @@
   </div>
 </section>
 
-<section class="block stat-band" id="assistant">
-  <div class="wrap split">
-    <div class="copy reveal">
-      <div class="eyebrow">New · the +XP assistant</div>
-      <h2 style="margin-top:8px">Just say what you did. It logs the rest.</h2>
-      <p class="ptext">Talk or type in plain words — "drank two glasses of water, walked 3,000 steps, mark floss done" — and the +XP assistant files each one into the right app. It shows you exactly what it'll save and waits for your okay: nothing is logged until you confirm, and one tap undoes it.</p>
+<section class="block" id="assistant">
+  <div class="wrap split rev">
+    <div class="copy reveal reveal-d1">
+      <div class="eyebrow">Lives under the +XP tab</div>
+      <h2 style="margin-top:8px">Just say what you did. It files itself.</h2>
+      <p class="ptext">Type it or talk to it — Cubemetrics works out which of your 50+ apps the entry belongs to, logs it, and hands you the XP. No forms, no tab-hunting, nothing to remember.</p>
       <ul class="feat-list">
-        <li><span class="feat-ico" data-ico="journal"></span><div><h4>Capture by voice or text</h4><p>One quick message instead of opening five apps.</p></div></li>
-        <li><span class="feat-ico" data-ico="todo"></span><div><h4>Confirm before it saves</h4><p>Review the proposed entries, uncheck any, then confirm — with undo on every one.</p></div></li>
-        <li><span class="feat-ico" data-ico="focus"></span><div><h4>Reshape your day</h4><p>"Focus on fitness and bills, hide journaling" — and your dashboard rearranges to match.</p></div></li>
+        <li><span class="feat-ico" data-ico="mic"></span><div><h4>Type it or speak it</h4><p>Chat or hold the mic — it understands plain language.</p></div></li>
+        <li><span class="feat-ico" data-ico="apps"></span><div><h4>Routes to the right app, automatically</h4><p>“I ran 2 miles” lands in Steps. “Add milk” hits Grocery.</p></div></li>
+        <li><span class="feat-ico" data-ico="todo"></span><div><h4>Confirms before it saves</h4><p>You approve each entry — and every one stays undoable.</p></div></li>
+      </ul>
+      <ul class="say-list">
+        <li><span class="said">“I drank two glasses of water”</span><span class="arr">→</span><span class="went"><span class="wico" data-ico="water"></span> <span><b>+2</b> Water</span></span></li>
+        <li><span class="said">“Remind me to call the dentist”</span><span class="arr">→</span><span class="went"><span class="wico" data-ico="todo"></span> <span><b>Todo</b> added</span></span></li>
       </ul>
     </div>
-    <div class="reveal reveal-d2">
-      <div class="mock-window" style="max-width:360px;margin:0 auto">
-        <div class="mock-bar">
-          <a class="brand" style="font-size:14px"><span class="brand-mark" style="width:22px;height:22px"><span style="width:7px;height:11px"></span></span> +XP</a>
-        </div>
-        <div style="padding:14px;display:flex;flex-direction:column;gap:10px">
-          <div style="align-self:flex-end;max-width:82%;background:var(--teal);color:#fff;border-radius:14px;padding:9px 13px;font-size:13.5px;font-weight:500">I drank two glasses of water and walked 3,000 steps</div>
-          <div style="align-self:flex-start;max-width:90%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 13px;font-size:13.5px;color:var(--ink)">
-            Here's what I'll log:
-            <div style="display:flex;align-items:center;gap:7px;margin-top:8px"><span style="width:15px;height:15px;border-radius:4px;background:var(--teal);display:inline-block"></span> Log 2 glasses to Water</div>
-            <div style="display:flex;align-items:center;gap:7px;margin-top:5px"><span style="width:15px;height:15px;border-radius:4px;background:var(--teal);display:inline-block"></span> Log 3,000 steps to Steps</div>
-            <span style="display:inline-block;margin-top:11px;background:var(--teal);color:#fff;font-weight:600;font-size:12px;padding:6px 14px;border-radius:999px">Confirm</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <div class="reveal reveal-d2" id="aiMock"></div>
   </div>
 </section>
 
-<section class="block">
-  <div class="wrap split rev">
+<section class="block stat-band">
+  <div class="wrap split">
     <div class="copy reveal reveal-d1">
       <div class="eyebrow">Everything counts</div>
       <h2 style="margin-top:8px">Momentum you can watch grow.</h2>
@@ -160,11 +148,11 @@
   </div>
 </section>
 
-<section class="block stat-band" id="apps">
+<section class="block" id="apps">
   <div class="wrap">
     <div class="sec-head reveal">
       <div class="eyebrow">The library</div>
-      <h2>80+ tiny apps. Pick the few that fit your life.</h2>
+      <h2>50+ tiny apps. Pick the few that fit your life.</h2>
       <p>Each one does a single thing well — and every one of them feeds the same XP, the same streak, the same dashboard. Start with two, add more when you're ready.</p>
     </div>
     <div id="appgrid"></div>
@@ -172,7 +160,7 @@
   </div>
 </section>
 
-<section class="block" id="progress">
+<section class="block stat-band" id="progress">
   <div class="wrap split">
     <div class="copy reveal">
       <div class="eyebrow">Look back</div>
@@ -192,7 +180,7 @@
     <div class="cta-card reveal">
       <h2>Start the streak today.</h2>
       <p>One sign-in and your dashboard is waiting — quests set, level ready, day one of the next 48 on the board.</p>
-      <a class="btn btn-primary" style="font-size:16px;padding:15px 26px" href="/api/auth/login"><span class="g-logo">G</span> Sign in with Google</a>
+      <a class="btn btn-primary" href="/api/auth/login" style="font-size:16px;padding:15px 26px"><span class="g-logo">G</span> Sign in with Google</a>
       <div class="mini">Free · Phone and desktop friendly · Your data stays in your account</div>
     </div>
   </div>
@@ -200,8 +188,8 @@
 
 <footer class="site">
   <div class="wrap row">
-    <a class="brand" style="font-size:16px"><span class="brand-mark" style="width:26px;height:26px"><span style="width:8px;height:12px"></span></span> XP Boost</a>
-    <div class="links"><a href="#loop">The loop</a><a href="#assistant">Assistant</a><a href="#apps">Apps</a><a href="#progress">Progress</a><a href="/api/auth/login">Sign in</a></div>
-    <small>© 2026 XP Boost — a calm place to make it count.</small>
+    <a class="brand" style="font-size:16px"><img src="/brand-mark.png" alt="" style="width:26px;height:26px;border-radius:7px;display:block" /> Cubemetrics</a>
+    <div class="links"><a href="#loop">The loop</a><a href="#apps">Apps</a><a href="#progress">Progress</a><a href="/api/auth/login">Sign in</a></div>
+    <small>© 2026 Cubemetrics — a calm place to make it count.</small>
   </div>
 </footer>
