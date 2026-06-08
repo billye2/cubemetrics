@@ -103,27 +103,29 @@ export function TimeTrackerView({ entries, budgets }: { entries: Entry[]; budget
     startEntry(() => addTimeEntryAction(category, STEP, ""));
   }
   function bumpTarget(category: string, delta: number) {
-    setTargets((t) => {
-      const next = Math.max(0, (t[category] ?? 0) + delta);
-      startBudget(() => setTimeBudgetAction(category, next));
-      return { ...t, [category]: next };
-    });
+    const next = Math.max(0, (targets[category] ?? 0) + delta);
+    setTargets((t) => ({ ...t, [category]: Math.max(0, (t[category] ?? 0) + delta) }));
+    startBudget(() => setTimeBudgetAction(category, next));
   }
 
   // Categories shown: those with a budget or week-spend (view), plus recents (adjust).
+  // Order is deliberately STABLE during interaction so steppers / +30m don't jump:
+  //   • view mode sorts by pace using server-side spend (baseSpent), so an optimistic
+  //     +30m grows a bar without reordering until the next server refresh;
+  //   • adjust mode sorts alphabetically, so editing a target never moves the card.
   const categories = useMemo(() => {
     const set = new Set<string>();
     Object.keys(targets).forEach((k) => targets[k] > 0 && set.add(k));
     Object.keys(baseSpent).forEach((k) => baseSpent[k] > 0 && set.add(k));
     Object.keys(optimisticMap).forEach((k) => optimisticMap[k] > 0 && set.add(k));
     if (editing) recentCategories.forEach((k) => set.add(k));
+    if (editing) return [...set].sort((a, b) => a.localeCompare(b));
     const ratio = (c: string) => {
-      const t = targetFor(c);
-      const s = spentFor(c);
+      const t = targets[c] ?? 0;
+      const s = baseSpent[c] ?? 0;
       return t > 0 ? s / t : s > 0 ? Infinity : -1; // unbudgeted-with-spend bubbles up
     };
     return [...set].sort((a, b) => ratio(b) - ratio(a));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targets, baseSpent, optimisticMap, editing, recentCategories]);
 
   const totalSpent = categories.reduce((s, c) => s + spentFor(c), 0);
@@ -237,7 +239,8 @@ export function TimeTrackerView({ entries, budgets }: { entries: Entry[]; budget
       <button
         type="button"
         onClick={() => setLogOpen(true)}
-        className="fixed right-4 z-20 bottom-[calc(64px+env(safe-area-inset-bottom)+1rem)] flex h-[50px] items-center gap-2 rounded-full bg-cyan-500 pl-5 pr-6 text-base font-semibold text-zinc-950 shadow-lg shadow-cyan-500/30 hover:bg-cyan-400 active:scale-95"
+        style={{ bottom: "calc(64px + env(safe-area-inset-bottom) + 1rem)" }}
+        className="fixed right-4 z-20 flex h-[50px] items-center gap-2 rounded-full bg-cyan-500 pl-5 pr-6 text-base font-semibold text-zinc-950 shadow-lg shadow-cyan-500/30 hover:bg-cyan-400 active:scale-95"
       >
         <span className="text-xl leading-none">+</span> Log time
       </button>
