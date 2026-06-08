@@ -14,6 +14,11 @@
 > hh:mm:ss, optional label, Stop & log → `daily_trackers`, today total + 7-day chart + history.
 > Remaining: P3 keep-awake / sound / mid-reset resume.
 
+> **Status (2026-06-07):** 🚫 HIDDEN per approved feedback #179 — redundant with Focus / Time Tracker
+> (both are live timers). Set `"hidden": true` in `stopwatch.json` (new catalog `hidden` flag): filtered
+> out of the /apps grid, search, favorites, the +XP assistant's tool routing, and the landing showcase.
+> The route + `daily_trackers` data are preserved (`getApp` still resolves it); flip the flag to un-retire.
+
 **Plan**
 - **P1 — build a real stopwatch (the whole point).** ✅ shipped
   - **Graduate to a custom app** (`ui: "modern"`, add `src/app/app/stopwatch/page.tsx` + `actions.ts`).

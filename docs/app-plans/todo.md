@@ -2,7 +2,7 @@
 
 **Purpose** — A fast, phone-first task list: capture a task, prioritize it, knock it out.
 
-**Current state** — Custom page. Inline add form with a title field and a 3-level priority toggle (Normal / `!` / `!!`). Active tasks listed; completed tasks collapse under a "Completed (n)" disclosure. Tap the circle to complete (the toggle action already writes `completed_at`), tap `×` to delete with a confirm. Priority `!!`/`!` shows as a colored pill. Empty state present.
+**Current state** — Custom page. Inline add form with a title field and a 3-level priority toggle (**Normal / Soon / Important** — renamed from `!`/`!!` 2026-06-07, PRs #181→#182). Active tasks listed; completed tasks collapse under a "Completed (n)" disclosure. Tap the circle to complete (the toggle action already writes `completed_at`), tap `×` to delete with a confirm. Priority shows as a colored pill (amber "Soon" / red "Important"). Empty state present.
 
 **Gaps** — Doesn't meet the quality bar. No hero/stats strip, no visualization, no streak. The biggest miss: **`due_date` and `completed_at` columns already exist but the UI never surfaces them** — there's no scheduling, no overdue/today/upcoming grouping, and the recorded completion time is invisible. You also can't edit a task once created (a typo means delete + re-add), there's no sort, and no notion of a "Today" focus.
 
