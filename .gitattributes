@@ -1,0 +1,4 @@
+# Build-script output (catalog + spine registries) is written with LF.
+# Pin it to LF so Windows' core.autocrlf=true doesn't flag these generated
+# files as modified after every `npm run build`. See scripts/build-*.mjs.
+**/_generated.ts text eol=lf
