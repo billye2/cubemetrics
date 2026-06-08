@@ -12,7 +12,10 @@
     "lint": "eslint",
     "pretest": "node scripts/build-catalog.mjs && node scripts/build-spine-registry.mjs",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e:provision": "node scripts/e2e/provision-user.mjs",
+    "test:e2e": "node scripts/e2e/provision-user.mjs && playwright test",
+    "test:e2e:headed": "node scripts/e2e/provision-user.mjs && playwright test --headed"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.101.0",
@@ -24,6 +27,7 @@
     "resend": "^6.12.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20",

@@ -37,6 +37,12 @@ yarn-error.log*
 .env*
 !.env.example
 
+# e2e (Playwright) — never commit the saved session, test creds, or run artifacts
+e2e/.auth/
+/test-results/
+/playwright-report/
+/playwright/.cache/
+
 # vercel
 .vercel
 
