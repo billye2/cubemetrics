@@ -1,6 +1,15 @@
 # Focus (`focus`)
 
-**Status:** Reference app — already built to the quality bar.
+**Status:** Reference app — **redesigned 2026-06-07 (PR #184)** to the "Intent" model.
+
+> **2026-06-07 redesign (PRs #184–#185).** Rebuilt from the "Intent" design hand-off as a four-stage flow
+> **home (journal) → setup → run → reflect**, restyled in the suite's zinc/cyan theme (owner chose
+> adapt-to-suite over the warm-paper original). Distraction parking was **dropped**, replaced by a
+> post-session reflection (one-line "what got done" + 1–5 focus rating). Data stays in `daily_trackers`
+> (`tracker_type:"focus"`, `value`=minutes); reflection/rating/done-criteria pack into `note` as JSON
+> (legacy distraction notes degrade gracefully). Added a read-only spine adapter
+> (`src/lib/spine/adapters/focus.ts`, "N/60 min" today card). See [[handoff-2026-06-07]]. Notes below
+> describe the *pre-redesign* app.
 
 **Purpose** — A single-task focus timer with intent, distraction parking, and a daily focus habit.
 

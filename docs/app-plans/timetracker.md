@@ -1,6 +1,17 @@
 # Time Tracker (`timetracker`)
 
-**Status:** Reference app — already built to the quality bar.
+**Status:** Reference app — **redesigned 2026-06-07 (PRs #187–#188)** to the "Time Budget" model.
+
+> **2026-06-07 redesign (PRs #187–#188).** Rebuilt from the "Time Budget" design hand-off — time as a
+> finite weekly resource allocated per category. New `TimeTrackerView.tsx` (zinc/cyan): hero (spent vs
+> total budget + status sentence), per-category cards (pace bar + even-pace marker + status pill;
+> view = spent/target + "+30m" quick-log, **Adjust mode** = ±30m target steppers), projection card,
+> **FAB → log sheet**, compact Recent-entries list. **New persisted per-category weekly budgets** stored
+> migration-free as `tracker_type:"timebudget"` rows in `daily_trackers` (config, not entries); a guard
+> in `src/lib/xp/compute.ts` skips them so they never count toward XP/quests. PR #188 fixed card-jumping
+> (stable sort), the FAB position (invalid `calc()`), and added the first **component test**
+> (`tests/unit/timetracker-view.test.tsx`, happy-dom + RTL). See [[handoff-2026-06-07]]. Notes below
+> describe the *pre-redesign* app.
 
 **Purpose** — Log where your time went, bucketed by category, with a today breakdown and a weekly trend.
 
