@@ -55,7 +55,6 @@
       ['timetracker','Time Tracker','Log where your day went','--c-blue'],
       ['countdown','Countdown','Count down the days to dates','--c-orange'],
       ['meditation','Meditation','Log minutes meditated','--c-pine'],
-      ['stopwatch','Stopwatch','Time any activity live','--c-purple'],
       ['pomodoro','Pomodoro','Work in focused sprints','--c-red']
     ],
     'TASKS & PLANNING': [

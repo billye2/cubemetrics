@@ -78,7 +78,7 @@ export const APPS: AppEntry[] = [
   {"id":"timetracker","name":"Time Tracker","category":"time","icon":"⧗","description":"Log where your day went, by category","ui":"modern"},
   {"id":"countdown","name":"Countdown","category":"time","icon":"⧖","description":"Count down the days to dates that matter","ui":"modern"},
   {"id":"meditation","name":"Meditation","category":"time","icon":"⊚","description":"Log minutes meditated toward a daily goal","ui":"tracker","config":{"trackerType":"meditation","unit":"minutes","min":0,"max":240,"aggregate":"sum","dailyGoal":20,"quickAdd":[5,10,20]}},
-  {"id":"stopwatch","name":"Stopwatch","category":"time","icon":"◷","description":"Time any activity live with a stopwatch","ui":"modern","config":{"trackerType":"stopwatch","unit":"minutes","aggregate":"sum"}},
+  {"id":"stopwatch","name":"Stopwatch","category":"time","icon":"◷","description":"Time any activity live with a stopwatch","ui":"modern","hidden":true,"config":{"trackerType":"stopwatch","unit":"minutes","aggregate":"sum"}},
   {"id":"calendar","name":"Calendar","category":"org","icon":"◰","description":"See your events on a calendar and agenda","ui":"modern"},
   {"id":"pomodoro","name":"Pomodoro","category":"time","icon":"◓","description":"Work in focused sprints with timed breaks","ui":"modern"},
   {"id":"expenses","name":"Expenses","category":"finance","icon":"⟢","description":"Log spending and see it by category","ui":"modern"},

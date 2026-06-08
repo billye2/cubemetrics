@@ -68,10 +68,11 @@ const MODEL = (process.env.AGENT_MODEL ?? "claude-haiku-4-5").replace(/^anthropi
 
 const MAX_STEPS = 5;
 
-const byUi = (ui: string) => APPS.filter((a) => a.ui === ui).map((a) => `${a.id} — ${a.name}`);
+const byUi = (ui: string) =>
+  APPS.filter((a) => a.ui === ui && !a.hidden).map((a) => `${a.id} — ${a.name}`);
 
 function catalogDigest(): string {
-  const trackers = APPS.filter((a) => a.ui === "tracker").map(
+  const trackers = APPS.filter((a) => a.ui === "tracker" && !a.hidden).map(
     (a) => `${a.id} — ${a.name}${a.config?.unit ? ` (${a.config.unit})` : ""}`,
   );
   return [

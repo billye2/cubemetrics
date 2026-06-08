@@ -40,9 +40,10 @@ export default async function AppsPage() {
 
   // System/admin tools are pulled out of the normal grid; they live in the
   // admins-only Administrator section below so they don't look like empty apps.
-  const gridApps = APPS.filter((a) => !ADMIN_APP_IDS.has(a.id));
+  const gridApps = APPS.filter((a) => !ADMIN_APP_IDS.has(a.id) && !a.hidden);
   // Search can find system apps for admins, but hides them from regular users.
-  const searchApps = admin ? APPS : gridApps;
+  // Hidden (retired/redundant) apps never surface in search for anyone.
+  const searchApps = (admin ? APPS : gridApps).filter((a) => !a.hidden);
   // Starred apps get their own section at the very top (catalog order preserved).
   const favorites = gridApps.filter((a) => favoriteIds.has(a.id));
 

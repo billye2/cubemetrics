@@ -27,6 +27,10 @@ export interface AppEntry {
   description: string;
   icon: string;
   ui: UiType;
+  /** Retired/redundant apps: kept (route + data survive) but filtered out of the
+   *  grid, search, favorites, and the assistant's tool routing. `getApp` still
+   *  resolves them so /app/<id> keeps working. Set via `"hidden": true` in the JSON. */
+  hidden?: boolean;
   config?: FactoryConfig;
 }
 
@@ -102,5 +106,5 @@ export function getApp(id: string): AppEntry | undefined {
 }
 
 export function getAppsByCategory(categoryId: string): AppEntry[] {
-  return APPS.filter((a) => a.category === categoryId);
+  return APPS.filter((a) => a.category === categoryId && !a.hidden);
 }
