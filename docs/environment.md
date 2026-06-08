@@ -36,7 +36,7 @@ safe-without-secrets (no key ⇒ nothing sent / deterministic insight line).
 |----------|-------|-------------|
 | `CRON_SECRET` | Server | Bearer secret the `/api/cron/digest` route checks (constant-time). Also set in the cron trigger. |
 | `RESEND_API_KEY` | Server | Resend API key for sending digests. Requires verifying `cubemetrics.com` + SPF/DKIM DNS on NameSilo. |
-| `NOTIFY_FROM` | Server | Digest sender, e.g. `XP Boost <hello@cubemetrics.com>`. |
+| `NOTIFY_FROM` | Server | Digest sender, e.g. `Cubemetrics <hello@cubemetrics.com>`. |
 | `NOTIFY_SIGNING_SECRET` | Server | HMAC secret for one-click unsubscribe tokens. |
 | `AI_NUDGES_ENABLED` / `AI_GATEWAY_API_KEY` | Server | Enable + auth the AI-written insight line (needs `npm i ai zod`; Phase 5 ships deterministic without them). |
 

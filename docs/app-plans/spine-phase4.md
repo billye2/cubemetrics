@@ -259,7 +259,7 @@ export async function sendEmail({ to, subject, html, text }) {
   await resend.emails.send({ from: process.env.NOTIFY_FROM!, to, subject, html, text });
 }
 ```
-- Dep: `resend`. `NOTIFY_FROM` e.g. `XP Boost <hello@cubemetrics.com>`.
+- Dep: `resend`. `NOTIFY_FROM` e.g. `Cubemetrics <hello@cubemetrics.com>`.
 - **Prerequisite (ops):** verify `cubemetrics.com` in Resend → add **SPF + DKIM** DNS on **NameSilo**
   (see [reference: NameSilo DNS]). Without this, mail lands in spam. This is a real setup task, not code.
 
@@ -313,7 +313,7 @@ user flips email on here. (Owner enables their own first to dogfood.)
 SUPABASE_SERVICE_ROLE_KEY=   # already referenced; cron requires it set in prod
 CRON_SECRET=                 # Vercel Cron bearer; also set in Vercel project settings
 RESEND_API_KEY=
-NOTIFY_FROM=XP Boost <hello@cubemetrics.com>
+NOTIFY_FROM=Cubemetrics <hello@cubemetrics.com>
 NOTIFY_SIGNING_SECRET=       # HMAC for unsubscribe tokens
 NEXT_PUBLIC_SITE_URL=        # already present — deep-link base for /today
 ```

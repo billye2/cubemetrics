@@ -31,7 +31,7 @@ user answers / stated needs
 
 ## 2. The honest caveat — "created by someone else" assumes a crowd
 The pitch — *"something that was already created by someone else"* — presupposes a **population of
-users** generating diverse dashboards so the archive fills with reusable variety. XP Boost is, today,
+users** generating diverse dashboards so the archive fills with reusable variety. Cubemetrics is, today,
 effectively **single-user** (the owner; see `spine.md` §6 "Single- vs multi-user… deferred"). With one
 user:
 - The archive is just **your own past dashboards** — still useful (revisit "Money month" next

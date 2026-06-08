@@ -1,6 +1,6 @@
 # The Spine
 
-A plan for turning XP Boost's ~86 standalone apps into one product that *pulls you back daily*.
+A plan for turning Cubemetrics's ~86 standalone apps into one product that *pulls you back daily*.
 
 > **Status:** ✅ **BUILT + SHIPPED (2026-05-31).** All five core phases are live on `master` (PRs #105–#109): substrate → capture → anchor (`/today`) → proactive engine → insight line. Layer 6 (cross-app links) remains opportunistic. The proactive engine + AI line are dormant pending ops provisioning (Resend/cron/secrets — see [phase 4](app-plans/spine-phase4.md) §11/§15 and [phase 5](app-plans/spine-phase5.md)). Per-phase detail in `spine-phase1..5.md`.
 > **North star:** the spine is not "done" when the apps feel coherent — it's done when **the product reaches out and brings you back on its own.**
@@ -309,6 +309,6 @@ the spine instead of diluting it.
 
 ## 8. North star (restated)
 
-Coherent is table stakes. **The spine is finished when XP Boost pulls you back daily on its own** —
+Coherent is table stakes. **The spine is finished when Cubemetrics pulls you back daily on its own** —
 the morning it emails you your day, you log three things from the digest, and you never had to
 remember which of 86 apps to open.

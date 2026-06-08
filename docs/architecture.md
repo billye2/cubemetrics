@@ -1,6 +1,6 @@
 # Architecture
 
-XP Boost is a single modern web app — React Server Components + Server Actions on Next.js, backed by Supabase.
+Cubemetrics is a single modern web app — React Server Components + Server Actions on Next.js, backed by Supabase.
 
 ```
 Browser (React)  ──Server Action / fetch──>  Next.js (RSC)  ──SQL──>  Supabase

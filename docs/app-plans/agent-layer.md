@@ -1,6 +1,6 @@
 # The Agent Layer (Spine Layer 7)
 
-A plan for making XP Boost **agent-enabled**: a Claude-powered assistant the user talks to in
+A plan for making Cubemetrics **agent-enabled**: a Claude-powered assistant the user talks to in
 natural language that (A) **redesigns the `/today` dashboard** around what the user says matters
 most, and (B) **makes entries into the relevant mini-apps** based on what it learns about the user.
 
@@ -29,7 +29,7 @@ most, and (B) **makes entries into the relevant mini-apps** based on what it lea
 ## 1. "Agent-enabled" — yes, this means the Claude API
 
 Concretely, an agent here = **Claude doing multi-step tool-calling** over a structured snapshot of
-the user's day, where the "tools" are a small, allowlisted set of writes into XP Boost's own tables.
+the user's day, where the "tools" are a small, allowlisted set of writes into Cubemetrics's own tables.
 
 Two viable wiring routes; **recommend the AI Gateway** (it's already the documented choice for the
 dormant Phase-5 insight line, so we stay on one path):

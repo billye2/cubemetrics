@@ -1,7 +1,7 @@
 # Spec — The XP Layer
 
 A meta-layer that turns activity across every app into **points, levels, streaks, daily quests,
-and achievements**. The product is called *XP Boost* but nothing currently awards XP; this is the
+and achievements**. The product is called *Cubemetrics* but nothing currently awards XP; this is the
 feature that makes 68 separate apps feel like one game-like product.
 
 Status: design spec (research). Grounded in the real schema (`docs/database.md`) and the

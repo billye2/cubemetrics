@@ -1,6 +1,6 @@
 # Agent Hooks — the extension points the codebase needs
 
-What contracts ("hooks") must XP Boost expose so a Claude agent ([Agent Layer](agent-layer.md)) works
+What contracts ("hooks") must Cubemetrics expose so a Claude agent ([Agent Layer](agent-layer.md)) works
 *well* — not just at all? Today the app gives an agent **one** hook: the spine `today()` adapter
 (read). Everything else an agent needs — to act, verify, remember, and stay safe — has no standardized
 surface. This catalogs the hooks, grounded in real files, and prioritizes the critical few.

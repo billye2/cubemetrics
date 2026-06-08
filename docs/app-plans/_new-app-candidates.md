@@ -1,6 +1,6 @@
 # New App Candidates — Research
 
-Research into what new apps to add to the XP Boost product mix. Method: mapped the current
+Research into what new apps to add to the Cubemetrics product mix. Method: mapped the current
 68-app catalog across its 10 categories, found thin spots and unmet everyday-productivity needs,
 then classified each idea by **build cost** — does it ride an existing factory template (just a
 catalog entry, near-zero code), need a custom page (meets the standalone quality bar), or warrant
@@ -88,7 +88,7 @@ Distinctive enough to deserve a dedicated page (hero / stats / chart), like Focu
 
 ## C. Brand-defining: the **XP layer**
 
-The product is *XP Boost* but nothing actually awards XP. The strongest single addition is a
+The product is *Cubemetrics* but nothing actually awards XP. The strongest single addition is a
 **meta-layer that turns activity across all apps into points, levels, and achievements**:
 
 - **XP & Levels dashboard** — every logged action (a focus session, a habit check-in, a workout,
