@@ -154,7 +154,7 @@
   var am=document.getElementById('aiMock'); if(am) am.innerHTML=aiMock();
   function dashMock(){
     return '<div class="mock-window">'+
-      '<div class="mock-bar"><a class="brand" style="font-size:14px"><img src="/brand-mark.png" alt="" style="width:22px;height:22px;border-radius:6px;display:block" /> Cubemetrics</a><span style="font-size:12px;color:var(--muted)">Evening</span></div>'+
+      '<div class="mock-bar"><a class="brand" style="font-size:14px"><img src="/brand-mark.png" alt="" style="width:22px;height:22px;border-radius:3px;display:block" /> Cubemetrics</a><span style="font-size:12px;color:var(--muted)">Evening</span></div>'+
       '<div class="dash">'+
         '<div class="greet-sm">Close out your day</div>'+
         '<div class="greet-lg">Billy Ye</div>'+
