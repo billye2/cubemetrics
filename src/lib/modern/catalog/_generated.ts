@@ -74,7 +74,7 @@ export const APPS: AppEntry[] = [
   {"id":"keepintouch","name":"Keep in Touch","category":"org","icon":"❥","description":"Reach out to people on a set cadence","ui":"modern"},
   {"id":"carcare","name":"Car","category":"lifestyle","icon":"⛀","description":"Keep vehicle service on a schedule","ui":"schedule","config":{"scheduleType":"carcare","itemLabel":"Service"}},
   {"id":"medication","name":"Meds","category":"habits","icon":"✛","description":"Track medications and refills on a cadence","ui":"schedule","config":{"scheduleType":"medication","itemLabel":"Med"}},
-  {"id":"focus","name":"Focus","category":"time","icon":"◉","description":"Timer for one deep-work session","ui":"modern"},
+  {"id":"focus","name":"Focus","category":"time","icon":"◉","description":"Set an intention, run a focus session, journal what got done","ui":"modern"},
   {"id":"timetracker","name":"Time Tracker","category":"time","icon":"⧗","description":"Log where your day went, by category","ui":"modern"},
   {"id":"countdown","name":"Countdown","category":"time","icon":"⧖","description":"Count down the days to dates that matter","ui":"modern"},
   {"id":"meditation","name":"Meditation","category":"time","icon":"⊚","description":"Log minutes meditated toward a daily goal","ui":"tracker","config":{"trackerType":"meditation","unit":"minutes","min":0,"max":240,"aggregate":"sum","dailyGoal":20,"quickAdd":[5,10,20]}},
