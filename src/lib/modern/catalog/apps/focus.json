@@ -4,6 +4,6 @@
   "name": "Focus",
   "category": "time",
   "icon": "◉",
-  "description": "Timer for one deep-work session",
+  "description": "Set an intention, run a focus session, journal what got done",
   "ui": "modern"
 }

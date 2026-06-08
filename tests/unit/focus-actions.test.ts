@@ -34,35 +34,35 @@ describe("saveFocusSessionAction", () => {
   it("ignores zero or negative durations", async () => {
     const client = makeClient({ id: "u1" });
     asMock(createServerSupabase).mockResolvedValue(client);
-    await saveFocusSessionAction(0, "intent", []);
-    await saveFocusSessionAction(-5, "intent", []);
+    await saveFocusSessionAction(0, "intent", "win", 4);
+    await saveFocusSessionAction(-5, "intent", "win", 4);
     expect(client.from).not.toHaveBeenCalled();
   });
 
-  it("rounds minutes and stores intent + distractions joined", async () => {
+  it("rounds minutes and packs the reflection + rating + done into note JSON", async () => {
     const client = makeClient({ id: "u1" });
     asMock(createServerSupabase).mockResolvedValue(client);
-    await saveFocusSessionAction(44.6, "  Write the report  ", [" phone ", "", "slack"]);
+    await saveFocusSessionAction(44.6, "  Write the report  ", "  Drafted it all  ", 5, "  ship a v1  ");
     expect(client.from).toHaveBeenCalledWith("daily_trackers");
     expect(client.__query.insert).toHaveBeenCalledWith({
       user_id: "u1",
       tracker_type: "focus",
       value: 45,
       label: "Write the report",
-      note: "phone | slack",
+      note: JSON.stringify({ win: "Drafted it all", rating: 5, done: "ship a v1" }),
     });
   });
 
-  it("nulls out an empty intent and an empty distraction list", async () => {
+  it("nulls an empty intent, defaults a blank reflection + out-of-range rating, omits empty done", async () => {
     const client = makeClient({ id: "u1" });
     asMock(createServerSupabase).mockResolvedValue(client);
-    await saveFocusSessionAction(25, "   ", []);
+    await saveFocusSessionAction(25, "   ", "   ", 0, "  ");
     expect(client.__query.insert).toHaveBeenCalledWith({
       user_id: "u1",
       tracker_type: "focus",
       value: 25,
       label: null,
-      note: null,
+      note: JSON.stringify({ win: "Showed up and put in the time.", rating: 3 }),
     });
   });
 });
