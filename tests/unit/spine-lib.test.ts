@@ -64,6 +64,7 @@ import { adapter as cleaningAdapter } from "@/lib/spine/adapters/cleaning";
 import { adapter as homemaintAdapter } from "@/lib/spine/adapters/homemaint";
 import { adapter as petcareAdapter } from "@/lib/spine/adapters/petcare";
 import { adapter as packingAdapter } from "@/lib/spine/adapters/packing";
+import { adapter as focusAdapter } from "@/lib/spine/adapters/focus";
 
 const TODAY = "2026-05-31";
 
@@ -466,7 +467,7 @@ describe("🔒 adapter user_id filter invariant", () => {
   const ctxWith = (client: unknown): SpineCtx =>
     ({ supabase: client, userId: "U1", tz: "UTC", now: new Date("2026-05-31T12:00:00Z") }) as SpineCtx;
 
-  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter, weightAdapter, meditationAdapter, workoutAdapter, kanbanAdapter, countdownAdapter, calendarAdapter, dailyplannerAdapter, routinesAdapter, stepsAdapter, stressAdapter, caffeineAdapter, bragAdapter, productivityAdapter, screentimeAdapter, writingtrackerAdapter, gratitudeAdapter, groceryAdapter, cleaningAdapter, homemaintAdapter, petcareAdapter, packingAdapter];
+  const adapters = [todoAdapter, habitsAdapter, waterAdapter, journalAdapter, budgetAdapter, billsAdapter, medicationAdapter, carcareAdapter, goalsAdapter, keepintouchAdapter, plantcareAdapter, moodAdapter, energyAdapter, sleepAdapter, invoicesAdapter, flashcardsAdapter, vocabularyAdapter, projecttrackerAdapter, weightAdapter, meditationAdapter, workoutAdapter, kanbanAdapter, countdownAdapter, calendarAdapter, dailyplannerAdapter, routinesAdapter, stepsAdapter, stressAdapter, caffeineAdapter, bragAdapter, productivityAdapter, screentimeAdapter, writingtrackerAdapter, gratitudeAdapter, groceryAdapter, cleaningAdapter, homemaintAdapter, petcareAdapter, packingAdapter, focusAdapter];
 
   for (const a of adapters) {
     it(`${a.appId}.today() filters by user_id`, async () => {

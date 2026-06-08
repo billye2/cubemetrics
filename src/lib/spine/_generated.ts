@@ -13,6 +13,7 @@ import { adapter as countdown } from "./adapters/countdown";
 import { adapter as dailyplanner } from "./adapters/dailyplanner";
 import { adapter as energy } from "./adapters/energy";
 import { adapter as flashcards } from "./adapters/flashcards";
+import { adapter as focus } from "./adapters/focus";
 import { adapter as goals } from "./adapters/goals";
 import { adapter as gratitude } from "./adapters/gratitude";
 import { adapter as grocery } from "./adapters/grocery";
@@ -42,4 +43,4 @@ import { adapter as weight } from "./adapters/weight";
 import { adapter as workout } from "./adapters/workout";
 import { adapter as writingtracker } from "./adapters/writingtracker";
 
-export const ADAPTERS: SpineAdapter[] = [bills, brag, budget, caffeine, calendar, carcare, cleaning, countdown, dailyplanner, energy, flashcards, goals, gratitude, grocery, habits, homemaint, invoices, journal, kanban, keepintouch, medication, meditation, mood, packing, petcare, plantcare, productivity, projecttracker, routines, screentime, sleep, steps, stress, todo, vocabulary, water, weight, workout, writingtracker];
+export const ADAPTERS: SpineAdapter[] = [bills, brag, budget, caffeine, calendar, carcare, cleaning, countdown, dailyplanner, energy, flashcards, focus, goals, gratitude, grocery, habits, homemaint, invoices, journal, kanban, keepintouch, medication, meditation, mood, packing, petcare, plantcare, productivity, projecttracker, routines, screentime, sleep, steps, stress, todo, vocabulary, water, weight, workout, writingtracker];
