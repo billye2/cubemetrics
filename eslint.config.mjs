@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // E2E harness — Playwright runs/typechecks these itself, not Next lint.
+    "e2e/**",
+    "playwright.config.ts",
+    "scripts/e2e/**",
   ]),
 ]);
 
