@@ -6,6 +6,7 @@
   "icon": "◷",
   "description": "Time any activity live with a stopwatch",
   "ui": "modern",
+  "hidden": true,
   "config": {
     "trackerType": "stopwatch",
     "unit": "minutes",
