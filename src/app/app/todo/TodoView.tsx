@@ -95,8 +95,8 @@ function AddTodoForm() {
       <div className="flex items-center gap-1 px-1 pb-1 pt-1">
         {[
           { v: 0, label: "Normal" },
-          { v: 1, label: "Late" },
-          { v: 2, label: "Urgent" },
+          { v: 1, label: "Soon" },
+          { v: 2, label: "Important" },
         ].map((p) => (
           <button
             key={p.v}
@@ -166,7 +166,7 @@ function TodoRow({ todo }: { todo: Todo }) {
             todo.priority >= 2 ? "bg-red-500/20 text-red-300" : "bg-amber-500/20 text-amber-300"
           }`}
         >
-          {todo.priority >= 2 ? "Urgent" : "Late"}
+          {todo.priority >= 2 ? "Important" : "Soon"}
         </span>
       )}
       <button
