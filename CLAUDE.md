@@ -1,4 +1,4 @@
-# XP Boost
+# Cubemetrics
 
 A personal productivity hub — a modern React app with 50+ tiny apps for tracking time, tasks, habits, and life.
 - **`/`** — Next.js App Router UI (Tailwind + Server Components, phone-first, dark mode)

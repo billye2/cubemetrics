@@ -275,6 +275,6 @@ lane, it owns `src/lib/spine/*` + the capture component; sequence the `Shell.tsx
 
 ## 10. Hand-off
 
-Plan-only (spec-writer role). Build after Phase 1 lands. Net effect: from anywhere in XP Boost you can
+Plan-only (spec-writer role). Build after Phase 1 lands. Net effect: from anywhere in Cubemetrics you can
 log to any of the (initially 4, then all) loggable apps without navigating — the input spine that
 feeds every downstream surface (Phase 3 dashboard, Phase 4 digest).

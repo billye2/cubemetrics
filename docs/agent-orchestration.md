@@ -1,6 +1,6 @@
 # Agent Orchestration
 
-How multiple autonomous agents build XP Boost **in parallel** without overwriting each other or
+How multiple autonomous agents build Cubemetrics **in parallel** without overwriting each other or
 doing duplicate work.
 
 **Status:** Proposed (2026-05-29). Phase 0 (`_status.md` ledger) already shipped in `c1fc940`.
@@ -23,7 +23,7 @@ what shipped, and where the seams are. This spec closes that gap.
 
 ---
 
-## What makes XP Boost *easy* to parallelize
+## What makes Cubemetrics *easy* to parallelize
 
 The architecture is ~90% there already. Most of an app lives on its own island that no other
 agent touches:
