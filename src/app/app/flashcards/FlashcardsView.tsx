@@ -2,6 +2,29 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { addCardAction, deleteCardAction, reviewCardAction, type Rating } from "./actions";
+import { Ring, StatTile, StatStrip, StatusPill } from "../_factories/FactoryUI";
+import { hexAlpha } from "../_factories/factoryLib";
+
+type CardStatus = "due" | "learning" | "mastered";
+const CS_TONE: Record<CardStatus, "cyan" | "amber" | "emerald"> = {
+  due: "cyan",
+  learning: "amber",
+  mastered: "emerald",
+};
+const CS_LABEL: Record<CardStatus, string> = { due: "Due", learning: "Learning", mastered: "Mastered" };
+function cardStatus(c: Card, today: string): CardStatus {
+  if (c.due_date <= today) return "due";
+  if (c.reps >= 3) return "mastered";
+  return "learning";
+}
+
+// Stable per-deck hue so each deck reads as its own color.
+const DECK_PALETTE = ["#6b8aff", "#22b3a3", "#e0a52a", "#e86aa0", "#8c80f5", "#6cbf66"];
+function deckHex(name: string): string {
+  let h = 0;
+  for (const ch of name) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return DECK_PALETTE[h % DECK_PALETTE.length];
+}
 
 export interface Card {
   id: number;
@@ -36,13 +59,33 @@ export function FlashcardsView({
   const [studying, setStudying] = useState(false);
   const dueCards = useMemo(() => cards.filter((c) => c.due_date <= today), [cards, today]);
 
+  const masteredPct = cards.length ? mastered / cards.length : 0;
+
   return (
     <div>
-      <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat label="Cards" value={String(cards.length)} />
-        <Stat label="Due" value={String(dueCount)} tone={dueCount > 0 ? "cyan" : undefined} />
-        <Stat label="Mastered" value={String(mastered)} />
-      </div>
+      {cards.length > 0 && (
+        <div className="mb-4 flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <Ring pct={masteredPct} size={64} stroke={7} tone="emerald">
+            <span className="text-[13px] font-bold tabular-nums text-zinc-200">
+              {Math.round(masteredPct * 100)}%
+            </span>
+          </Ring>
+          <div className="min-w-0">
+            <div className="text-[15px] font-bold text-zinc-100">
+              {mastered} of {cards.length} mastered
+            </div>
+            <div className="mt-0.5 text-xs text-zinc-500">
+              {dueCount > 0 ? `${dueCount} due to study` : "All caught up"}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <StatStrip cols={3}>
+        <StatTile label="Cards" value={String(cards.length)} tone="zinc" />
+        <StatTile label="Due" value={String(dueCount)} tone={dueCount > 0 ? "cyan" : "zinc"} />
+        <StatTile label="Mastered" value={String(mastered)} tone="emerald" />
+      </StatStrip>
 
       {studying ? (
         <StudySession queue={dueCards} onExit={() => setStudying(false)} />
@@ -56,20 +99,9 @@ export function FlashcardsView({
           >
             {dueCards.length > 0 ? `Study ${dueCards.length} due card${dueCards.length === 1 ? "" : "s"}` : "Nothing due — all caught up"}
           </button>
-          <ManageCards cards={cards} />
+          <ManageCards cards={cards} today={today} />
         </>
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "cyan" }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
-      <div className={`text-xl font-bold tracking-tight ${tone === "cyan" ? "text-cyan-400" : "text-zinc-100"}`}>
-        {value}
-      </div>
-      <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
     </div>
   );
 }
@@ -163,7 +195,7 @@ function StudySession({ queue, onExit }: { queue: Card[]; onExit: () => void }) 
   );
 }
 
-function ManageCards({ cards }: { cards: Card[] }) {
+function ManageCards({ cards, today }: { cards: Card[]; today: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [showForm, setShowForm] = useState(false);
   const [pending, start] = useTransition();
@@ -252,37 +284,44 @@ function ManageCards({ cards }: { cards: Card[] }) {
         </div>
       ) : (
         <div className="mt-5 space-y-5">
-          {decks.map(([deck, deckCards]) => (
-            <div key={deck}>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                {deck} <span className="text-zinc-600">· {deckCards.length}</span>
-              </h3>
-              <ul className="space-y-2">
-                {deckCards.map((c) => (
-                  <CardRow key={c.id} card={c} />
-                ))}
-              </ul>
-            </div>
-          ))}
+          {decks.map(([deck, deckCards]) => {
+            const hex = deckHex(deck);
+            return (
+              <div key={deck}>
+                <h3 className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  <span className="inline-block h-2 w-2 rounded-full" style={{ background: hex }} />
+                  {deck} <span className="text-zinc-600">· {deckCards.length}</span>
+                </h3>
+                <ul className="space-y-2">
+                  {deckCards.map((c) => (
+                    <CardRow key={c.id} card={c} status={cardStatus(c, today)} tint={hex} />
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
 
-function CardRow({ card }: { card: Card }) {
+function CardRow({ card, status, tint }: { card: Card; status: CardStatus; tint: string }) {
   const [pending, start] = useTransition();
   function remove() {
     if (!confirm("Delete this card?")) return;
     start(() => deleteCardAction(card.id));
   }
   return (
-    <li className={`flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-2 ${pending ? "opacity-50" : ""}`}>
+    <li
+      className={`flex items-center gap-3 rounded-xl border px-3 py-2 ${pending ? "opacity-50" : ""}`}
+      style={{ background: hexAlpha(tint, 0.08), borderColor: hexAlpha(tint, 0.25) }}
+    >
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm text-zinc-100">{card.front}</div>
         <div className="truncate text-xs text-zinc-500">{card.back}</div>
       </div>
-      {card.reps >= 3 && <span title="Mastered" className="text-xs text-emerald-400">★</span>}
+      <StatusPill label={CS_LABEL[status]} tone={CS_TONE[status]} />
       <button
         type="button"
         onClick={remove}
