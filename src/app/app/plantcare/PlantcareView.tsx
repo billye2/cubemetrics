@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { LightLevel, Plant, PlantStatus, SparkBar } from "./lib";
 import { averageInterval, needsWaterToday, statsFor, waterIntervals } from "./lib";
+import { Ring, StatTile, StatStrip, StatusPill } from "../_factories/FactoryUI";
 import {
   addPlant,
   deletePlant,
@@ -51,6 +52,12 @@ const STATUS_STYLE: Record<PlantStatus, { bar: string; text: string; badge: stri
   upcoming: { bar: "bg-zinc-600", text: "text-zinc-400", badge: "bg-zinc-700/40 text-zinc-400" },
 };
 
+const STATUS_TONE: Record<PlantStatus, "rose" | "cyan" | "zinc"> = {
+  overdue: "rose",
+  today: "cyan",
+  upcoming: "zinc",
+};
+
 const LIGHT_LABEL: Record<LightLevel, string> = { low: "Low light", medium: "Medium light", bright: "Bright light" };
 
 function freqLabel(days: number): string {
@@ -70,21 +77,13 @@ export function PlantcareView({ plants }: { plants: Plant[] }) {
 
   return (
     <div className="space-y-6">
-      <Hero dueCount={stats.dueToday} />
+      <Hero needsWater={due.length} total={stats.total} />
 
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="Plants" value={String(stats.total)} />
-        <Stat
-          label="Due today"
-          value={String(stats.dueToday)}
-          tone={stats.dueToday > 0 ? "text-cyan-400" : undefined}
-        />
-        <Stat
-          label="Overdue"
-          value={String(stats.overdue)}
-          tone={stats.overdue > 0 ? "text-rose-400" : undefined}
-        />
-      </div>
+      <StatStrip cols={3}>
+        <StatTile label="Plants" value={String(stats.total)} tone="zinc" />
+        <StatTile label="Due today" value={String(stats.dueToday)} tone={stats.dueToday > 0 ? "cyan" : "zinc"} />
+        <StatTile label="Overdue" value={String(stats.overdue)} tone={stats.overdue > 0 ? "rose" : "zinc"} />
+      </StatStrip>
 
       <AddPlantForm />
 
@@ -110,32 +109,32 @@ export function PlantcareView({ plants }: { plants: Plant[] }) {
   );
 }
 
-function Hero({ dueCount }: { dueCount: number }) {
+function Hero({ needsWater, total }: { needsWater: number; total: number }) {
+  const healthPct = total > 0 ? (total - needsWater) / total : 1;
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-center">
-      {dueCount === 0 ? (
-        <>
-          <div className="text-3xl text-emerald-400">✓</div>
-          <p className="mt-2 text-sm font-semibold text-zinc-100">Everything&apos;s watered</p>
-          <p className="text-xs text-zinc-500">No plants need water today.</p>
-        </>
-      ) : (
-        <>
-          <div className="text-4xl font-bold tabular-nums text-cyan-400">{dueCount}</div>
-          <p className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-500">
-            {dueCount === 1 ? "plant needs water today" : "plants need water today"}
-          </p>
-        </>
-      )}
-    </div>
-  );
-}
-
-function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-2 py-3 text-center">
-      <div className={`text-base font-semibold tabular-nums ${tone ?? "text-zinc-100"}`}>{value}</div>
-      <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">{label}</div>
+    <div className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <Ring pct={healthPct} size={72} stroke={8} tone={needsWater === 0 ? "emerald" : "cyan"}>
+        {needsWater === 0 ? (
+          <span className="text-2xl text-emerald-400">✓</span>
+        ) : (
+          <span className="text-2xl font-bold tabular-nums text-cyan-400">{needsWater}</span>
+        )}
+      </Ring>
+      <div className="min-w-0">
+        {needsWater === 0 ? (
+          <>
+            <p className="text-[15px] font-bold text-emerald-400">Everything&rsquo;s watered</p>
+            <p className="mt-0.5 text-xs text-zinc-500">No plants need water today.</p>
+          </>
+        ) : (
+          <>
+            <p className="text-[15px] font-bold text-zinc-100">
+              {needsWater} {needsWater === 1 ? "plant needs" : "plants need"} water
+            </p>
+            <p className="mt-0.5 text-xs text-zinc-500">{total - needsWater} of {total} happy</p>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -312,11 +311,8 @@ function PlantRow({ p }: { p: Plant }) {
             <span className="break-words text-sm font-medium text-zinc-100">{p.name}</span>
             {p.light && <span className="text-xs text-zinc-500">{LIGHT_LABEL[p.light]}</span>}
           </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-            <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${style.badge}`}>
-              {p.status === "overdue" ? "Overdue" : p.status === "today" ? "Today" : "Upcoming"}
-            </span>
-            <span className={`text-xs ${style.text}`}>{p.label}</span>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <StatusPill label={p.label} tone={STATUS_TONE[p.status]} />
             {fert.enabled && fert.status && (fert.status === "overdue" || fert.status === "today") && (
               <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${FERT_STYLE[fert.status]}`}>
                 <span aria-hidden>🌿</span> {fert.label}
