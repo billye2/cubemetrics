@@ -8,7 +8,7 @@ import {
 } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
 import { currency, currencyCompact, dueInfo, monthlyFactor, dueBucket, DUE_BUCKET_ORDER } from "./factoryLib";
-import { BucketSection } from "./FactoryUI";
+import { BucketSection, Ring } from "./FactoryUI";
 
 interface Item {
   id: number;
@@ -109,19 +109,41 @@ export function FinanceView({
 
   return (
     <div>
-      <div className="mb-4 flex flex-col items-center rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-        <div className="text-xs uppercase tracking-wider text-zinc-500">
-          {isRecurring ? "Monthly" : "Outstanding"}
+      {isRecurring ? (
+        <div className="mb-4 flex flex-col items-center rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+          <div className="text-xs uppercase tracking-wider text-zinc-500">Monthly</div>
+          <div className="mt-1 text-3xl font-bold text-cyan-400">{currencyCompact(monthlyRecurring)}</div>
+          <div className="mt-0.5 text-xs text-zinc-500">
+            {currencyCompact(monthlyRecurring * 12)} / year · {items.length} active
+          </div>
         </div>
-        <div className={`mt-1 text-3xl font-bold ${isRecurring ? "text-cyan-400" : "text-amber-300"}`}>
-          {currencyCompact(isRecurring ? monthlyRecurring : totalUnpaid)}
+      ) : (
+        <div className="mb-4 flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+          <Ring
+            pct={items.length ? paid.length / items.length : 0}
+            size={72}
+            stroke={8}
+            tone={unpaid.length === 0 && items.length > 0 ? "emerald" : "amber"}
+          >
+            {unpaid.length === 0 && items.length > 0 ? (
+              <span className="text-2xl text-emerald-400">✓</span>
+            ) : (
+              <span className="text-[13px] font-bold tabular-nums text-zinc-300">
+                {paid.length}/{items.length}
+              </span>
+            )}
+          </Ring>
+          <div className="min-w-0">
+            <div className="text-xs uppercase tracking-wider text-zinc-500">Outstanding</div>
+            <div className="text-3xl font-bold text-amber-300">{currencyCompact(totalUnpaid)}</div>
+            <div className="mt-0.5 text-xs text-zinc-500">
+              {unpaid.length === 0 && items.length > 0
+                ? "All paid — nicely handled"
+                : `${unpaid.length} ${unpaid.length === 1 ? "item" : "items"}${overdueCount > 0 ? ` · ${overdueCount} overdue` : ""}`}
+            </div>
+          </div>
         </div>
-        <div className="mt-0.5 text-xs text-zinc-500">
-          {isRecurring
-            ? `${currencyCompact(monthlyRecurring * 12)} / year · ${items.length} active`
-            : `${unpaid.length} ${unpaid.length === 1 ? "item" : "items"}${overdueCount > 0 ? ` · ${overdueCount} overdue` : ""}`}
-        </div>
-      </div>
+      )}
 
       {categoryBreakdown.length > 1 && (
         <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
