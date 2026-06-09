@@ -10,6 +10,7 @@ import {
   parseISODate,
   type WeeklyReview,
 } from "./lib";
+import { StatTile } from "../_factories/FactoryUI";
 
 interface SectionDef {
   key: "wins" | "misses" | "lessons" | "next_focus";
@@ -228,25 +229,17 @@ function WeekNav({
 }
 
 function StatsHeader({ stats }: { stats: WeekStats }) {
-  const items = [
-    { label: "Habits", value: String(stats.habitsCompleted) },
-    { label: "Focus", value: formatMinutes(stats.focusMinutes) },
-    { label: "Todos done", value: String(stats.todosDone) },
-    { label: "Tracked", value: formatMinutes(stats.trackedMinutes) },
+  const items: { label: string; value: string; tone: "emerald" | "cyan" | "zinc" }[] = [
+    { label: "Habits", value: String(stats.habitsCompleted), tone: "emerald" },
+    { label: "Focus", value: formatMinutes(stats.focusMinutes), tone: "cyan" },
+    { label: "Todos", value: String(stats.todosDone), tone: "zinc" },
+    { label: "Tracked", value: formatMinutes(stats.trackedMinutes), tone: "zinc" },
   ];
   return (
     <div>
       <div className="grid grid-cols-4 gap-2">
         {items.map((it) => (
-          <div
-            key={it.label}
-            className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-2 py-3 text-center"
-          >
-            <div className="text-base font-semibold tabular-nums text-zinc-100">{it.value}</div>
-            <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-              {it.label}
-            </div>
-          </div>
+          <StatTile key={it.label} label={it.label} value={it.value} tone={it.tone} />
         ))}
       </div>
       <p className="mt-1.5 text-center text-[11px] text-zinc-600">
