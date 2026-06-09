@@ -7,6 +7,8 @@ import {
   addSetAction,
   deleteSetAction,
 } from "./actions";
+import { StatTile, StatStrip } from "../_factories/FactoryUI";
+import { entryStreak } from "../_factories/factoryLib";
 
 export interface WorkoutSet {
   id: number;
@@ -53,6 +55,9 @@ export function WorkoutView({
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, start] = useTransition();
 
+  // Consecutive days with a workout (anchored to local noon to avoid tz drift).
+  const streak = entryStreak(sessions.map((s) => `${s.performed_on}T12:00:00`));
+
   function submit(formData: FormData) {
     const title = String(formData.get("title") || "").trim();
     if (!title) return;
@@ -67,11 +72,16 @@ export function WorkoutView({
 
   return (
     <div>
-      <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat label="Workouts ·7d" value={String(stats.weekSessions)} />
-        <Stat label="Volume ·7d" value={VOLUME_FMT.format(stats.weekVolume)} />
-        <Stat label="Total" value={String(stats.totalSessions)} />
-      </div>
+      <StatStrip cols={3}>
+        <StatTile label="Workouts" sub="7d" value={String(stats.weekSessions)} />
+        <StatTile label="Volume" sub="7d" value={VOLUME_FMT.format(stats.weekVolume)} />
+        <StatTile
+          label="Streak"
+          value={streak > 0 ? String(streak) : "—"}
+          sub={streak > 0 ? (streak === 1 ? "day" : "days") : "start one"}
+          tone={streak > 0 ? "amber" : "zinc"}
+        />
+      </StatStrip>
 
       {!showForm ? (
         <button
@@ -132,15 +142,6 @@ export function WorkoutView({
           ))}
         </ul>
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
-      <div className="text-xl font-bold tracking-tight text-cyan-400">{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
     </div>
   );
 }
