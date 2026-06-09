@@ -3,6 +3,21 @@
 import { useRef, useState, useTransition } from "react";
 import type { Contact, Status } from "./page";
 import { addContact, deleteContact, logTouch, setCadence } from "./actions";
+import { Ring, StatTile, StatStrip, StatusPill, BucketSection } from "../_factories/FactoryUI";
+
+const STATUS_TONE: Record<Status, "rose" | "amber" | "emerald" | "zinc"> = {
+  due: "rose",
+  soon: "amber",
+  ok: "emerald",
+  none: "zinc",
+};
+
+const STATUS_SECTIONS: { key: Status; label: string; danger: boolean }[] = [
+  { key: "due", label: "Reach out now", danger: true },
+  { key: "soon", label: "Coming up", danger: false },
+  { key: "ok", label: "On track", danger: false },
+  { key: "none", label: "No cadence", danger: false },
+];
 
 const CADENCE_OPTIONS = [
   { v: 0, label: "No cadence" },
@@ -26,25 +41,30 @@ export function KeepInTouchView({ contacts }: { contacts: Contact[] }) {
   const soon = contacts.filter((c) => c.status === "soon").length;
   const tracked = contacts.filter((c) => c.cadenceDays).length;
 
+  const groups: Record<Status, Contact[]> = { due: [], soon: [], ok: [], none: [] };
+  for (const c of contacts) groups[c.status].push(c);
+
   return (
     <div className="space-y-6">
-      <Hero due={due} />
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="People" value={String(contacts.length)} />
-        <Stat label="Due now" value={String(due)} tone={due > 0 ? "text-rose-400" : undefined} />
-        <Stat label="Upcoming" value={String(soon)} />
-      </div>
+      <Hero due={due} tracked={tracked} />
+      <StatStrip cols={3}>
+        <StatTile label="People" value={String(contacts.length)} tone="zinc" />
+        <StatTile label="Due now" value={String(due)} tone={due > 0 ? "rose" : "zinc"} />
+        <StatTile label="Upcoming" value={String(soon)} tone={soon > 0 ? "amber" : "zinc"} />
+      </StatStrip>
 
       <AddContactForm />
 
       {contacts.length === 0 ? (
         <EmptyState />
       ) : (
-        <ul className="space-y-2">
-          {contacts.map((c) => (
-            <ContactRow key={c.id} contact={c} />
-          ))}
-        </ul>
+        STATUS_SECTIONS.filter((s) => groups[s.key].length).map((s) => (
+          <BucketSection key={s.key} label={s.label} count={groups[s.key].length} danger={s.danger}>
+            {groups[s.key].map((c) => (
+              <ContactRow key={c.id} contact={c} />
+            ))}
+          </BucketSection>
+        ))
       )}
       {tracked === 0 && contacts.length > 0 && (
         <p className="text-center text-xs text-zinc-600">
@@ -55,35 +75,31 @@ export function KeepInTouchView({ contacts }: { contacts: Contact[] }) {
   );
 }
 
-function Hero({ due }: { due: number }) {
+function Hero({ due, tracked }: { due: number; tracked: number }) {
+  const caughtPct = tracked > 0 ? (tracked - due) / tracked : 1;
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-center">
-      {due === 0 ? (
-        <>
-          <div className="text-3xl text-emerald-400">✓</div>
-          <p className="mt-2 text-sm font-semibold text-zinc-100">All caught up</p>
-          <p className="text-xs text-zinc-500">No one's overdue. Nicely kept up.</p>
-        </>
-      ) : (
-        <>
-          <div className="text-4xl font-bold tabular-nums text-rose-400">{due}</div>
-          <p className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-500">
-            {due === 1 ? "person to reach out to" : "people to reach out to"}
-          </p>
-        </>
-      )}
-    </div>
-  );
-}
-
-function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 text-center">
-      <div className={`text-base font-semibold tabular-nums ${tone ?? "text-zinc-100"}`}>
-        {value}
-      </div>
-      <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-        {label}
+    <div className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <Ring pct={caughtPct} size={72} stroke={8} tone={due === 0 ? "emerald" : "rose"}>
+        {due === 0 ? (
+          <span className="text-2xl text-emerald-400">✓</span>
+        ) : (
+          <span className="text-2xl font-bold tabular-nums text-rose-400">{due}</span>
+        )}
+      </Ring>
+      <div className="min-w-0">
+        {due === 0 ? (
+          <>
+            <p className="text-[15px] font-bold text-emerald-400">All caught up</p>
+            <p className="mt-0.5 text-xs text-zinc-500">No one&rsquo;s overdue — nicely kept up.</p>
+          </>
+        ) : (
+          <>
+            <p className="text-[15px] font-bold text-zinc-100">
+              {due} {due === 1 ? "person" : "people"} to reach out to
+            </p>
+            <p className="mt-0.5 text-xs text-zinc-500">{tracked} on a cadence</p>
+          </>
+        )}
       </div>
     </div>
   );
@@ -179,7 +195,9 @@ function ContactRow({ contact }: { contact: Contact }) {
             <span className="text-xs text-zinc-500">{contact.company}</span>
           )}
         </div>
-        <div className={`mt-0.5 text-xs ${style.text}`}>{contact.label}</div>
+        <div className="mt-1">
+          <StatusPill label={contact.label} tone={STATUS_TONE[contact.status]} />
+        </div>
       </div>
 
       <select
