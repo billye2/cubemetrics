@@ -2,6 +2,26 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { addWordAction, deleteWordAction, reviewWordAction, type Rating } from "./actions";
+import { Ring, StatTile, StatStrip, StatusPill, BucketSection } from "../_factories/FactoryUI";
+
+type WordStatus = "due" | "learning" | "mastered";
+const WS_TONE: Record<WordStatus, "cyan" | "amber" | "emerald"> = {
+  due: "cyan",
+  learning: "amber",
+  mastered: "emerald",
+};
+const WS_LABEL: Record<WordStatus, string> = { due: "Due", learning: "Learning", mastered: "Mastered" };
+const WS_SECTIONS: { key: WordStatus; label: string }[] = [
+  { key: "due", label: "Due for review" },
+  { key: "learning", label: "Learning" },
+  { key: "mastered", label: "Mastered" },
+];
+
+function wordStatus(w: Word, today: string): WordStatus {
+  if (w.due_date <= today) return "due";
+  if (w.reps >= 3) return "mastered";
+  return "learning";
+}
 
 export interface Word {
   id: number;
@@ -36,13 +56,33 @@ export function VocabularyView({
   const [reviewing, setReviewing] = useState(false);
   const dueWords = useMemo(() => words.filter((w) => w.due_date <= today), [words, today]);
 
+  const masteredPct = words.length ? mastered / words.length : 0;
+
   return (
     <div>
-      <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat label="Words" value={String(words.length)} />
-        <Stat label="Due" value={String(dueCount)} tone={dueCount > 0 ? "cyan" : undefined} />
-        <Stat label="Mastered" value={String(mastered)} />
-      </div>
+      {words.length > 0 && (
+        <div className="mb-4 flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <Ring pct={masteredPct} size={64} stroke={7} tone="emerald">
+            <span className="text-[13px] font-bold tabular-nums text-zinc-200">
+              {Math.round(masteredPct * 100)}%
+            </span>
+          </Ring>
+          <div className="min-w-0">
+            <div className="text-[15px] font-bold text-zinc-100">
+              {mastered} of {words.length} mastered
+            </div>
+            <div className="mt-0.5 text-xs text-zinc-500">
+              {dueCount > 0 ? `${dueCount} due for review` : "All caught up"}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <StatStrip cols={3}>
+        <StatTile label="Words" value={String(words.length)} tone="zinc" />
+        <StatTile label="Due" value={String(dueCount)} tone={dueCount > 0 ? "cyan" : "zinc"} />
+        <StatTile label="Mastered" value={String(mastered)} tone="emerald" />
+      </StatStrip>
 
       {reviewing ? (
         <ReviewSession queue={dueWords} onExit={() => setReviewing(false)} />
@@ -58,20 +98,9 @@ export function VocabularyView({
               ? `Review ${dueWords.length} word${dueWords.length === 1 ? "" : "s"} due`
               : "Nothing due — all caught up"}
           </button>
-          <WordList words={words} />
+          <WordList words={words} today={today} />
         </>
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value, tone }: { label: string; value: string; tone?: "cyan" }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
-      <div className={`text-xl font-bold tracking-tight ${tone === "cyan" ? "text-cyan-400" : "text-zinc-100"}`}>
-        {value}
-      </div>
-      <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
     </div>
   );
 }
@@ -176,10 +205,13 @@ function ReviewSession({ queue, onExit }: { queue: Word[]; onExit: () => void })
   );
 }
 
-function WordList({ words }: { words: Word[] }) {
+function WordList({ words, today }: { words: Word[]; today: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [showForm, setShowForm] = useState(false);
   const [pending, start] = useTransition();
+
+  const groups: Record<WordStatus, Word[]> = { due: [], learning: [], mastered: [] };
+  for (const w of words) groups[wordStatus(w, today)].push(w);
 
   function submit(formData: FormData) {
     const word = String(formData.get("word") || "");
@@ -247,17 +279,19 @@ function WordList({ words }: { words: Word[] }) {
           <p className="mt-1 text-xs text-zinc-500">Add a few, then review the ones that come due.</p>
         </div>
       ) : (
-        <ul className="mt-5 space-y-2">
-          {words.map((w) => (
-            <WordRow key={w.id} word={w} />
-          ))}
-        </ul>
+        WS_SECTIONS.filter((s) => groups[s.key].length).map((s) => (
+          <BucketSection key={s.key} label={s.label} count={groups[s.key].length}>
+            {groups[s.key].map((w) => (
+              <WordRow key={w.id} word={w} status={s.key} />
+            ))}
+          </BucketSection>
+        ))
       )}
     </div>
   );
 }
 
-function WordRow({ word }: { word: Word }) {
+function WordRow({ word, status }: { word: Word; status: WordStatus }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
 
@@ -275,11 +309,7 @@ function WordRow({ word }: { word: Word }) {
         className="flex w-full items-center gap-3 px-3 py-2 text-left"
       >
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-100">{word.word}</span>
-        {word.reps >= 3 && (
-          <span title="Mastered" className="text-xs text-emerald-400">
-            ★
-          </span>
-        )}
+        <StatusPill label={WS_LABEL[status]} tone={WS_TONE[status]} />
         <span
           onClick={remove}
           role="button"
