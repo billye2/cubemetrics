@@ -9,6 +9,7 @@ import {
   deleteExpenseAction,
   updateExpenseAction,
 } from "./actions";
+import { StatTile, StatStrip } from "../_factories/FactoryUI";
 
 export interface BreakdownSlice {
   name: string;
@@ -83,10 +84,14 @@ export function ExpensesView({
   }, [expenses]);
 
   const categoryNames = categories.map((c) => c.name);
+  const todayTotal = useMemo(() => {
+    const t = todayISO();
+    return expenses.reduce((s, e) => (e.expense_date === t ? s + (Number(e.amount) || 0) : s), 0);
+  }, [expenses]);
 
   return (
     <div className="space-y-6">
-      <SummaryCard monthTotal={monthTotal} weekTotal={weekTotal} />
+      <SummaryCard monthTotal={monthTotal} weekTotal={weekTotal} todayTotal={todayTotal} />
       {breakdown.length > 0 && (
         <BreakdownCard breakdown={breakdown} monthTotal={monthTotal} />
       )}
@@ -113,29 +118,18 @@ export function ExpensesView({
 function SummaryCard({
   monthTotal,
   weekTotal,
+  todayTotal,
 }: {
   monthTotal: number;
   weekTotal: number;
+  todayTotal: number;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-        <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-          This month
-        </div>
-        <div className="mt-1 text-2xl font-semibold text-cyan-300">
-          {fmt(monthTotal)}
-        </div>
-      </div>
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-        <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-          This week
-        </div>
-        <div className="mt-1 text-2xl font-semibold text-zinc-100">
-          {fmt(weekTotal)}
-        </div>
-      </div>
-    </div>
+    <StatStrip cols={3}>
+      <StatTile label="This month" value={fmt(monthTotal)} />
+      <StatTile label="This week" value={fmt(weekTotal)} tone="zinc" />
+      <StatTile label="Today" value={fmt(todayTotal)} tone="zinc" />
+    </StatStrip>
   );
 }
 
