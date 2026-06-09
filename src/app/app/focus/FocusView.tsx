@@ -154,7 +154,12 @@ function Home({ entries, onStart }: { entries: Entry[]; onStart: () => void }) {
       )}
 
       {/* Sticky CTA — floats just above the fixed bottom nav (z-30). */}
-      <div className="fixed inset-x-0 z-20 bottom-[calc(64px+env(safe-area-inset-bottom))] bg-gradient-to-t from-zinc-950 from-40% to-transparent px-4 pb-3 pt-8">
+      {/* bottom offset via inline style: a Tailwind arbitrary value can't hold a
+          calc() with spaces, and calc needs them around the operator. */}
+      <div
+        className="fixed inset-x-0 z-20 bg-gradient-to-t from-zinc-950 from-40% to-transparent px-4 pb-3 pt-8"
+        style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+      >
         <div className="mx-auto max-w-3xl">
           <button
             type="button"
