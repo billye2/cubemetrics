@@ -2,7 +2,9 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import type { FactoryConfig } from "@/lib/modern/catalog";
-import { BucketSection, Ring } from "./FactoryUI";
+import { BucketSection, Ring, StatusPill } from "./FactoryUI";
+
+const STATUS_TONE = { due: "rose", soon: "amber", ok: "emerald" } as const;
 import {
   scheduleAddAction,
   scheduleDeleteAction,
@@ -35,11 +37,6 @@ const STATUS_BAR: Record<Status, string> = {
   due: "bg-rose-500",
   soon: "bg-amber-500",
   ok: "bg-emerald-500",
-};
-const STATUS_TEXT: Record<Status, string> = {
-  due: "text-rose-300",
-  soon: "text-amber-300",
-  ok: "text-emerald-300",
 };
 
 function parseDate(d: string): Date {
@@ -263,9 +260,9 @@ function Row({ appId, item }: { appId: string; item: Enriched }) {
       <span className={`h-9 w-1 shrink-0 rounded-full ${STATUS_BAR[item.status]}`} aria-hidden />
       <div className="min-w-0 flex-1">
         <div className="break-words text-sm font-medium text-zinc-100">{item.title}</div>
-        <div className="mt-0.5 flex flex-wrap gap-x-2 text-xs">
-          <span className={STATUS_TEXT[item.status]}>{item.label}</span>
-          {item.note && <span className="text-zinc-600">· {item.note}</span>}
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          <StatusPill label={item.label} tone={STATUS_TONE[item.status]} />
+          {item.note && <span className="text-zinc-600">{item.note}</span>}
         </div>
       </div>
       <select
