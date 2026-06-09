@@ -77,7 +77,7 @@ export const APPS: AppEntry[] = [
   {"id":"focus","name":"Focus","category":"time","icon":"◉","description":"Set an intention, run a focus session, journal what got done","ui":"modern"},
   {"id":"timetracker","name":"Time Tracker","category":"time","icon":"⧗","description":"Budget your week by category and track your pace","ui":"modern"},
   {"id":"countdown","name":"Countdown","category":"time","icon":"⧖","description":"Count down the days to dates that matter","ui":"modern"},
-  {"id":"meditation","name":"Meditation","category":"time","icon":"⊚","description":"Log minutes meditated toward a daily goal","ui":"tracker","config":{"trackerType":"meditation","unit":"minutes","min":0,"max":240,"aggregate":"sum","dailyGoal":20,"quickAdd":[5,10,20]}},
+  {"id":"meditation","name":"Meditation","category":"time","icon":"⊚","description":"Guided sessions, a breathing player, and your daily minutes","ui":"modern","config":{"trackerType":"meditation","dailyGoal":20}},
   {"id":"stopwatch","name":"Stopwatch","category":"time","icon":"◷","description":"Time any activity live with a stopwatch","ui":"modern","hidden":true,"config":{"trackerType":"stopwatch","unit":"minutes","aggregate":"sum"}},
   {"id":"calendar","name":"Calendar","category":"org","icon":"◰","description":"See your events on a calendar and agenda","ui":"modern"},
   {"id":"pomodoro","name":"Pomodoro","category":"time","icon":"◓","description":"Work in focused sprints with timed breaks","ui":"modern"},
