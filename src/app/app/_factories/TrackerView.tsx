@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { trackerAddAction, trackerDeleteAction } from "./actions";
+import { trackerAddAction, trackerDeleteAction, trackerUpdateAction } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
 import { StatTile, StatStrip } from "./FactoryUI";
 import {
@@ -514,13 +514,81 @@ function EntryRow({
   mode: AggregateMode;
 }) {
   const [pending, start] = useTransition();
+  const [editing, setEditing] = useState(false);
+  const valueRef = useRef<HTMLInputElement>(null);
+  const selRef = useRef<HTMLSelectElement>(null);
+  const noteRef = useRef<HTMLInputElement>(null);
   const date = new Date(entry.created_at);
   const dateLabel = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   const timeLabel = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const labels = config.labels;
 
   function remove() {
     if (!confirm("Delete this entry?")) return;
     start(() => trackerDeleteAction(appId, entry.id));
+  }
+
+  function save() {
+    const raw = labels ? Number(selRef.current?.value) : Number(valueRef.current?.value);
+    if (Number.isNaN(raw)) return;
+    const note = noteRef.current?.value || "";
+    start(async () => {
+      await trackerUpdateAction(appId, entry.id, raw, note);
+      setEditing(false);
+    });
+  }
+
+  if (editing) {
+    return (
+      <li className={`rounded-xl border border-cyan-500/40 bg-zinc-900/60 px-3 py-2.5 ${pending ? "opacity-50" : ""}`}>
+        <div className="flex items-center gap-2">
+          {labels ? (
+            <select
+              ref={selRef}
+              defaultValue={String(Number(entry.value) || 0)}
+              className="rounded-lg bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+            >
+              {labels.map((l, i) => (
+                <option key={i} value={i}>{l}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              ref={valueRef}
+              type="number"
+              inputMode="decimal"
+              step="any"
+              defaultValue={String(Number(entry.value) || 0)}
+              className="w-24 rounded-lg bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+            />
+          )}
+          {config.unit && <span className="text-xs text-zinc-500">{config.unit}</span>}
+          <input
+            ref={noteRef}
+            defaultValue={entry.note ?? ""}
+            placeholder="Note"
+            className="min-w-0 flex-1 rounded-lg bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+          />
+        </div>
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            onClick={save}
+            disabled={pending}
+            className="rounded-lg bg-cyan-500 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-50"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-zinc-700"
+          >
+            Cancel
+          </button>
+        </div>
+      </li>
+    );
   }
 
   return (
@@ -542,7 +610,16 @@ function EntryRow({
       </div>
       <button
         type="button"
+        onClick={() => setEditing(true)}
+        aria-label="Edit entry"
+        className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-cyan-400"
+      >
+        ✎
+      </button>
+      <button
+        type="button"
         onClick={remove}
+        aria-label="Delete entry"
         className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-red-400"
       >
         ×
