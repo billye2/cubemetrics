@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { timeProgress, goalPace, PACE_LABEL } from "@/app/app/_factories/factoryLib";
+import { timeProgress, goalPace, PACE_LABEL, dueBucket } from "@/app/app/_factories/factoryLib";
 
 describe("timeProgress", () => {
   it("reports the elapsed fraction across the created→due window", () => {
@@ -33,5 +33,18 @@ describe("goalPace", () => {
     expect(PACE_LABEL.ahead).toBeTruthy();
     expect(PACE_LABEL.on).toBeTruthy();
     expect(PACE_LABEL.behind).toBeTruthy();
+  });
+});
+
+describe("dueBucket", () => {
+  const now = new Date(2026, 5, 15, 12, 0, 0); // Jun 15 2026
+  it("buckets a dated item by how soon it's due", () => {
+    expect(dueBucket("2026-06-10", now)).toBe("Overdue");
+    expect(dueBucket("2026-06-15", now)).toBe("Today");
+    expect(dueBucket("2026-06-20", now)).toBe("This week");
+    expect(dueBucket("2026-07-30", now)).toBe("Later");
+  });
+  it("puts undated items in Someday", () => {
+    expect(dueBucket(null, now)).toBe("Someday");
   });
 });

@@ -9,6 +9,7 @@ import {
   checklistSetDueAction,
 } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
+import { dueBucket, DUE_BUCKET_ORDER, type DueBucket } from "./factoryLib";
 
 interface Item {
   id: number;
@@ -88,6 +89,16 @@ export function ChecklistView({
   const active = sorted.filter((i) => !i.completed);
   const done = sorted.filter((i) => i.completed);
 
+  const overdue = active.filter((i) => dueBucket(i.due_date) === "Overdue").length;
+  const dueToday = active.filter((i) => dueBucket(i.due_date) === "Today").length;
+
+  // When sorting by due, group active items into time buckets (Countdown-style).
+  const buckets = useMemo(() => {
+    const g: Record<string, Item[]> = {};
+    for (const i of active) (g[dueBucket(i.due_date)] = g[dueBucket(i.due_date)] || []).push(i);
+    return g;
+  }, [active]);
+
   function submit(formData: FormData) {
     const title = String(formData.get("title") || "");
     if (!title.trim()) return;
@@ -107,18 +118,31 @@ export function ChecklistView({
   return (
     <div>
       {total > 0 && (
-        <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-          <div className="mb-2 flex items-center justify-between text-xs">
-            <span className="font-semibold text-zinc-300">
-              {doneCount} of {total} done
-            </span>
-            <span className="font-semibold text-cyan-400">{pct}%</span>
-          </div>
-          <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
-            <div
-              className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-cyan-500"}`}
-              style={{ width: `${pct}%` }}
-            />
+        <div className="mb-4 flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <ProgressRing pct={pct} />
+          <div className="min-w-0 flex-1">
+            {active.length === 0 ? (
+              <div className="text-[15px] font-bold text-emerald-400">✓ All clear — nice work</div>
+            ) : (
+              <div className="text-[15px] font-bold text-zinc-100">
+                {active.length} {active.length === 1 ? "thing" : "things"} left
+              </div>
+            )}
+            <div className="mt-0.5 text-xs text-zinc-500">{doneCount} of {total} done</div>
+            {(overdue > 0 || dueToday > 0) && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {overdue > 0 && (
+                  <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-bold text-red-300">
+                    {overdue} overdue
+                  </span>
+                )}
+                {dueToday > 0 && (
+                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-bold text-amber-300">
+                    {dueToday} due today
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -198,6 +222,22 @@ export function ChecklistView({
         <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
           <p className="text-sm text-zinc-400">No {itemLabel}s yet.</p>
         </div>
+      ) : sort === "due" ? (
+        DUE_BUCKET_ORDER.filter((b) => buckets[b]?.length).map((b) => (
+          <div key={b} className="mt-5">
+            <div className="mb-2 flex items-center gap-2 px-0.5">
+              <span className={`text-[12.5px] font-bold ${b === "Overdue" ? "text-red-400" : "text-zinc-200"}`}>{b}</span>
+              <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[11px] font-bold text-zinc-400">
+                {buckets[b].length}
+              </span>
+            </div>
+            <ul className="space-y-2">
+              {buckets[b].map((i) => (
+                <Row key={i.id} appId={appId} item={i} />
+              ))}
+            </ul>
+          </div>
+        ))
       ) : (
         <ul className="mt-4 space-y-2">
           {active.map((i, idx) => (
@@ -233,6 +273,35 @@ export function ChecklistView({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function ProgressRing({ pct }: { pct: number }) {
+  const size = 60;
+  const stroke = 7;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const done = pct >= 100;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-zinc-800)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={done ? "#34d399" : "var(--color-cyan-500)"}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${c * Math.max(0, Math.min(1, pct / 100))} ${c}`}
+          className="transition-all duration-500 motion-reduce:transition-none"
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center text-[13px] font-bold text-zinc-100">
+        {pct}%
+      </div>
     </div>
   );
 }
