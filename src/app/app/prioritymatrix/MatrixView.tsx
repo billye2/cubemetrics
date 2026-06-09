@@ -3,6 +3,8 @@
 import { useRef, useTransition } from "react";
 import type { MatrixTask } from "./page";
 import { addTask, completeTask, deleteTask, setQuadrant } from "./actions";
+import { StatTile, StatStrip } from "../_factories/FactoryUI";
+import { hexAlpha } from "../_factories/factoryLib";
 
 interface Quad {
   key: number;
@@ -10,13 +12,14 @@ interface Quad {
   sub: string;
   cell: string; // hero cell classes
   dot: string; // section accent
+  hex: string; // tint seed for rows
 }
 
 const QUADS: Quad[] = [
-  { key: 1, label: "Do", sub: "Urgent & important", cell: "border-rose-500/40 bg-rose-500/10 text-rose-200", dot: "bg-rose-500" },
-  { key: 2, label: "Schedule", sub: "Important, not urgent", cell: "border-cyan-500/40 bg-cyan-500/10 text-cyan-200", dot: "bg-cyan-500" },
-  { key: 3, label: "Delegate", sub: "Urgent, not important", cell: "border-amber-500/40 bg-amber-500/10 text-amber-200", dot: "bg-amber-500" },
-  { key: 4, label: "Drop", sub: "Neither — let it go", cell: "border-zinc-600 bg-zinc-800/40 text-zinc-300", dot: "bg-zinc-500" },
+  { key: 1, label: "Do", sub: "Urgent & important", cell: "border-rose-500/40 bg-rose-500/10 text-rose-200", dot: "bg-rose-500", hex: "#fb7185" },
+  { key: 2, label: "Schedule", sub: "Important, not urgent", cell: "border-cyan-500/40 bg-cyan-500/10 text-cyan-200", dot: "bg-cyan-500", hex: "#06b6d4" },
+  { key: 3, label: "Delegate", sub: "Urgent, not important", cell: "border-amber-500/40 bg-amber-500/10 text-amber-200", dot: "bg-amber-500", hex: "#fbbf24" },
+  { key: 4, label: "Drop", sub: "Neither — let it go", cell: "border-zinc-600 bg-zinc-800/40 text-zinc-300", dot: "bg-zinc-500", hex: "#71717a" },
 ];
 
 const MOVE_OPTIONS = [
@@ -38,11 +41,11 @@ export function MatrixView({ tasks }: { tasks: MatrixTask[] }) {
   return (
     <div className="space-y-6">
       <MatrixMap counts={counts} />
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="To triage" value={String(counts[0])} />
-        <Stat label="Important" value={String(important)} />
-        <Stat label="Active" value={String(tasks.length)} />
-      </div>
+      <StatStrip cols={3}>
+        <StatTile label="To triage" value={String(counts[0])} tone={counts[0] > 0 ? "amber" : "zinc"} />
+        <StatTile label="Important" value={String(important)} tone="cyan" />
+        <StatTile label="Active" value={String(tasks.length)} tone="zinc" />
+      </StatStrip>
 
       <AddTaskForm />
 
@@ -55,6 +58,7 @@ export function MatrixView({ tasks }: { tasks: MatrixTask[] }) {
               title="Unsorted"
               sub="Place each into a quadrant"
               dot="bg-zinc-400"
+              tint="#71717a"
               tasks={unsorted}
             />
           )}
@@ -64,6 +68,7 @@ export function MatrixView({ tasks }: { tasks: MatrixTask[] }) {
               title={q.label}
               sub={q.sub}
               dot={q.dot}
+              tint={q.hex}
               tasks={byQuad(q.key)}
             />
           ))}
@@ -118,17 +123,6 @@ function MapCell({ quad, count }: { quad: Quad; count: number }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 text-center">
-      <div className="text-base font-semibold text-zinc-100">{value}</div>
-      <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-        {label}
-      </div>
-    </div>
-  );
-}
-
 function AddTaskForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, start] = useTransition();
@@ -169,11 +163,13 @@ function Section({
   title,
   sub,
   dot,
+  tint,
   tasks,
 }: {
   title: string;
   sub: string;
   dot: string;
+  tint: string;
   tasks: MatrixTask[];
 }) {
   return (
@@ -191,7 +187,7 @@ function Section({
       ) : (
         <ul className="space-y-2">
           {tasks.map((t) => (
-            <TaskRow key={t.id} task={t} />
+            <TaskRow key={t.id} task={t} tint={tint} />
           ))}
         </ul>
       )}
@@ -199,7 +195,7 @@ function Section({
   );
 }
 
-function TaskRow({ task }: { task: MatrixTask }) {
+function TaskRow({ task, tint }: { task: MatrixTask; tint: string }) {
   const [pending, start] = useTransition();
 
   function remove() {
@@ -209,9 +205,8 @@ function TaskRow({ task }: { task: MatrixTask }) {
 
   return (
     <li
-      className={`flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-2.5 ${
-        pending ? "opacity-50" : ""
-      }`}
+      className={`flex items-center gap-2 rounded-xl border px-3 py-2.5 ${pending ? "opacity-50" : ""}`}
+      style={{ background: hexAlpha(tint, 0.08), borderColor: hexAlpha(tint, 0.25) }}
     >
       <button
         type="button"
