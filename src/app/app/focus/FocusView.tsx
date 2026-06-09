@@ -364,8 +364,7 @@ function Home({
 
   return (
     <div>
-      <p className="text-[14.5px] text-zinc-400">Set an intention, run a focus session, journal what got done.</p>
-      <p className="mt-3 text-[11.5px] font-bold uppercase tracking-[0.14em]" style={{ color: TEAL }}>
+      <p className="text-[11.5px] font-bold uppercase tracking-[0.14em]" style={{ color: TEAL }}>
         {WD[now.getDay()]}DAY, {MO[now.getMonth()]} {now.getDate()}
       </p>
       <h1 className="mt-1 text-[28px] font-bold tracking-tight text-zinc-100">Your focus journal</h1>
