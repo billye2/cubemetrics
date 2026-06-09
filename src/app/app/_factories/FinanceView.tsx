@@ -8,7 +8,9 @@ import {
 } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
 import { currency, currencyCompact, dueInfo, monthlyFactor, dueBucket, DUE_BUCKET_ORDER } from "./factoryLib";
-import { BucketSection, Ring } from "./FactoryUI";
+import { BucketSection, Ring, StatusPill } from "./FactoryUI";
+
+const DUE_TONE = { overdue: "rose", today: "amber", soon: "amber", future: "zinc" } as const;
 
 interface Item {
   id: number;
@@ -23,13 +25,6 @@ interface Item {
 }
 
 const FREQUENCIES = ["monthly", "yearly", "weekly", "quarterly"];
-
-const TONE_CLASS: Record<string, string> = {
-  overdue: "text-red-400",
-  today: "text-amber-300",
-  soon: "text-amber-300",
-  future: "text-zinc-500",
-};
 
 export function FinanceView({
   appId,
@@ -311,7 +306,7 @@ function Row({ appId, item, isRecurring }: { appId: string; item: Item; isRecurr
       <div className="min-w-0 flex-1">
         <div className={`flex items-baseline gap-2 ${item.paid ? "text-zinc-500" : ""}`}>
           <div className={`truncate text-sm font-semibold ${item.paid ? "line-through" : "text-zinc-100"}`}>{item.name}</div>
-          {due && <div className={`text-xs ${TONE_CLASS[due.tone]}`}>{due.label}</div>}
+          {due && <StatusPill label={due.label} tone={DUE_TONE[due.tone]} />}
         </div>
         {item.category && <div className="truncate text-xs text-zinc-500">{item.category}</div>}
       </div>

@@ -87,6 +87,23 @@ export function StatStrip({ children, cols = 3 }: { children: React.ReactNode; c
   );
 }
 
+const PILL_CLASS: Record<Tone, string> = {
+  cyan: "bg-cyan-500/15 text-cyan-300",
+  amber: "bg-amber-500/15 text-amber-300",
+  emerald: "bg-emerald-500/15 text-emerald-300",
+  rose: "bg-rose-500/15 text-rose-300",
+  zinc: "bg-zinc-700/40 text-zinc-300",
+};
+
+/** Color-coded status pill (on-track / due-soon / overdue / surplus). */
+export function StatusPill({ label, tone }: { label: string; tone: Tone }) {
+  return (
+    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold ${PILL_CLASS[tone]}`}>
+      {label}
+    </span>
+  );
+}
+
 /** A time-bucket section: header label + count badge, wrapping a list of rows.
  *  `danger` colors the header red (for "Overdue" / "Due now"). Countdown-style. */
 export function BucketSection({
