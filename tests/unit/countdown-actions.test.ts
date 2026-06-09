@@ -42,7 +42,7 @@ describe("addCountdownAction", () => {
   it("inserts a fully populated countdown", async () => {
     const client = makeClient({ id: "u1" });
     asMock(createServerSupabase).mockResolvedValue(client);
-    await addCountdownAction("  Mom's birthday ", "2026-06-12", "09:30", "  Birthday ", true, " buy flowers ");
+    await addCountdownAction("  Mom's birthday ", "2026-06-12", "09:30", "  Birthday ", true, " buy flowers ", " 🎂 ");
     expect(client.from).toHaveBeenCalledWith("countdowns");
     expect(client.__query.insert).toHaveBeenCalledWith({
       user_id: "u1",
@@ -52,6 +52,7 @@ describe("addCountdownAction", () => {
       category: "Birthday",
       recurring_yearly: true,
       note: "buy flowers",
+      emoji: "🎂",
     });
   });
 
@@ -67,6 +68,7 @@ describe("addCountdownAction", () => {
       category: null,
       recurring_yearly: false,
       note: null,
+      emoji: null,
     });
   });
 });

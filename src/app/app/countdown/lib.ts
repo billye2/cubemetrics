@@ -9,6 +9,8 @@ export interface Countdown {
   /** Progress-ring anchor: how long ago the countdown was created. Optional so
    *  pure-logic callers (and older rows) don't have to supply it. */
   created_at?: string | null;
+  /** Custom per-event emoji; falls back to the category emoji when null. */
+  emoji?: string | null;
 }
 
 export interface ResolvedCountdown extends Countdown {
@@ -192,6 +194,12 @@ const FALLBACK_TOKEN: CategoryToken = { color: "#9aa3b2", emoji: "🗓️" };
 export function categoryToken(name: string | null | undefined): CategoryToken {
   if (!name) return FALLBACK_TOKEN;
   return CATEGORY_TOKENS[name] ?? FALLBACK_TOKEN;
+}
+
+/** The glyph to show: the event's custom emoji, else its category's emoji. */
+export function displayEmoji(c: Pick<Countdown, "emoji" | "category">): string {
+  const custom = c.emoji?.trim();
+  return custom || categoryToken(c.category).emoji;
 }
 
 /** `#rrggbb` + alpha → `rgba(...)`. */

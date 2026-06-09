@@ -17,6 +17,7 @@ export async function addCountdownAction(
   category: string,
   recurringYearly: boolean,
   note: string,
+  emoji = "",
 ) {
   const cleanTitle = title.trim();
   if (!cleanTitle || !targetDate) return;
@@ -29,6 +30,7 @@ export async function addCountdownAction(
     category: category.trim() || null,
     recurring_yearly: recurringYearly,
     note: note.trim() || null,
+    emoji: emoji.trim() || null,
   });
   revalidatePath("/app/countdown");
 }
@@ -41,6 +43,7 @@ export async function updateCountdownAction(
   category: string,
   recurringYearly: boolean,
   note: string,
+  emoji = "",
 ) {
   const cleanTitle = title.trim();
   if (!cleanTitle || !targetDate) return;
@@ -54,6 +57,7 @@ export async function updateCountdownAction(
       category: category.trim() || null,
       recurring_yearly: recurringYearly,
       note: note.trim() || null,
+      emoji: emoji.trim() || null,
     })
     .eq("id", id)
     .eq("user_id", userId);

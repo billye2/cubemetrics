@@ -8,6 +8,7 @@ import {
   bucketOf,
   progressFraction,
   categoryToken,
+  displayEmoji,
   CATEGORY_TOKENS,
   type Countdown,
 } from "@/app/app/countdown/lib";
@@ -193,5 +194,15 @@ describe("categoryToken", () => {
     const fb = categoryToken("Birthday");
     expect(fb.color).toBeTruthy();
     expect(categoryToken(null).emoji).toBeTruthy();
+  });
+});
+
+describe("displayEmoji", () => {
+  it("prefers a custom emoji", () => {
+    expect(displayEmoji({ emoji: "🎂", category: "Travel" })).toBe("🎂");
+  });
+  it("falls back to the category emoji when blank/absent", () => {
+    expect(displayEmoji({ emoji: "  ", category: "Travel" })).toBe(CATEGORY_TOKENS.Travel.emoji);
+    expect(displayEmoji({ emoji: null, category: "Work" })).toBe(CATEGORY_TOKENS.Work.emoji);
   });
 });

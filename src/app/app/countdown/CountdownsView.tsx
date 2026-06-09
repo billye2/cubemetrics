@@ -7,6 +7,7 @@ import {
   type ResolvedCountdown,
   resolveAll,
   categoryToken,
+  displayEmoji,
   hexAlpha,
   fuzzyParts,
   bucketOf,
@@ -97,7 +98,7 @@ function Hero({
     >
       <Ring size={104} stroke={9} value={pr} color={t.color}>
         <div className="text-center">
-          <div className="text-2xl leading-none">{t.emoji}</div>
+          <div className="text-2xl leading-none">{displayEmoji(item)}</div>
           <div className="mt-1 text-[10px] font-bold" style={{ color: t.color }}>
             {Math.round(pr * 100)}%
           </div>
@@ -147,7 +148,7 @@ function TintCard({
     >
       <div className="flex items-center gap-3">
         <Ring size={52} stroke={5} value={pr} color={t.color}>
-          <span className="text-xl leading-none">{t.emoji}</span>
+          <span className="text-xl leading-none">{displayEmoji(item)}</span>
         </Ring>
         <div className="min-w-0 flex-1">
           <div className="truncate text-[15px] font-bold text-zinc-100">{item.title}</div>
@@ -311,19 +312,22 @@ function EventSheet({ initial, onClose }: { initial: ResolvedCountdown | null; o
   const [category, setCategory] = useState(init.category);
   const [recurring, setRecurring] = useState(init.recurring);
   const [note, setNote] = useState(init.note);
+  const [emoji, setEmoji] = useState(init.emoji);
   const [pending, start] = useTransition();
 
   const valid = title.trim().length > 0 && !!date;
   const token = categoryToken(category);
+  // What the ring will show: the custom emoji if set, else the category's.
+  const shownEmoji = emoji.trim() || token.emoji;
 
   function submit() {
     if (!valid) return;
     const t = withTime ? time : "";
     start(async () => {
       if (initial) {
-        await updateCountdownAction(initial.id, title.trim(), date, t, category, recurring, note.trim());
+        await updateCountdownAction(initial.id, title.trim(), date, t, category, recurring, note.trim(), emoji);
       } else {
-        await addCountdownAction(title.trim(), date, t, category, recurring, note.trim());
+        await addCountdownAction(title.trim(), date, t, category, recurring, note.trim(), emoji);
       }
       onClose();
     });
@@ -352,9 +356,13 @@ function EventSheet({ initial, onClose }: { initial: ResolvedCountdown | null; o
 
         <Label>What are you counting down to?</Label>
         <div className="flex items-center gap-2">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-xl" aria-hidden>
-            {token.emoji}
-          </div>
+          <input
+            value={emoji}
+            onChange={(e) => setEmoji(e.target.value.slice(0, 8))}
+            aria-label="Emoji"
+            placeholder={token.emoji}
+            className="h-11 w-11 shrink-0 rounded-xl bg-zinc-900 text-center text-xl text-zinc-100 outline-none ring-1 ring-zinc-800 placeholder:opacity-70 focus:ring-cyan-500/50"
+          />
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -363,6 +371,10 @@ function EventSheet({ initial, onClose }: { initial: ResolvedCountdown | null; o
             placeholder="e.g. Trip to Tokyo"
             className="flex-1 rounded-xl bg-zinc-900 px-3 py-2.5 text-base text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
           />
+        </div>
+        <div className="mt-1 text-[11px] text-zinc-600">
+          Ring shows <span className="text-zinc-300">{shownEmoji}</span> — leave blank to use the
+          category emoji.
         </div>
 
         <div className="mt-4 flex gap-3">
@@ -489,7 +501,7 @@ function useNow(): Date {
 
 function deriveInitial(initial: ResolvedCountdown | null) {
   if (!initial) {
-    return { title: "", date: todayInput(), time: "", category: "Personal", recurring: false, note: "" };
+    return { title: "", date: todayInput(), time: "", category: "Personal", recurring: false, note: "", emoji: "" };
   }
   return {
     title: initial.title,
@@ -498,6 +510,7 @@ function deriveInitial(initial: ResolvedCountdown | null) {
     category: initial.category ?? "Personal",
     recurring: initial.recurring_yearly,
     note: initial.note ?? "",
+    emoji: initial.emoji ?? "",
   };
 }
 

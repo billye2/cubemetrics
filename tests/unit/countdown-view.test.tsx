@@ -4,10 +4,10 @@ import { render, screen, fireEvent, within, cleanup, waitFor } from "@testing-li
 
 const { addCountdownAction, updateCountdownAction, deleteCountdownAction } = vi.hoisted(() => ({
   addCountdownAction: vi.fn(
-    async (_t: string, _d: string, _ti: string, _c: string, _r: boolean, _n: string) => {},
+    async (_t: string, _d: string, _ti: string, _c: string, _r: boolean, _n: string, _e?: string) => {},
   ),
   updateCountdownAction: vi.fn(
-    async (_id: number, _t: string, _d: string, _ti: string, _c: string, _r: boolean, _n: string) => {},
+    async (_id: number, _t: string, _d: string, _ti: string, _c: string, _r: boolean, _n: string, _e?: string) => {},
   ),
   deleteCountdownAction: vi.fn(async (_id: number) => {}),
 }));
@@ -34,7 +34,7 @@ const CREATED = "2026-01-01T00:00:00Z";
 
 const rows = [
   { id: 1, title: "Dentist visit", target_date: dateAhead(2), target_time: null, category: "Health", recurring_yearly: false, note: null, created_at: CREATED },
-  { id: 2, title: "Italy trip", target_date: dateAhead(5), target_time: null, category: "Travel", recurring_yearly: false, note: "Flights booked", created_at: CREATED },
+  { id: 2, title: "Italy trip", target_date: dateAhead(5), target_time: null, category: "Travel", recurring_yearly: false, note: "Flights booked", created_at: CREATED, emoji: "🍝" },
   { id: 3, title: "Product launch", target_date: dateAhead(20), target_time: null, category: "Work", recurring_yearly: false, note: null, created_at: CREATED },
   { id: 4, title: "Cousin wedding", target_date: dateAhead(60), target_time: null, category: "Event", recurring_yearly: false, note: null, created_at: CREATED },
   { id: 5, title: "Old meetup", target_date: dateAhead(-1), target_time: null, category: "Personal", recurring_yearly: false, note: null, created_at: CREATED },
@@ -81,13 +81,19 @@ describe("CountdownsView — filter", () => {
 });
 
 describe("CountdownsView — add / edit / delete", () => {
-  it("adds a countdown from the FAB sheet", async () => {
+  it("renders a custom emoji on a card", () => {
+    render(<CountdownsView rows={rows} />);
+    expect(screen.getByText("🍝")).toBeTruthy(); // Italy trip's custom emoji
+  });
+
+  it("adds a countdown with a custom emoji from the FAB sheet", async () => {
     render(<CountdownsView rows={rows} />);
     fireEvent.click(screen.getByRole("button", { name: "Add countdown" })); // the FAB
     const dialog = screen.getByRole("dialog");
     fireEvent.change(within(dialog).getByPlaceholderText("e.g. Trip to Tokyo"), {
       target: { value: "Birthday party" },
     });
+    fireEvent.change(within(dialog).getByLabelText("Emoji"), { target: { value: "🎂" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Fun" })); // category chip
     fireEvent.click(within(dialog).getByRole("button", { name: "Add countdown" })); // submit
 
@@ -97,6 +103,7 @@ describe("CountdownsView — add / edit / delete", () => {
     expect(args[1]).toBe(todayInput()); // date defaults to today
     expect(args[3]).toBe("Fun");
     expect(args[4]).toBe(false); // not recurring
+    expect(args[6]).toBe("🎂"); // custom emoji persisted
   });
 
   it("opens a prefilled edit sheet from a card and saves", async () => {
