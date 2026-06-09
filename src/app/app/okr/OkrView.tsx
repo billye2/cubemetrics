@@ -30,6 +30,7 @@ import {
   setObjectiveTitle as setObjectiveTitleAction,
   updateKeyResult,
 } from "./actions";
+import { Ring, StatusPill } from "../_factories/FactoryUI";
 
 const CONFIDENCE_META: Record<
   Confidence,
@@ -141,35 +142,21 @@ export function OkrView({ objectives }: { objectives: Objective[] }) {
 }
 
 function CycleDashboard({ stats }: { stats: ReturnType<typeof cycleStats> }) {
+  const tone = stats.attainment >= 70 ? "emerald" : stats.attainment >= 40 ? "cyan" : "amber";
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3">
-      <div className="flex items-center justify-between">
-        <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-          Cycle attainment
-        </span>
-        <span className="text-2xl font-bold tabular-nums text-zinc-100">
-          {stats.attainment}%
-        </span>
-      </div>
-      <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-        <div
-          className="h-full rounded-full bg-cyan-500 transition-all"
-          style={{ width: `${stats.attainment}%` }}
-        />
-      </div>
-      <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-        <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 font-semibold text-emerald-300">
-          {stats.onTrack} on track
-        </span>
-        <span className="rounded-full bg-amber-500/20 px-2 py-0.5 font-semibold text-amber-300">
-          {stats.atRisk} at risk
-        </span>
-        <span className="rounded-full bg-rose-500/20 px-2 py-0.5 font-semibold text-rose-300">
-          {stats.offTrack} off track
-        </span>
-        <span className="ml-auto text-zinc-500">
-          {stats.count} objective{stats.count === 1 ? "" : "s"}
-        </span>
+    <div className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+      <Ring pct={stats.attainment / 100} size={64} stroke={7} tone={tone}>
+        <span className="text-[13px] font-bold tabular-nums text-zinc-100">{stats.attainment}%</span>
+      </Ring>
+      <div className="min-w-0 flex-1">
+        <div className="text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+          Cycle attainment · {stats.count} objective{stats.count === 1 ? "" : "s"}
+        </div>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {stats.onTrack > 0 && <StatusPill label={`${stats.onTrack} on track`} tone="emerald" />}
+          {stats.atRisk > 0 && <StatusPill label={`${stats.atRisk} at risk`} tone="amber" />}
+          {stats.offTrack > 0 && <StatusPill label={`${stats.offTrack} off track`} tone="rose" />}
+        </div>
       </div>
     </div>
   );
