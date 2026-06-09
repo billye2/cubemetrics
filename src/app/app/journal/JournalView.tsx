@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { deleteEntryAction, updateEntryAction } from "./actions";
 import { renderMarkdown } from "../_factories/markdown";
 
@@ -18,6 +18,20 @@ interface Entry {
 
 export function JournalView({ entries }: { entries: Entry[] }) {
   const [query, setQuery] = useState("");
+  const [moodFilter, setMoodFilter] = useState<string | null>(null);
+
+  // Moods actually used, in first-seen order — drives the filter chips.
+  const usedMoods = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const e of entries) {
+      if (e.mood && !seen.has(e.mood)) {
+        seen.add(e.mood);
+        out.push(e.mood);
+      }
+    }
+    return out;
+  }, [entries]);
 
   if (entries.length === 0) {
     return (
@@ -33,15 +47,19 @@ export function JournalView({ entries }: { entries: Entry[] }) {
   }
 
   const q = query.trim().toLowerCase();
-  const filtered = q
-    ? entries.filter(
-        (e) => e.body.toLowerCase().includes(q) || (e.title ?? "").toLowerCase().includes(q),
-      )
-    : entries;
+  const filtered = entries.filter((e) => {
+    if (q && !(e.body.toLowerCase().includes(q) || (e.title ?? "").toLowerCase().includes(q)))
+      return false;
+    if (moodFilter && e.mood !== moodFilter) return false;
+    return true;
+  });
 
   return (
     <div>
       <NewEntryButton />
+
+      <JournalStats entries={entries} />
+
       {entries.length > 3 && (
         <input
           value={query}
@@ -50,8 +68,30 @@ export function JournalView({ entries }: { entries: Entry[] }) {
           className="mt-4 w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
         />
       )}
+
+      {usedMoods.length > 1 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {usedMoods.map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => setMoodFilter((cur) => (cur === m ? null : m))}
+              aria-label={`Filter by mood ${m}`}
+              aria-pressed={moodFilter === m}
+              className={`flex h-8 w-8 items-center justify-center rounded-lg text-base ring-1 transition ${
+                moodFilter === m
+                  ? "bg-cyan-500/20 ring-cyan-500/50"
+                  : "bg-zinc-900 ring-zinc-800 hover:ring-zinc-700"
+              }`}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
+      )}
+
       {filtered.length === 0 ? (
-        <p className="mt-6 text-center text-sm text-zinc-500">No entries match “{query}”.</p>
+        <p className="mt-6 text-center text-sm text-zinc-500">No entries match your filters.</p>
       ) : (
         <ul className="mt-4 space-y-3">
           {filtered.map((e) => (
@@ -61,6 +101,71 @@ export function JournalView({ entries }: { entries: Entry[] }) {
       )}
     </div>
   );
+}
+
+function JournalStats({ entries }: { entries: Entry[] }) {
+  const streak = computeStreak(entries);
+  const thisMonth = countThisMonth(entries);
+  return (
+    <div className="mt-4 grid grid-cols-3 gap-2.5">
+      <StatCell value={`${entries.length}`} label="entries" />
+      <StatCell value={`${thisMonth}`} label="this month" />
+      <StatCell value={streak > 0 ? `${streak}` : "—"} label="day streak" accent />
+    </div>
+  );
+}
+
+function StatCell({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
+  return (
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 text-center">
+      <div className={`text-lg font-extrabold ${accent ? "text-cyan-400" : "text-zinc-100"}`}>
+        {value}
+      </div>
+      <div className="mt-0.5 text-[9.5px] font-medium uppercase tracking-[0.08em] text-zinc-500">
+        {label}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────── date helpers ───────────────────────────
+
+function localDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Day bucket for an entry: prefer the explicit entry_date (a DATE), else the
+// created_at timestamp. Both reduce to a YYYY-MM-DD key.
+function dayKeyOf(e: Entry): string {
+  if (e.entry_date) return e.entry_date.slice(0, 10);
+  return localDateKey(new Date(e.created_at));
+}
+
+// Consecutive days with at least one entry, ending today (or yesterday so a
+// not-yet-written today doesn't reset the count).
+function computeStreak(entries: Entry[]): number {
+  if (entries.length === 0) return 0;
+  const days = new Set(entries.map(dayKeyOf));
+  const cursor = new Date();
+  if (!days.has(localDateKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+    if (!days.has(localDateKey(cursor))) return 0;
+  }
+  let streak = 0;
+  while (days.has(localDateKey(cursor))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+function countThisMonth(entries: Entry[]): number {
+  const now = new Date();
+  const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  return entries.filter((e) => dayKeyOf(e).startsWith(prefix)).length;
 }
 
 function NewEntryButton() {
