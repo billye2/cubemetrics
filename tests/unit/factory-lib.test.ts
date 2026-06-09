@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { timeProgress, goalPace, PACE_LABEL, dueBucket } from "@/app/app/_factories/factoryLib";
+import { timeProgress, goalPace, PACE_LABEL, dueBucket, entryStreak } from "@/app/app/_factories/factoryLib";
 
 describe("timeProgress", () => {
   it("reports the elapsed fraction across the created→due window", () => {
@@ -46,5 +46,26 @@ describe("dueBucket", () => {
   });
   it("puts undated items in Someday", () => {
     expect(dueBucket(null, now)).toBe("Someday");
+  });
+});
+
+describe("entryStreak", () => {
+  const now = new Date(2026, 5, 15, 12, 0, 0);
+  const at = (daysAgo: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - daysAgo);
+    return d.toISOString();
+  };
+  it("counts consecutive days ending today", () => {
+    expect(entryStreak([at(0), at(1), at(2)], now)).toBe(3);
+  });
+  it("still counts from yesterday when today is empty", () => {
+    expect(entryStreak([at(1), at(2)], now)).toBe(2);
+  });
+  it("is 0 when the most recent entry is older than yesterday", () => {
+    expect(entryStreak([at(3), at(4)], now)).toBe(0);
+  });
+  it("dedupes multiple entries on the same day", () => {
+    expect(entryStreak([at(0), at(0), at(1)], now)).toBe(2);
   });
 });

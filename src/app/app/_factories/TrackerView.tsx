@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import { trackerAddAction, trackerDeleteAction } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
+import { StatTile, StatStrip } from "./FactoryUI";
 import {
   type TrackerEntry,
   type AggregateMode,
@@ -275,34 +276,24 @@ function StatsStrip({
 }) {
   const avgLabel = mode === "sum" ? "7d avg/day" : "7d avg";
   return (
-    <div className="mb-4 grid grid-cols-3 gap-3">
-      <Stat
+    <StatStrip cols={3}>
+      <StatTile
         label="Today"
         value={today !== null ? formatValue(today, config, mode) : "—"}
         sub={today !== null ? config.unit : undefined}
       />
-      <Stat
+      <StatTile
         label={avgLabel}
         value={sevenDayAvg !== null ? formatValue(sevenDayAvg, config, "average") : "—"}
         sub={sevenDayAvg !== null ? config.unit : undefined}
       />
-      <Stat
+      <StatTile
         label="Streak"
         value={streak > 0 ? String(streak) : "—"}
         sub={streak > 0 ? (streak === 1 ? "day" : "days") : "start one"}
+        tone={streak > 0 ? "amber" : "zinc"}
       />
-    </div>
-  );
-}
-
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
-      <div className="text-xl font-bold tracking-tight text-cyan-400">{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-zinc-500">
-        {sub ? `${label} · ${sub}` : label}
-      </div>
-    </div>
+    </StatStrip>
   );
 }
 

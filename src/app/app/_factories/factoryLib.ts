@@ -126,6 +126,25 @@ export const PACE_LABEL: Record<Pace, string> = {
 export type DueBucket = "Overdue" | "Today" | "This week" | "Later" | "Someday";
 export const DUE_BUCKET_ORDER: DueBucket[] = ["Overdue", "Today", "This week", "Later", "Someday"];
 
+/** Consecutive local days with at least one entry, ending today (or yesterday
+ *  so a not-yet-logged today doesn't reset the count). For logbook/journal-style
+ *  "you've shown up N days running" stats. */
+export function entryStreak(timestamps: string[], now: Date = new Date()): number {
+  const key = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  const days = new Set(timestamps.map((t) => key(new Date(t))));
+  const cursor = new Date(now);
+  if (!days.has(key(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+    if (!days.has(key(cursor))) return 0;
+  }
+  let streak = 0;
+  while (days.has(key(cursor))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
 export function dueBucket(due: string | null | undefined, now: Date = new Date()): DueBucket {
   if (!due) return "Someday";
   const days = daysUntil(due.slice(0, 10), now);
