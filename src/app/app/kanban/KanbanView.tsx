@@ -3,17 +3,21 @@
 import { useRef, useTransition } from "react";
 import type { KanbanCard } from "./page";
 import { addCard, deleteCard, moveCard } from "./actions";
+import { Ring, StatTile, StatStrip } from "../_factories/FactoryUI";
+import { hexAlpha } from "../_factories/factoryLib";
 
 interface LaneMeta {
   key: string;
   label: string;
   dot: string;
+  hex: string;
+  tone: "zinc" | "cyan" | "emerald";
 }
 
 const LANES: LaneMeta[] = [
-  { key: "todo", label: "To do", dot: "bg-zinc-500" },
-  { key: "doing", label: "Doing", dot: "bg-cyan-500" },
-  { key: "done", label: "Done", dot: "bg-emerald-500" },
+  { key: "todo", label: "To do", dot: "bg-zinc-500", hex: "#71717a", tone: "zinc" },
+  { key: "doing", label: "Doing", dot: "bg-cyan-500", hex: "#06b6d4", tone: "cyan" },
+  { key: "done", label: "Done", dot: "bg-emerald-500", hex: "#34d399", tone: "emerald" },
 ];
 
 export function KanbanView({ cards }: { cards: KanbanCard[] }) {
@@ -23,39 +27,34 @@ export function KanbanView({ cards }: { cards: KanbanCard[] }) {
   const done = counts["done"] || 0;
   const pct = total ? Math.round((done / total) * 100) : 0;
 
+  const allDone = total > 0 && done === total;
+
   return (
     <div className="space-y-5">
-      {/* Hero: progress */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-        <div className="flex items-baseline justify-between">
-          <span className="text-sm font-medium text-zinc-300">
-            {total === 0 ? "No cards yet" : `${done} of ${total} done`}
-          </span>
-          <span className="text-sm font-semibold tabular-nums text-emerald-400">{pct}%</span>
-        </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-800">
-          <div
-            className="h-full rounded-full bg-emerald-500 motion-safe:transition-[width]"
-            style={{ width: `${pct}%` }}
-          />
+      {/* Hero: progress ring */}
+      <div className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+        <Ring pct={total ? done / total : 0} size={64} stroke={7} tone="emerald">
+          <span className="text-[13px] font-bold tabular-nums text-zinc-200">{pct}%</span>
+        </Ring>
+        <div className="min-w-0">
+          {total === 0 ? (
+            <div className="text-[15px] font-semibold text-zinc-100">No cards yet</div>
+          ) : allDone ? (
+            <div className="text-[15px] font-bold text-emerald-400">✓ Board clear — all done</div>
+          ) : (
+            <div className="text-[15px] font-semibold text-zinc-100">{done} of {total} done</div>
+          )}
+          <div className="mt-0.5 text-xs text-zinc-500">
+            {counts["todo"] || 0} to do · {counts["doing"] || 0} doing
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <StatStrip cols={3}>
         {LANES.map((l) => (
-          <div
-            key={l.key}
-            className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 text-center"
-          >
-            <div className="text-base font-semibold tabular-nums text-zinc-100">
-              {counts[l.key] || 0}
-            </div>
-            <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-              {l.label}
-            </div>
-          </div>
+          <StatTile key={l.key} label={l.label} value={String(counts[l.key] || 0)} tone={l.tone} />
         ))}
-      </div>
+      </StatStrip>
 
       {/* Board */}
       <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2">
@@ -85,7 +84,10 @@ function Column({
   next?: string;
 }) {
   return (
-    <div className="flex min-w-[78%] shrink-0 snap-start flex-col rounded-2xl border border-zinc-800 bg-zinc-900/30 p-3 sm:min-w-0 sm:flex-1">
+    <div
+      className="flex min-w-[78%] shrink-0 snap-start flex-col rounded-2xl border p-3 sm:min-w-0 sm:flex-1"
+      style={{ background: hexAlpha(lane.hex, 0.05), borderColor: hexAlpha(lane.hex, 0.25) }}
+    >
       <div className="mb-3 flex items-center gap-2">
         <span className={`inline-block h-2.5 w-2.5 rounded-full ${lane.dot}`} />
         <h3 className="text-sm font-semibold text-zinc-100">{lane.label}</h3>
@@ -94,7 +96,7 @@ function Column({
 
       <ul className="flex-1 space-y-2">
         {cards.map((c) => (
-          <CardItem key={c.id} card={c} prev={prev} next={next} />
+          <CardItem key={c.id} card={c} prev={prev} next={next} tint={lane.hex} />
         ))}
         {cards.length === 0 && (
           <li className="rounded-lg border border-dashed border-zinc-800 px-3 py-3 text-center text-xs text-zinc-600">
@@ -112,10 +114,12 @@ function CardItem({
   card,
   prev,
   next,
+  tint,
 }: {
   card: KanbanCard;
   prev?: string;
   next?: string;
+  tint: string;
 }) {
   const [pending, start] = useTransition();
 
@@ -126,9 +130,8 @@ function CardItem({
 
   return (
     <li
-      className={`rounded-xl border border-zinc-800 bg-zinc-900/70 p-2.5 ${
-        pending ? "opacity-50" : ""
-      }`}
+      className={`rounded-xl border p-2.5 ${pending ? "opacity-50" : ""}`}
+      style={{ background: hexAlpha(tint, 0.1), borderColor: hexAlpha(tint, 0.28) }}
     >
       <p className="break-words text-sm text-zinc-100">{card.title}</p>
       <div className="mt-2 flex items-center gap-1">

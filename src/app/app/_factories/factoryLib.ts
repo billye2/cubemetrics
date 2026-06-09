@@ -66,6 +66,12 @@ export function shortDate(dateStr: string): string {
   return parseDateOnly(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+/** `#rrggbb` + alpha → `rgba(...)`, for hue-tinted cards/sections. */
+export function hexAlpha(hex: string, a: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+
 export interface TimeProgress {
   /** Fraction of the window already elapsed, 0..1. */
   elapsedPct: number;
