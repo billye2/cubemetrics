@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { startSessionAction, completeSessionAction, cancelSessionAction } from "./actions";
+import { Ring, StatTile, StatStrip, StatusPill } from "../_factories/FactoryUI";
 
 interface Session {
   id: number;
@@ -176,23 +177,39 @@ export function PomodoroView({
 
   return (
     <div>
-      <div className="mb-4 grid grid-cols-3 gap-3">
-        <Stat
-          label="Today"
-          value={`${todayCount}/${settings.dailyGoal}`}
-          accent={todayCount >= settings.dailyGoal}
-        />
-        <Stat label="This week" value={String(week.reduce((a, d) => a + d.count, 0))} />
-        <Stat label="Best day" value={String(Math.max(0, ...week.map((d) => d.count)))} />
-      </div>
-      {settings.dailyGoal > 0 && (
-        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-zinc-800">
-          <div
-            className={`h-full rounded-full transition-all ${todayCount >= settings.dailyGoal ? "bg-emerald-500" : "bg-cyan-500"}`}
-            style={{ width: `${Math.min(100, Math.round((todayCount / settings.dailyGoal) * 100))}%` }}
-          />
-        </div>
-      )}
+      {(() => {
+        const goal = settings.dailyGoal;
+        const done = goal > 0 && todayCount >= goal;
+        return (
+          <>
+            <StatStrip cols={3}>
+              <StatTile
+                label="Today"
+                value={`${todayCount}/${goal}`}
+                tone={done ? "emerald" : "cyan"}
+              />
+              <StatTile label="This week" value={String(week.reduce((a, d) => a + d.count, 0))} />
+              <StatTile label="Best day" value={String(Math.max(0, ...week.map((d) => d.count)))} />
+            </StatStrip>
+            {goal > 0 && (
+              <div className="mb-4 flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3">
+                <Ring pct={todayCount / goal} size={48} stroke={6} tone={done ? "emerald" : "cyan"}>
+                  <span className="text-[11px] font-bold tabular-nums text-zinc-200">{todayCount}</span>
+                </Ring>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-zinc-100">
+                    {done ? "Daily goal complete 🎉" : `${goal - todayCount} to your goal`}
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {todayCount} of {goal} pomodoros today
+                  </div>
+                </div>
+                <StatusPill label={done ? "Complete" : "On track"} tone={done ? "emerald" : "cyan"} />
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       <CycleDots perLong={settings.perLong} progress={cycleProgress} />
 
@@ -236,15 +253,6 @@ export function PomodoroView({
           </ul>
         </div>
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
-      <div className={`text-xl font-bold tracking-tight ${accent ? "text-emerald-400" : "text-cyan-400"}`}>{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
     </div>
   );
 }
