@@ -40,3 +40,31 @@ export function StatStrip({ children, cols = 3 }: { children: React.ReactNode; c
     <div className={`mb-4 grid gap-3 ${cols === 2 ? "grid-cols-2" : "grid-cols-3"}`}>{children}</div>
   );
 }
+
+/** A time-bucket section: header label + count badge, wrapping a list of rows.
+ *  `danger` colors the header red (for "Overdue" / "Due now"). Countdown-style. */
+export function BucketSection({
+  label,
+  count,
+  danger = false,
+  children,
+}: {
+  label: string;
+  count: number;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mt-5">
+      <div className="mb-2 flex items-center gap-2 px-0.5">
+        <span className={`text-[12.5px] font-bold ${danger ? "text-rose-400" : "text-zinc-200"}`}>
+          {label}
+        </span>
+        <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[11px] font-bold text-zinc-400">
+          {count}
+        </span>
+      </div>
+      <ul className="space-y-2">{children}</ul>
+    </div>
+  );
+}

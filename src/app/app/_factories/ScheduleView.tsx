@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import type { FactoryConfig } from "@/lib/modern/catalog";
+import { BucketSection } from "./FactoryUI";
 import {
   scheduleAddAction,
   scheduleDeleteAction,
@@ -98,6 +99,15 @@ export function ScheduleView({
 
   const dueCount = enriched.filter((e) => e.status === "due").length;
 
+  // Group by due status into Countdown-style sections.
+  const STATUS_SECTIONS: { key: Status; label: string }[] = [
+    { key: "due", label: "Due now" },
+    { key: "soon", label: "This week" },
+    { key: "ok", label: "Scheduled" },
+  ];
+  const groups: Record<Status, Enriched[]> = { due: [], soon: [], ok: [] };
+  for (const e of enriched) groups[e.status].push(e);
+
   return (
     <div className="space-y-6">
       <Hero dueCount={dueCount} noun={noun} hasItems={items.length > 0} />
@@ -108,11 +118,15 @@ export function ScheduleView({
           <p className="text-xs text-zinc-500">Add one above and set how often it repeats.</p>
         </div>
       ) : (
-        <ul className="space-y-2">
-          {enriched.map((it) => (
-            <Row key={it.id} appId={appId} item={it} />
+        <div>
+          {STATUS_SECTIONS.filter((s) => groups[s.key].length).map((s) => (
+            <BucketSection key={s.key} label={s.label} count={groups[s.key].length} danger={s.key === "due"}>
+              {groups[s.key].map((it) => (
+                <Row key={it.id} appId={appId} item={it} />
+              ))}
+            </BucketSection>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

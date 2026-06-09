@@ -7,7 +7,8 @@ import {
   financeDeleteAction,
 } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
-import { currency, currencyCompact, dueInfo, monthlyFactor } from "./factoryLib";
+import { currency, currencyCompact, dueInfo, monthlyFactor, dueBucket, DUE_BUCKET_ORDER } from "./factoryLib";
+import { BucketSection } from "./FactoryUI";
 
 interface Item {
   id: number;
@@ -59,6 +60,16 @@ export function FinanceView({
     [items],
   );
   const paid = useMemo(() => items.filter((i) => i.paid), [items]);
+
+  // Bills group by how soon they're due (Countdown-style); subscriptions stay flat.
+  const billGroups = useMemo(() => {
+    const g: Record<string, Item[]> = {};
+    for (const i of unpaid) {
+      const b = dueBucket(i.due_date);
+      (g[b] = g[b] || []).push(i);
+    }
+    return g;
+  }, [unpaid]);
 
   const totalUnpaid = unpaid.reduce((acc, i) => acc + Number(i.amount || 0), 0);
   const overdueCount = unpaid.filter((i) => i.due_date && dueInfo(i.due_date).days < 0).length;
@@ -212,12 +223,20 @@ export function FinanceView({
         <div className="mt-8 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
           <p className="text-sm text-zinc-400">Nothing tracked yet.</p>
         </div>
-      ) : (
+      ) : isRecurring ? (
         <ul className="mt-4 space-y-2">
           {unpaid.map((i) => (
             <Row key={i.id} appId={appId} item={i} isRecurring={isRecurring} />
           ))}
         </ul>
+      ) : (
+        DUE_BUCKET_ORDER.filter((b) => billGroups[b]?.length).map((b) => (
+          <BucketSection key={b} label={b} count={billGroups[b].length} danger={b === "Overdue"}>
+            {billGroups[b].map((i) => (
+              <Row key={i.id} appId={appId} item={i} isRecurring={isRecurring} />
+            ))}
+          </BucketSection>
+        ))
       )}
 
       {paid.length > 0 && (
