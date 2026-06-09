@@ -8,12 +8,26 @@ import {
   triageToNote,
   triageToTodo,
 } from "./actions";
+import { StatTile, StatStrip, BucketSection } from "../_factories/FactoryUI";
 
 interface ViewItem {
   id: number;
   text: string;
   created_at: string;
   age: string;
+}
+
+type AgeBucket = "Today" | "This week" | "Older";
+const AGE_ORDER: AgeBucket[] = ["Today", "This week", "Older"];
+
+function ageBucket(createdAt: string, now: Date = new Date()): AgeBucket {
+  const c = new Date(createdAt);
+  const cDay = new Date(c.getFullYear(), c.getMonth(), c.getDate());
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const days = Math.round((today.getTime() - cDay.getTime()) / 86_400_000);
+  if (days <= 0) return "Today";
+  if (days <= 7) return "This week";
+  return "Older";
 }
 
 export function InboxView({
@@ -23,20 +37,22 @@ export function InboxView({
   items: ViewItem[];
   oldest: string | null;
 }) {
+  const groups: Record<AgeBucket, ViewItem[]> = { Today: [], "This week": [], Older: [] };
+  for (const it of items) groups[ageBucket(it.created_at)].push(it);
+
   return (
     <div className="space-y-6">
       <CaptureBox />
       <Hero count={items.length} oldest={oldest} />
       {items.length > 0 && (
         <div>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-            To process
-          </h3>
-          <ul className="space-y-2">
-            {items.map((it) => (
-              <InboxRow key={it.id} item={it} />
-            ))}
-          </ul>
+          {AGE_ORDER.filter((b) => groups[b].length).map((b) => (
+            <BucketSection key={b} label={b} count={groups[b].length}>
+              {groups[b].map((it) => (
+                <InboxRow key={it.id} item={it} />
+              ))}
+            </BucketSection>
+          ))}
         </div>
       )}
     </div>
@@ -101,29 +117,10 @@ function Hero({ count, oldest }: { count: number; oldest: string | null }) {
     );
   }
   return (
-    <div className="grid grid-cols-3 gap-2">
-      <div className="col-span-1 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 text-center">
-        <div className="text-3xl font-bold tabular-nums text-cyan-400">{count}</div>
-        <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-          to process
-        </div>
-      </div>
-      <Stat label="In inbox" value={String(count)} />
-      <Stat label="Oldest" value={oldest ?? "—"} />
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 text-center">
-      <div className="truncate text-base font-semibold text-zinc-100" title={value}>
-        {value}
-      </div>
-      <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-        {label}
-      </div>
-    </div>
+    <StatStrip cols={2}>
+      <StatTile label="To process" value={String(count)} />
+      <StatTile label="Oldest" value={oldest ?? "—"} tone="zinc" />
+    </StatStrip>
   );
 }
 
