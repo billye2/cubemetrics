@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import type { HabitWithStats } from "./page";
 import { addHabit, checkInAction, deleteHabitAction, renameHabitAction } from "./actions";
-import { buildHeatmap } from "./lib";
+import { buildHeatmap, completionRate } from "./lib";
 import { InlineEdit } from "@/components/modern/InlineEdit";
 
 export function HabitsView({ habits }: { habits: HabitWithStats[] }) {
@@ -18,11 +18,22 @@ export function HabitsView({ habits }: { habits: HabitWithStats[] }) {
 
 function TodayRow({ habits }: { habits: HabitWithStats[] }) {
   if (habits.length === 0) return null;
+  const done = habits.filter((h) => h.checkedToday).length;
+  const pct = Math.round((done / habits.length) * 100);
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-        Today
-      </h3>
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Today</h3>
+        <span className="text-xs font-semibold tabular-nums text-zinc-400">
+          {done}/{habits.length} done
+        </span>
+      </div>
+      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+        <div
+          className="h-full rounded-full bg-cyan-500 transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
       <div className="flex flex-wrap gap-3">
         {habits.map((h) => (
           <CheckInButton key={h.id} habit={h} />
@@ -166,6 +177,7 @@ function HabitRow({ habit }: { habit: HabitWithStats }) {
               {habit.streak} day streak
             </span>
             <span>{habit.weekCount}/7 this week</span>
+            <span>{completionRate(new Set(habit.checkinDates), 30)}% · 30d</span>
           </div>
         </div>
         <button
