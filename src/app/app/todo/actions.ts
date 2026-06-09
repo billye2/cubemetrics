@@ -45,3 +45,16 @@ export async function deleteTodoAction(id: number) {
   await supabase.from("todos").delete().eq("id", id).eq("user_id", userId);
   revalidatePath("/app/todo");
 }
+
+export async function setTodoPriorityAction(id: number, priority: number) {
+  const p = Math.max(0, Math.min(2, Math.round(priority)));
+  const { supabase, userId } = await requireUser();
+  await supabase.from("todos").update({ priority: p }).eq("id", id).eq("user_id", userId);
+  revalidatePath("/app/todo");
+}
+
+export async function clearCompletedTodosAction() {
+  const { supabase, userId } = await requireUser();
+  await supabase.from("todos").delete().eq("user_id", userId).eq("completed", true);
+  revalidatePath("/app/todo");
+}
