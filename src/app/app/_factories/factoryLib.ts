@@ -119,6 +119,22 @@ export const PACE_LABEL: Record<Pace, string> = {
   behind: "Behind pace",
 };
 
+// ─────────────────────── due-date bucketing (checklist) ───────────────────────
+// Group dated items the way Countdown groups events, so a checklist reads as
+// "what's overdue / due today / this week" instead of one long flat list.
+
+export type DueBucket = "Overdue" | "Today" | "This week" | "Later" | "Someday";
+export const DUE_BUCKET_ORDER: DueBucket[] = ["Overdue", "Today", "This week", "Later", "Someday"];
+
+export function dueBucket(due: string | null | undefined, now: Date = new Date()): DueBucket {
+  if (!due) return "Someday";
+  const days = daysUntil(due.slice(0, 10), now);
+  if (days < 0) return "Overdue";
+  if (days === 0) return "Today";
+  if (days <= 7) return "This week";
+  return "Later";
+}
+
 /** Count how many of the given ISO timestamps fall within the last `days` days. */
 export function countWithinDays(
   timestamps: string[],
