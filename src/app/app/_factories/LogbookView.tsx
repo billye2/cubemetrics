@@ -3,7 +3,8 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import { logbookAddAction, logbookUpdateAction, logbookDeleteAction } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
-import { countWithinDays } from "./factoryLib";
+import { countWithinDays, entryStreak } from "./factoryLib";
+import { StatTile, StatStrip } from "./FactoryUI";
 import { renderMarkdown } from "./markdown";
 
 interface LogEntry {
@@ -56,6 +57,7 @@ export function LogbookView({
     () => countWithinDays(entries.map((e) => e.created_at), 7),
     [entries],
   );
+  const streak = useMemo(() => entryStreak(entries.map((e) => e.created_at)), [entries]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -94,10 +96,16 @@ export function LogbookView({
   return (
     <div>
       {entries.length > 0 && (
-        <div className="mb-4 grid grid-cols-2 gap-3">
-          <Stat label="Total" value={String(entries.length)} />
-          <Stat label="This week" value={String(thisWeek)} />
-        </div>
+        <StatStrip cols={3}>
+          <StatTile label="Total" value={String(entries.length)} />
+          <StatTile label="This week" value={String(thisWeek)} />
+          <StatTile
+            label="Streak"
+            value={streak > 0 ? String(streak) : "—"}
+            sub={streak > 0 ? (streak === 1 ? "day" : "days") : "start one"}
+            tone={streak > 0 ? "amber" : "zinc"}
+          />
+        </StatStrip>
       )}
 
       {!showForm ? (
@@ -185,15 +193,6 @@ export function LogbookView({
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
-      <div className="text-xl font-bold tracking-tight text-cyan-400">{value}</div>
-      <div className="text-[10px] uppercase tracking-wider text-zinc-500">{label}</div>
     </div>
   );
 }
