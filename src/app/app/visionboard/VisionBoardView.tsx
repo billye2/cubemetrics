@@ -9,6 +9,7 @@ import {
   type VisionCard,
 } from "./lib";
 import { addImageCard, addQuoteCard, deleteCard } from "./actions";
+import { StatTile, StatStrip } from "../_factories/FactoryUI";
 
 type ComposeMode = "quote" | "image";
 
@@ -16,9 +17,18 @@ export function VisionBoardView({ cards }: { cards: VisionCard[] }) {
   const [filter, setFilter] = useState<string | null>(null);
   const visible = useMemo(() => filterByArea(cards, filter), [cards, filter]);
   const areas = useMemo(() => activeAreas(cards), [cards]);
+  const quotes = cards.filter((c) => c.kind === "quote").length;
 
   return (
     <div className="space-y-6">
+      {cards.length > 0 && (
+        <StatStrip cols={3}>
+          <StatTile label="Cards" value={String(cards.length)} tone="zinc" />
+          <StatTile label="Quotes" value={String(quotes)} tone="cyan" />
+          <StatTile label="Images" value={String(cards.length - quotes)} tone="zinc" />
+        </StatStrip>
+      )}
+
       <Compose />
 
       {cards.length > 0 && areas.length > 0 && (
