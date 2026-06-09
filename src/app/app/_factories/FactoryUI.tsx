@@ -12,6 +12,52 @@ const TONE_TEXT: Record<Tone, string> = {
   zinc: "text-zinc-100",
 };
 
+const RING_STROKE: Record<Tone, string> = {
+  cyan: "var(--color-cyan-500)",
+  amber: "#fbbf24",
+  emerald: "#34d399",
+  rose: "#fb7185",
+  zinc: "var(--color-zinc-500)",
+};
+
+/** Progress ring (0..1) with centered content — the Countdown/Meditation hero dial. */
+export function Ring({
+  pct,
+  size = 64,
+  stroke = 7,
+  tone = "cyan",
+  children,
+}: {
+  pct: number;
+  size?: number;
+  stroke?: number;
+  tone?: Tone;
+  children?: React.ReactNode;
+}) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const v = Math.max(0, Math.min(1, pct));
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--color-zinc-800)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={RING_STROKE[tone]}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${c * v} ${c}`}
+          className="transition-all duration-500 motion-reduce:transition-none"
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">{children}</div>
+    </div>
+  );
+}
+
 /** One stat cell — bold value + small uppercase label (+ optional sub). */
 export function StatTile({
   label,

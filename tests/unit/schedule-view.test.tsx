@@ -47,6 +47,14 @@ describe("ScheduleView — status bucketing", () => {
     expect(screen.getByText("Scheduled")).toBeTruthy();
   });
 
+  it("shows the all-caught-up hero when nothing is due", () => {
+    const caughtUp = [
+      { id: 5, title: "Recently done", interval_days: 30, last_done: dateAgo(0), note: null, created_at: "2026-06-01T00:00:00Z" },
+    ];
+    render(<ScheduleView appId={APP} config={config} items={caughtUp} />);
+    expect(screen.getByText("All caught up")).toBeTruthy();
+  });
+
   it("marks an item done and deletes another", async () => {
     vi.stubGlobal("confirm", vi.fn(() => true));
     render(<ScheduleView appId={APP} config={config} items={items} />);

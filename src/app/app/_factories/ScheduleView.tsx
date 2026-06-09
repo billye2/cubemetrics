@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import type { FactoryConfig } from "@/lib/modern/catalog";
-import { BucketSection } from "./FactoryUI";
+import { BucketSection, Ring } from "./FactoryUI";
 import {
   scheduleAddAction,
   scheduleDeleteAction,
@@ -110,7 +110,7 @@ export function ScheduleView({
 
   return (
     <div className="space-y-6">
-      <Hero dueCount={dueCount} noun={noun} hasItems={items.length > 0} />
+      <Hero dueCount={dueCount} total={items.length} noun={noun} />
       <AddForm appId={appId} scheduleType={scheduleType} noun={noun} />
       {items.length === 0 ? (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
@@ -134,29 +134,43 @@ export function ScheduleView({
 
 function Hero({
   dueCount,
+  total,
   noun,
-  hasItems,
 }: {
   dueCount: number;
+  total: number;
   noun: string;
-  hasItems: boolean;
 }) {
-  if (!hasItems) return null;
-  if (dueCount === 0) {
-    return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-center">
-        <div className="text-3xl text-emerald-400">✓</div>
-        <p className="mt-2 text-sm font-semibold text-zinc-100">All caught up</p>
-        <p className="text-xs text-zinc-500">Nothing due right now.</p>
-      </div>
-    );
-  }
+  if (total === 0) return null;
+  const caughtUp = dueCount === 0;
+  // Fraction up-to-date drives the ring (full + emerald when nothing is due).
+  const pct = (total - dueCount) / total;
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-center">
-      <div className="text-4xl font-bold tabular-nums text-rose-400">{dueCount}</div>
-      <p className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-500">
-        {dueCount === 1 ? `${noun} due` : `${noun}s due`}
-      </p>
+    <div className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <Ring pct={pct} size={72} stroke={8} tone={caughtUp ? "emerald" : "rose"}>
+        {caughtUp ? (
+          <span className="text-2xl text-emerald-400">✓</span>
+        ) : (
+          <span className="text-2xl font-bold tabular-nums text-rose-400">{dueCount}</span>
+        )}
+      </Ring>
+      <div className="min-w-0">
+        {caughtUp ? (
+          <>
+            <p className="text-[15px] font-bold text-emerald-400">All caught up</p>
+            <p className="mt-0.5 text-xs text-zinc-500">Nothing due right now — nice.</p>
+          </>
+        ) : (
+          <>
+            <p className="text-[15px] font-bold text-zinc-100">
+              {dueCount} {dueCount === 1 ? noun : `${noun}s`} due
+            </p>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              {total - dueCount} of {total} up to date
+            </p>
+          </>
+        )}
+      </div>
     </div>
   );
 }
