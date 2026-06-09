@@ -24,6 +24,7 @@ import {
   copyWeek,
 } from "./actions";
 import type { RecipeOption } from "./page";
+import { Ring } from "../_factories/FactoryUI";
 
 interface EditTarget {
   date: string;
@@ -139,6 +140,13 @@ export function MealPlannerView({
 
   const isThisWeek = anchor === weekStart(today);
 
+  // Week-at-a-glance progress (planned slots vs total), computed from the grid.
+  const totalSlots = dates.length * SLOTS.length;
+  const planned = grid.size;
+  const plannedPct = totalSlots ? planned / totalSlots : 0;
+  const recipeLinked = [...grid.values()].filter((m) => m.recipeId != null).length;
+  const daysCovered = new Set([...grid.values()].map((m) => m.date)).size;
+
   return (
     <div className="space-y-4">
       {/* Week navigation */}
@@ -171,6 +179,19 @@ export function MealPlannerView({
         >
           ›
         </button>
+      </div>
+
+      {/* Week-progress hero */}
+      <div className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+        <Ring pct={plannedPct} size={64} stroke={7} tone={planned >= totalSlots && totalSlots > 0 ? "emerald" : "cyan"}>
+          <span className="text-[12px] font-bold tabular-nums text-zinc-200">{Math.round(plannedPct * 100)}%</span>
+        </Ring>
+        <div className="min-w-0">
+          <div className="text-[15px] font-bold text-zinc-100">{planned} of {totalSlots} meals planned</div>
+          <div className="mt-0.5 text-xs text-zinc-500">
+            {daysCovered}/7 days covered · {recipeLinked} recipe-linked
+          </div>
+        </div>
       </div>
 
       {/* Actions */}
