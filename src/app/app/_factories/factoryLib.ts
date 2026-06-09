@@ -66,6 +66,59 @@ export function shortDate(dateStr: string): string {
   return parseDateOnly(dateStr).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+export interface TimeProgress {
+  /** Fraction of the window already elapsed, 0..1. */
+  elapsedPct: number;
+  daysTotal: number;
+  daysElapsed: number;
+  /** Whole days remaining; negative once overdue. */
+  daysLeft: number;
+  overdue: boolean;
+}
+
+/**
+ * Time elapsed vs. remaining across a goal's window (created → due). Drives the
+ * "how much of your runway is gone" bar that complements value progress.
+ */
+export function timeProgress(
+  createdAt: string,
+  dueDate: string,
+  now: Date = new Date(),
+): TimeProgress {
+  const c = new Date(createdAt);
+  const createdDay = new Date(c.getFullYear(), c.getMonth(), c.getDate());
+  const dueDay = parseDateOnly(dueDate);
+  const daysTotal = Math.max(1, Math.round((dueDay.getTime() - createdDay.getTime()) / 86_400_000));
+  const daysLeft = daysUntil(dueDate, now);
+  const daysElapsed = Math.max(0, Math.min(daysTotal, daysTotal - daysLeft));
+  return {
+    elapsedPct: Math.max(0, Math.min(1, daysElapsed / daysTotal)),
+    daysTotal,
+    daysElapsed,
+    daysLeft,
+    overdue: daysLeft < 0,
+  };
+}
+
+export type Pace = "ahead" | "on" | "behind";
+
+/**
+ * Compare value progress (0..100) against time elapsed (0..1). "Behind" only
+ * once you've meaningfully fallen behind the clock, so it doesn't nag on day one.
+ */
+export function goalPace(valuePct: number, elapsedPct: number): Pace {
+  const diff = valuePct - elapsedPct * 100;
+  if (diff >= 5) return "ahead";
+  if (diff <= -12) return "behind";
+  return "on";
+}
+
+export const PACE_LABEL: Record<Pace, string> = {
+  ahead: "Ahead of pace",
+  on: "On track",
+  behind: "Behind pace",
+};
+
 /** Count how many of the given ISO timestamps fall within the last `days` days. */
 export function countWithinDays(
   timestamps: string[],
