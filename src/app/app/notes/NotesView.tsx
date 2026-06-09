@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { addNoteAction, deleteNoteAction, togglePinAction, updateNoteAction } from "./actions";
 import { renderMarkdown } from "../_factories/markdown";
 
@@ -124,6 +124,35 @@ export function NotesView({ notes }: { notes: Note[] }) {
   );
 }
 
+// Copy a note's text (title + body) to the clipboard, with brief ✓ feedback.
+function CopyButton({ note }: { note: Note }) {
+  const [copied, setCopied] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
+  function copy() {
+    const text = note.title ? `${note.title}\n\n${note.body}` : note.body;
+    navigator.clipboard?.writeText(text);
+    setCopied(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopied(false), 1500);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      aria-label={copied ? "Copied" : "Copy note"}
+      className={`rounded-lg p-1 ${copied ? "text-cyan-400" : "text-zinc-600 hover:bg-zinc-800 hover:text-cyan-400"}`}
+    >
+      {copied ? "✓" : "⧉"}
+    </button>
+  );
+}
+
 function NoteCard({ note }: { note: Note }) {
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -163,14 +192,17 @@ function NoteCard({ note }: { note: Note }) {
         <span>{date}</span>
         <div className="flex items-center gap-1">
           {!editing && (
-            <button
-              type="button"
-              onClick={openEdit}
-              aria-label="Edit note"
-              className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-cyan-400"
-            >
-              ✎
-            </button>
+            <>
+              <CopyButton note={note} />
+              <button
+                type="button"
+                onClick={openEdit}
+                aria-label="Edit note"
+                className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-cyan-400"
+              >
+                ✎
+              </button>
+            </>
           )}
           <button
             type="button"
@@ -207,6 +239,7 @@ function NoteCard({ note }: { note: Note }) {
             placeholder="Note…"
             className="w-full resize-none rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
           />
+          <div className="text-right text-[10px] text-zinc-600">{body.length} characters</div>
           <div className="flex gap-2">
             <button
               type="button"
