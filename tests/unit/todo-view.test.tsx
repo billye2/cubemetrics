@@ -4,17 +4,28 @@ import { render, screen, fireEvent, within, cleanup, waitFor } from "@testing-li
 
 // Mock the server actions (they pull in supabase/server which is RSC-only).
 // vi.hoisted so the fns exist when the hoisted vi.mock factory runs.
-const { addTodoAction, toggleTodoAction, deleteTodoAction, updateTodoAction } = vi.hoisted(() => ({
+const {
+  addTodoAction,
+  toggleTodoAction,
+  deleteTodoAction,
+  updateTodoAction,
+  setTodoPriorityAction,
+  clearCompletedTodosAction,
+} = vi.hoisted(() => ({
   addTodoAction: vi.fn(async (_fd: FormData) => {}),
   toggleTodoAction: vi.fn(async (_id: number, _completed: boolean) => {}),
   deleteTodoAction: vi.fn(async (_id: number) => {}),
   updateTodoAction: vi.fn(async (_id: number, _title: string) => {}),
+  setTodoPriorityAction: vi.fn(async (_id: number, _priority: number) => {}),
+  clearCompletedTodosAction: vi.fn(async () => {}),
 }));
 vi.mock("@/app/app/todo/actions", () => ({
   addTodoAction,
   toggleTodoAction,
   deleteTodoAction,
   updateTodoAction,
+  setTodoPriorityAction,
+  clearCompletedTodosAction,
 }));
 
 import { TodoView } from "@/app/app/todo/TodoView";
@@ -140,6 +151,36 @@ describe("TodoView — inline title edit", () => {
     fireEvent.click(within(row).getByLabelText("Save"));
     // value unchanged → InlineEdit skips the action
     expect(updateTodoAction).not.toHaveBeenCalled();
+  });
+});
+
+describe("TodoView — priority control & bulk clear", () => {
+  it("shows the active task count", () => {
+    render(<TodoView initialTodos={todos} />);
+    expect(screen.getByText("3 tasks left")).toBeTruthy();
+  });
+
+  it("cycles a normal task's priority up to Soon", async () => {
+    render(<TodoView initialTodos={todos} />);
+    fireEvent.click(within(rowOf("Active normal")).getByLabelText(/Priority: Normal/));
+    await waitFor(() => expect(setTodoPriorityAction).toHaveBeenCalledWith(1, 1));
+  });
+
+  it("wraps an important task's priority back to Normal", async () => {
+    render(<TodoView initialTodos={todos} />);
+    fireEvent.click(within(rowOf("Active important")).getByLabelText(/Priority: Important/));
+    await waitFor(() => expect(setTodoPriorityAction).toHaveBeenCalledWith(3, 0));
+  });
+
+  it("clears completed when confirmed, and not when dismissed", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => false));
+    render(<TodoView initialTodos={todos} />);
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    expect(clearCompletedTodosAction).not.toHaveBeenCalled();
+
+    vi.stubGlobal("confirm", vi.fn(() => true));
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+    await waitFor(() => expect(clearCompletedTodosAction).toHaveBeenCalled());
   });
 });
 

@@ -1,8 +1,17 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { addTodoAction, toggleTodoAction, deleteTodoAction, updateTodoAction } from "./actions";
+import {
+  addTodoAction,
+  toggleTodoAction,
+  deleteTodoAction,
+  updateTodoAction,
+  setTodoPriorityAction,
+  clearCompletedTodosAction,
+} from "./actions";
 import { InlineEdit } from "@/components/modern/InlineEdit";
+
+const PRIORITY_LABELS = ["Normal", "Soon", "Important"];
 
 interface Todo {
   id: number;
@@ -26,24 +35,37 @@ export function TodoView({ initialTodos }: { initialTodos: Todo[] }) {
           <p className="mt-2 text-sm text-zinc-300">No tasks yet.</p>
           <p className="text-xs text-zinc-500">Add one above.</p>
         </div>
+      ) : active.length > 0 ? (
+        <>
+          <div className="mt-4 px-1 text-xs font-medium text-zinc-500">
+            {active.length} {active.length === 1 ? "task" : "tasks"} left
+          </div>
+          <ul className="mt-2 space-y-2">
+            {active.map((t) => (
+              <TodoRow key={t.id} todo={t} />
+            ))}
+          </ul>
+        </>
       ) : (
-        <ul className="mt-4 space-y-2">
-          {active.map((t) => (
-            <TodoRow key={t.id} todo={t} />
-          ))}
-        </ul>
+        <div className="mt-6 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 text-center">
+          <div className="text-2xl">🎉</div>
+          <p className="mt-1 text-sm text-zinc-300">All done — nothing left to do.</p>
+        </div>
       )}
 
       {done.length > 0 && (
         <div className="mt-6">
-          <button
-            type="button"
-            onClick={() => setShowCompleted((v) => !v)}
-            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-300"
-          >
-            <span>{showCompleted ? "▼" : "▶"}</span>
-            Completed ({done.length})
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setShowCompleted((v) => !v)}
+              className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-zinc-500 hover:text-zinc-300"
+            >
+              <span>{showCompleted ? "▼" : "▶"}</span>
+              Completed ({done.length})
+            </button>
+            <ClearCompletedButton count={done.length} />
+          </div>
           {showCompleted && (
             <ul className="mt-3 space-y-2">
               {done.map((t) => (
@@ -116,6 +138,75 @@ function AddTodoForm() {
   );
 }
 
+// Tappable priority — cycles Normal → Soon → Important → Normal and persists.
+// Lets a task's importance change after creation (was create-only before).
+function PriorityControl({ todo }: { todo: Todo }) {
+  const [pending, start] = useTransition();
+  const p = todo.priority;
+
+  function cycle() {
+    start(() => setTodoPriorityAction(todo.id, (p + 1) % 3));
+  }
+
+  const tone =
+    p >= 2
+      ? "bg-red-500/20 text-red-300"
+      : p === 1
+        ? "bg-amber-500/20 text-amber-300"
+        : "text-zinc-600 hover:text-zinc-300";
+
+  return (
+    <button
+      type="button"
+      onClick={cycle}
+      disabled={pending}
+      aria-label={`Priority: ${PRIORITY_LABELS[p]}. Tap to change.`}
+      className={`flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold transition ${tone} ${
+        pending ? "opacity-50" : ""
+      }`}
+    >
+      <FlagIcon className="h-3 w-3" filled={p > 0} />
+      {p > 0 && (p >= 2 ? "Important" : "Soon")}
+    </button>
+  );
+}
+
+function ClearCompletedButton({ count }: { count: number }) {
+  const [pending, start] = useTransition();
+
+  function clear() {
+    if (!confirm(`Delete ${count} completed task${count === 1 ? "" : "s"}?`)) return;
+    start(() => clearCompletedTodosAction());
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={clear}
+      disabled={pending}
+      className="text-xs font-medium text-zinc-500 transition hover:text-red-400 disabled:opacity-50"
+    >
+      Clear
+    </button>
+  );
+}
+
+function FlagIcon({ className, filled }: { className?: string; filled?: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M5 21V4M5 4h11l-2 4 2 4H5" />
+    </svg>
+  );
+}
+
 function TodoRow({ todo }: { todo: Todo }) {
   const [pending, start] = useTransition();
 
@@ -160,15 +251,7 @@ function TodoRow({ todo }: { todo: Todo }) {
           </div>
         </InlineEdit>
       </div>
-      {todo.priority > 0 && !todo.completed && (
-        <span
-          className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${
-            todo.priority >= 2 ? "bg-red-500/20 text-red-300" : "bg-amber-500/20 text-amber-300"
-          }`}
-        >
-          {todo.priority >= 2 ? "Important" : "Soon"}
-        </span>
-      )}
+      {!todo.completed && <PriorityControl todo={todo} />}
       <button
         type="button"
         onClick={remove}
