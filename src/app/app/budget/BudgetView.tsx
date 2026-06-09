@@ -13,6 +13,7 @@ import {
   type Totals,
 } from "./lib";
 import { copyForwardAction, setBudgetTargetAction } from "./actions";
+import { Ring, StatusPill } from "../_factories/FactoryUI";
 
 export function BudgetView({
   month,
@@ -219,27 +220,30 @@ function HeroCard({
       </div>
       {anyPlanned ? (
         <>
-          <div className="mt-1 flex items-baseline gap-2">
-            <span
-              className={`text-3xl font-bold ${
-                overall ? "text-red-400" : "text-cyan-300"
-              }`}
+          <div className="mt-2 flex items-center gap-4">
+            <Ring
+              pct={pct / 100}
+              size={76}
+              stroke={9}
+              tone={overall ? "rose" : pacing?.aheadOfPace ? "amber" : "cyan"}
             >
-              {fmt(Math.abs(remaining))}
-            </span>
-            <span className="text-sm text-zinc-400">
-              {remaining >= 0 ? "left of" : "over"} {fmt(totals.planned)}
-            </span>
-          </div>
-          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-zinc-800">
-            <div
-              className={`h-full rounded-full ${overall ? "bg-red-500" : "bg-cyan-500"}`}
-              style={{ width: `${Math.min(Math.max(pct, 2), 100)}%` }}
-            />
-          </div>
-          <div className="mt-2 flex justify-between text-xs text-zinc-500">
-            <span>{fmt(totals.spent)} spent</span>
-            <span>{fmt(totals.planned)} planned</span>
+              <span className="text-[13px] font-bold tabular-nums text-zinc-200">
+                {Math.round(pct)}%
+              </span>
+            </Ring>
+            <div className="min-w-0">
+              <div className="flex items-baseline gap-2">
+                <span className={`text-3xl font-bold ${overall ? "text-red-400" : "text-cyan-300"}`}>
+                  {fmt(Math.abs(remaining))}
+                </span>
+                <span className="text-sm text-zinc-400">
+                  {remaining >= 0 ? "left of" : "over"} {fmt(totals.planned)}
+                </span>
+              </div>
+              <div className="mt-1 text-xs text-zinc-500">
+                {fmt(totals.spent)} spent · {fmt(totals.planned)} planned
+              </div>
+            </div>
           </div>
           {overall && (
             <div className="mt-3 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
@@ -426,15 +430,14 @@ function CategoryRowItem({ line, month }: { line: BudgetLine; month: string }) {
               style={{ width: `${Math.min(Math.max(pct, 2), 100)}%` }}
             />
           </div>
-          <div className="mt-1.5 flex items-baseline justify-between text-xs">
+          <div className="mt-1.5 flex items-center justify-between text-xs">
             <span className="text-zinc-400">
               {fmt(line.spent)} <span className="text-zinc-600">of {fmt(line.planned)}</span>
             </span>
-            <span className={over ? "font-semibold text-red-400" : "text-zinc-400"}>
-              {over
-                ? `${fmt(line.spent - line.planned)} over`
-                : `${fmt(remaining)} left`}
-            </span>
+            <StatusPill
+              label={over ? `${fmt(line.spent - line.planned)} over` : `${fmt(remaining)} left`}
+              tone={over ? "rose" : "cyan"}
+            />
           </div>
         </>
       ) : (
