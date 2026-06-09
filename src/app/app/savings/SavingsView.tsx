@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { currency, currencyCompact, shortDate } from "../_factories/factoryLib";
+import { currency, currencyCompact, shortDate, hexAlpha } from "../_factories/factoryLib";
+import { Ring } from "../_factories/FactoryUI";
+
+const EMERALD = "#34d399";
 import {
   addContribution,
   createGoal,
@@ -129,58 +132,50 @@ function GoalCard({
   const [editing, setEditing] = useState(false);
   const stats = useMemo(() => statsFor(goal, contribs), [goal, contribs]);
   const pct = Math.round(stats.fraction * 100);
+  const ringTone = stats.complete
+    ? "emerald"
+    : stats.pace === "behind"
+      ? "rose"
+      : stats.pace === "ahead"
+        ? "emerald"
+        : "cyan";
 
   return (
-    <li className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="break-words text-base font-semibold text-zinc-100">
-            {goal.title}
-          </h3>
-          <div className="mt-0.5 text-sm tabular-nums text-zinc-400">
-            <span className="font-semibold text-cyan-300">
-              {currency(stats.saved)}
-            </span>
-            {goal.target_value ? (
-              <> / {currency(goal.target_value)}</>
-            ) : null}
+    <li
+      className={`rounded-2xl border p-4 ${stats.complete ? "" : "border-zinc-800 bg-zinc-900/40"}`}
+      style={stats.complete ? { background: hexAlpha(EMERALD, 0.06), borderColor: hexAlpha(EMERALD, 0.3) } : undefined}
+    >
+      <div className="flex items-start gap-4">
+        {goal.target_value ? (
+          <Ring pct={stats.fraction} size={64} stroke={7} tone={ringTone}>
+            <span className="text-[12px] font-bold tabular-nums text-zinc-200">{pct}%</span>
+          </Ring>
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="break-words text-base font-semibold text-zinc-100">{goal.title}</h3>
+              <div className="mt-0.5 text-sm tabular-nums text-zinc-400">
+                <span className="font-semibold text-cyan-300">{currency(stats.saved)}</span>
+                {goal.target_value ? <> / {currency(goal.target_value)}</> : null}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditing((v) => !v)}
+              aria-label="Edit goal"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
+            >
+              <span className="text-sm">{editing ? "×" : "⋯"}</span>
+            </button>
           </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {stats.complete && (
-            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-              done
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => setEditing((v) => !v)}
-            aria-label="Edit goal"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
-          >
-            <span className="text-sm">{editing ? "×" : "⋯"}</span>
-          </button>
+          {stats.complete ? (
+            <div className="mt-1 text-[12px] font-semibold text-emerald-400">🎉 Goal reached!</div>
+          ) : goal.target_value && stats.remaining > 0 ? (
+            <div className="mt-1 text-[11px] text-zinc-500">{currency(stats.remaining)} to go</div>
+          ) : null}
         </div>
       </div>
-
-      {goal.target_value ? (
-        <div className="mt-3">
-          <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
-            <div
-              className={`h-full rounded-full ${
-                stats.complete ? "bg-emerald-500" : "bg-cyan-500"
-              }`}
-              style={{ width: `${Math.min(100, pct)}%` }}
-            />
-          </div>
-          <div className="mt-1 flex justify-between text-[11px] text-zinc-500">
-            <span>{pct}%</span>
-            {stats.remaining > 0 && (
-              <span>{currency(stats.remaining)} to go</span>
-            )}
-          </div>
-        </div>
-      ) : null}
 
       <PaceRow goal={goal} stats={stats} />
 
