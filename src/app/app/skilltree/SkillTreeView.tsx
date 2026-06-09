@@ -12,6 +12,7 @@ import {
   addDepAction,
   deleteDepAction,
 } from "./actions";
+import { Ring } from "../_factories/FactoryUI";
 
 type View = "list" | "tree" | "stats";
 
@@ -30,6 +31,20 @@ export function SkillTreeView({ skills, stats }: { skills: Skill[]; stats: Skill
 
   return (
     <div>
+      <div className="mb-4 flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+        <Ring pct={MAX_LEVEL > 0 ? stats.accountLevel / MAX_LEVEL : 0} size={64} stroke={7} tone="cyan">
+          <span className="text-base font-bold tabular-nums text-zinc-100">{stats.accountLevel}</span>
+        </Ring>
+        <div className="min-w-0">
+          <div className="text-[15px] font-bold text-zinc-100">Account level {stats.accountLevel}</div>
+          <div className="mt-0.5 text-xs text-zinc-500">
+            {totalXp.toLocaleString()} XP
+            {stats.streak > 0 ? ` · ${stats.streak}🔥 streak` : ""}
+            {maxedCount > 0 ? ` · ${maxedCount} maxed` : ""}
+          </div>
+        </div>
+      </div>
+
       <div className="mb-4 grid grid-cols-3 gap-3">
         <Stat label="Acct Lv" value={String(stats.accountLevel)} tone="cyan" />
         <Stat label="Total XP" value={totalXp.toLocaleString()} />
