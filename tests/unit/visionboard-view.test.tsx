@@ -16,9 +16,9 @@ vi.mock("@/app/app/visionboard/actions", () => ({
 import { VisionBoardView } from "@/app/app/visionboard/VisionBoardView";
 
 const cards = [
-  { id: 1, kind: "quote" as const, text: "Dream big", imageUrl: null, section: "" },
-  { id: 2, kind: "quote" as const, text: "Stay focused", imageUrl: null, section: "" },
-  { id: 3, kind: "image" as const, text: null, imageUrl: "https://x/y.jpg", section: "" },
+  { id: 1, kind: "quote" as const, text: "Dream big", imageUrl: null, section: "", position: 0, createdAt: "2026-06-01T00:00:00Z" },
+  { id: 2, kind: "quote" as const, text: "Stay focused", imageUrl: null, section: "", position: 1, createdAt: "2026-06-01T00:00:00Z" },
+  { id: 3, kind: "image" as const, text: null, imageUrl: "https://x/y.jpg", section: "", position: 2, createdAt: "2026-06-01T00:00:00Z" },
 ];
 
 function statCell(label: string): HTMLElement {

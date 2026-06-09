@@ -21,6 +21,7 @@ import {
   deleteInteraction,
   updateContact,
 } from "./actions";
+import { Ring, StatTile, StatStrip } from "../_factories/FactoryUI";
 
 const STATUS_STYLE: Record<Status, { bar: string; text: string }> = {
   due: { bar: "bg-rose-500", text: "text-rose-300" },
@@ -49,22 +50,19 @@ export function ContactsView({
   const due = useMemo(() => overdue(contacts), [contacts]);
   const birthdays = useMemo(() => upcomingBirthdays(contacts, 30), [contacts]);
   const history = useMemo(() => logsByContact(logs, 3), [logs]);
+  const tracked = useMemo(() => contacts.filter((c) => c.cadenceDays).length, [contacts]);
 
   return (
     <div className="space-y-5">
-      <Hero count={due.length} />
+      <Hero due={due.length} tracked={tracked} />
 
       {birthdays.length > 0 && <BirthdayStrip items={birthdays} />}
 
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="People" value={String(contacts.length)} />
-        <Stat
-          label="Reach out"
-          value={String(due.length)}
-          tone={due.length > 0 ? "text-rose-400" : undefined}
-        />
-        <Stat label="Tags" value={String(tags.length)} />
-      </div>
+      <StatStrip cols={3}>
+        <StatTile label="People" value={String(contacts.length)} tone="zinc" />
+        <StatTile label="Reach out" value={String(due.length)} tone={due.length > 0 ? "rose" : "zinc"} />
+        <StatTile label="Tags" value={String(tags.length)} tone="zinc" />
+      </StatStrip>
 
       {contacts.length > 0 && (
         <div className="space-y-2">
@@ -138,23 +136,32 @@ export function ContactsView({
   );
 }
 
-function Hero({ count }: { count: number }) {
+function Hero({ due, tracked }: { due: number; tracked: number }) {
+  const caughtPct = tracked > 0 ? (tracked - due) / tracked : 1;
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-center">
-      {count === 0 ? (
-        <>
-          <div className="text-3xl text-emerald-400">✓</div>
-          <p className="mt-2 text-sm font-semibold text-zinc-100">All caught up</p>
-          <p className="text-xs text-zinc-500">No one&apos;s overdue. Nicely kept up.</p>
-        </>
-      ) : (
-        <>
-          <div className="text-4xl font-bold tabular-nums text-rose-400">{count}</div>
-          <p className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-500">
-            {count === 1 ? "person to reach out to" : "people to reach out to"}
-          </p>
-        </>
-      )}
+    <div className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <Ring pct={caughtPct} size={72} stroke={8} tone={due === 0 ? "emerald" : "rose"}>
+        {due === 0 ? (
+          <span className="text-2xl text-emerald-400">✓</span>
+        ) : (
+          <span className="text-2xl font-bold tabular-nums text-rose-400">{due}</span>
+        )}
+      </Ring>
+      <div className="min-w-0">
+        {due === 0 ? (
+          <>
+            <p className="text-[15px] font-bold text-emerald-400">All caught up</p>
+            <p className="mt-0.5 text-xs text-zinc-500">No one&apos;s overdue — nicely kept up.</p>
+          </>
+        ) : (
+          <>
+            <p className="text-[15px] font-bold text-zinc-100">
+              {due} {due === 1 ? "person" : "people"} to reach out to
+            </p>
+            <p className="mt-0.5 text-xs text-zinc-500">{tracked} on a cadence</p>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -177,19 +184,6 @@ function BirthdayStrip({ items }: { items: { contact: Contact; inDays: number }[
             </span>
           </span>
         ))}
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 text-center">
-      <div className={`text-base font-semibold tabular-nums ${tone ?? "text-zinc-100"}`}>
-        {value}
-      </div>
-      <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-        {label}
       </div>
     </div>
   );
