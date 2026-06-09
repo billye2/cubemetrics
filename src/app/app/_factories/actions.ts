@@ -33,6 +33,19 @@ export async function trackerDeleteAction(appId: string, id: number) {
   revalidatePath(path);
 }
 
+// Edit a previously logged entry in place (value and/or note). Used by the
+// Tracker history row's inline editor.
+export async function trackerUpdateAction(appId: string, id: number, value: number, note: string) {
+  if (Number.isNaN(value)) return;
+  const { supabase, userId, path } = await ctx(appId);
+  await supabase
+    .from("daily_trackers")
+    .update({ value, note: note.trim() || null })
+    .eq("id", id)
+    .eq("user_id", userId);
+  revalidatePath(path);
+}
+
 // === Checklist ===
 export async function checklistAddAction(
   appId: string,
