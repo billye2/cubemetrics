@@ -12,7 +12,7 @@ export default async function CountdownPage() {
 
   const { data } = await supabase
     .from("countdowns")
-    .select("id, title, target_date, target_time, category, recurring_yearly, note")
+    .select("id, title, target_date, target_time, category, recurring_yearly, note, created_at")
     .eq("user_id", user.id)
     .order("target_date", { ascending: true })
     .limit(200);

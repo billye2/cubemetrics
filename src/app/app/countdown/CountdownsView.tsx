@@ -6,419 +6,514 @@ import {
   type Countdown,
   type ResolvedCountdown,
   resolveAll,
-  breakdown,
-  pickGranularity,
-  formatBreakdown,
+  categoryToken,
+  hexAlpha,
+  fuzzyParts,
+  bucketOf,
+  BUCKET_ORDER,
+  CATEGORY_NAMES,
+  progressFraction,
 } from "./lib";
 
-const DEFAULT_CATEGORIES = ["Birthday", "Medical", "Holiday", "Travel", "Work", "Personal"];
-const CATEGORY_COLORS: Record<string, string> = {
-  Birthday: "bg-pink-500",
-  Medical: "bg-rose-500",
-  Holiday: "bg-emerald-500",
-  Travel: "bg-sky-500",
-  Work: "bg-violet-500",
-  Personal: "bg-amber-500",
-};
-const FALLBACK_COLORS = ["bg-cyan-500", "bg-lime-500", "bg-orange-500", "bg-indigo-500"];
-
-function colorFor(category: string | null, fallbackIndex = 0): string {
-  if (!category) return "bg-zinc-700";
-  return CATEGORY_COLORS[category] ?? FALLBACK_COLORS[fallbackIndex % FALLBACK_COLORS.length];
-}
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function CountdownsView({ rows }: { rows: Countdown[] }) {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
-  }, []);
+  const now = useNow();
+  const [sheet, setSheet] = useState<null | "new" | ResolvedCountdown>(null);
+  const [filter, setFilter] = useState<string>("All");
 
   const resolved = useMemo(() => resolveAll(rows, now), [rows, now]);
   const upcoming = resolved.filter((r) => !r.isPast);
-  const past = resolved.filter((r) => r.isPast).slice(0, 10);
+  const past = resolved.filter((r) => r.isPast);
+  const hero = upcoming[0] ?? null;
+  const rest = [...upcoming.slice(1), ...past];
 
-  const recentCategories = useMemo(() => {
+  const cats = useMemo(() => {
     const seen = new Set<string>();
-    const out: string[] = [];
-    for (const r of rows) {
-      if (!r.category) continue;
-      if (seen.has(r.category)) continue;
-      seen.add(r.category);
-      out.push(r.category);
-      if (out.length >= 6) break;
-    }
-    if (out.length === 0) return DEFAULT_CATEGORIES;
-    return out;
+    for (const r of rows) if (r.category) seen.add(r.category);
+    return [...seen];
   }, [rows]);
 
+  const pool = rest.filter((r) => filter === "All" || r.category === filter);
+  const groups: Record<string, ResolvedCountdown[]> = {};
+  for (const r of pool) {
+    const b = bucketOf(r.nextAt, now);
+    (groups[b] = groups[b] || []).push(r);
+  }
+
   return (
-    <div>
-      <AddForm recentCategories={recentCategories} />
+    <div className="pb-28">
+      {rows.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <>
+          {hero && <Hero item={hero} now={now} onEdit={setSheet} />}
 
-      <Section title="Upcoming" empty="Nothing on the horizon yet.">
-        {upcoming.map((r, i) => (
-          <CountdownCard key={r.id} item={r} now={now} fallbackIndex={i} recentCategories={recentCategories} />
-        ))}
-      </Section>
+          {cats.length > 0 && <FilterRow cats={cats} filter={filter} onPick={setFilter} />}
 
-      {past.length > 0 && (
-        <Section title="Just passed">
-          {past.map((r, i) => (
-            <CountdownCard key={r.id} item={r} now={now} fallbackIndex={i} recentCategories={recentCategories} />
+          {BUCKET_ORDER.filter((b) => groups[b]?.length).map((b) => (
+            <Section key={b} label={b} count={groups[b].length}>
+              {groups[b].map((r) => (
+                <TintCard key={r.id} item={r} now={now} onEdit={setSheet} />
+              ))}
+            </Section>
           ))}
-        </Section>
+
+          {pool.length === 0 && (
+            <p className="mt-8 text-center text-sm text-zinc-500">Nothing else in this category.</p>
+          )}
+        </>
       )}
+
+      <Fab onClick={() => setSheet("new")} />
+
+      {sheet !== null && (
+        <EventSheet initial={sheet === "new" ? null : sheet} onClose={() => setSheet(null)} />
+      )}
+    </div>
+  );
+}
+
+// ───────────────────────────── Hero ─────────────────────────────
+
+function Hero({
+  item,
+  now,
+  onEdit,
+}: {
+  item: ResolvedCountdown;
+  now: Date;
+  onEdit: (e: ResolvedCountdown) => void;
+}) {
+  const t = categoryToken(item.category);
+  const fp = fuzzyParts(item.nextAt.getTime() - now.getTime());
+  const pr = progressFraction(item, item.nextAt, now);
+  return (
+    <button
+      type="button"
+      onClick={() => onEdit(item)}
+      className="flex w-full items-center gap-4 rounded-3xl border border-zinc-800 bg-zinc-900/60 p-5 text-left"
+    >
+      <Ring size={104} stroke={9} value={pr} color={t.color}>
+        <div className="text-center">
+          <div className="text-2xl leading-none">{t.emoji}</div>
+          <div className="mt-1 text-[10px] font-bold" style={{ color: t.color }}>
+            {Math.round(pr * 100)}%
+          </div>
+        </div>
+      </Ring>
+      <div className="min-w-0 flex-1">
+        <div className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">Next up</div>
+        <div className="mt-0.5 truncate text-lg font-bold leading-tight text-zinc-100">
+          {item.title}
+        </div>
+        <div className="mt-1.5 flex items-baseline gap-1.5">
+          <span className="text-3xl font-extrabold tracking-tight" style={{ color: t.color }}>
+            {fp.big}
+          </span>
+          {fp.small && (
+            <span className="text-base font-bold" style={{ color: hexAlpha(t.color, 0.7) }}>
+              {fp.small}
+            </span>
+          )}
+        </div>
+        <div className="mt-1 text-xs text-zinc-500">{dateTimeLabel(item)}</div>
+      </div>
+    </button>
+  );
+}
+
+// ─────────────────────────── Tint card ───────────────────────────
+
+function TintCard({
+  item,
+  now,
+  onEdit,
+}: {
+  item: ResolvedCountdown;
+  now: Date;
+  onEdit: (e: ResolvedCountdown) => void;
+}) {
+  const t = categoryToken(item.category);
+  const fp = fuzzyParts(item.nextAt.getTime() - now.getTime());
+  const pr = progressFraction(item, item.nextAt, now);
+  return (
+    <button
+      type="button"
+      onClick={() => onEdit(item)}
+      className="block w-full rounded-2xl p-3.5 text-left transition active:scale-[0.99]"
+      style={{ background: hexAlpha(t.color, 0.1), border: `1px solid ${hexAlpha(t.color, 0.28)}` }}
+    >
+      <div className="flex items-center gap-3">
+        <Ring size={52} stroke={5} value={pr} color={t.color}>
+          <span className="text-xl leading-none">{t.emoji}</span>
+        </Ring>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[15px] font-bold text-zinc-100">{item.title}</div>
+          <div className="mt-0.5 text-xs font-semibold" style={{ color: hexAlpha(t.color, 0.95) }}>
+            {dateTimeLabel(item)}
+          </div>
+          {item.note && <div className="mt-0.5 truncate text-[11.5px] text-zinc-500">{item.note}</div>}
+        </div>
+        <div className="shrink-0 text-right">
+          <div className="text-[19px] font-extrabold leading-none" style={{ color: t.color }}>
+            {fp.big}
+          </div>
+          {fp.small && (
+            <div className="mt-0.5 text-xs font-bold" style={{ color: hexAlpha(t.color, 0.7) }}>
+              {fp.small}
+            </div>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+// ─────────────────────── chips / sections / chrome ───────────────────────
+
+function FilterRow({
+  cats,
+  filter,
+  onPick,
+}: {
+  cats: string[];
+  filter: string;
+  onPick: (c: string) => void;
+}) {
+  const chips = ["All", ...cats];
+  return (
+    <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+      {chips.map((c) => {
+        const on = filter === c;
+        const color = c === "All" ? "#06b6d4" : categoryToken(c).color;
+        return (
+          <button
+            key={c}
+            type="button"
+            onClick={() => onPick(c)}
+            aria-pressed={on}
+            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition ${
+              on ? "text-white" : "bg-zinc-900 text-zinc-400 ring-1 ring-zinc-800 hover:ring-zinc-700"
+            }`}
+            style={on ? { background: color } : undefined}
+          >
+            {c}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
 function Section({
-  title,
-  empty,
+  label,
+  count,
   children,
 }: {
-  title: string;
-  empty?: string;
+  label: string;
+  count: number;
   children: React.ReactNode;
 }) {
-  const arr = Array.isArray(children) ? children : [children];
-  const isEmpty = arr.filter(Boolean).length === 0;
   return (
-    <div className="mt-6">
-      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-        {title}
-      </h3>
-      {isEmpty && empty ? (
-        <p className="text-sm text-zinc-500">{empty}</p>
-      ) : (
-        <ul className="space-y-2">{children}</ul>
-      )}
+    <div className="mt-5">
+      <div className="mb-2 flex items-center gap-2 px-0.5">
+        <span className="text-[12.5px] font-bold text-zinc-200">{label}</span>
+        <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[11px] font-bold text-zinc-400">
+          {count}
+        </span>
+      </div>
+      <div className="flex flex-col gap-2.5">{children}</div>
     </div>
   );
 }
 
-interface CountdownFormValues {
-  title: string;
-  date: string;
-  time: string;
-  category: string;
-  recurring: boolean;
-  note: string;
+function Fab({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Add countdown"
+      style={{ bottom: "calc(64px + env(safe-area-inset-bottom) + 1rem)" }}
+      className="fixed right-4 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-500 text-3xl font-light leading-none text-zinc-950 shadow-lg shadow-cyan-500/30 hover:bg-cyan-400 active:scale-95"
+    >
+      +
+    </button>
+  );
 }
 
-// Shared field set for both the add form and the per-card edit form.
-function CountdownFields({
-  heading,
-  submitLabel,
-  recentCategories,
-  initial,
-  pending,
-  onSubmit,
-  onCancel,
-}: {
-  heading: string;
-  submitLabel: string;
-  recentCategories: string[];
-  initial: CountdownFormValues;
-  pending: boolean;
-  onSubmit: (v: CountdownFormValues) => void;
-  onCancel: () => void;
-}) {
-  const [title, setTitle] = useState(initial.title);
-  const [date, setDate] = useState(initial.date);
-  const [time, setTime] = useState(initial.time);
-  const [category, setCategory] = useState(initial.category);
-  const [customCategory, setCustomCategory] = useState(
-    !!initial.category && !recentCategories.includes(initial.category),
+function EmptyState() {
+  return (
+    <div className="mt-8 rounded-3xl border border-zinc-800 bg-zinc-900/40 p-10 text-center">
+      <div className="text-4xl">⏳</div>
+      <p className="mt-3 text-sm text-zinc-300">No countdowns yet.</p>
+      <p className="mt-1 text-xs text-zinc-500">Tap + to add something to look forward to.</p>
+    </div>
   );
-  const [recurring, setRecurring] = useState(initial.recurring);
-  const [note, setNote] = useState(initial.note);
+}
+
+// ─────────────────────── Ring (SVG progress dial) ───────────────────────
+
+function Ring({
+  size,
+  stroke,
+  value,
+  color,
+  children,
+}: {
+  size: number;
+  stroke: number;
+  value: number;
+  color: string;
+  children: React.ReactNode;
+}) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={hexAlpha(color, 0.18)} strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke={color}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - Math.max(0, Math.min(1, value)))}
+          style={{ transition: "stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)" }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">{children}</div>
+    </div>
+  );
+}
+
+// ─────────────────────── Bottom sheet (add / edit) ───────────────────────
+
+function Label({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+function EventSheet({ initial, onClose }: { initial: ResolvedCountdown | null; onClose: () => void }) {
+  const init = useMemo(() => deriveInitial(initial), [initial]);
+  const [title, setTitle] = useState(init.title);
+  const [date, setDate] = useState(init.date);
+  const [withTime, setWithTime] = useState(!!init.time);
+  const [time, setTime] = useState(init.time);
+  const [category, setCategory] = useState(init.category);
+  const [recurring, setRecurring] = useState(init.recurring);
+  const [note, setNote] = useState(init.note);
+  const [pending, start] = useTransition();
+
+  const valid = title.trim().length > 0 && !!date;
+  const token = categoryToken(category);
 
   function submit() {
-    if (!title.trim() || !date) return;
-    onSubmit({ title: title.trim(), date, time, category: category.trim(), recurring, note });
+    if (!valid) return;
+    const t = withTime ? time : "";
+    start(async () => {
+      if (initial) {
+        await updateCountdownAction(initial.id, title.trim(), date, t, category, recurring, note.trim());
+      } else {
+        await addCountdownAction(title.trim(), date, t, category, recurring, note.trim());
+      }
+      onClose();
+    });
+  }
+
+  function del() {
+    if (!initial) return;
+    if (!confirm(`Delete "${initial.title}"?`)) return;
+    start(async () => {
+      await deleteCountdownAction(initial.id);
+      onClose();
+    });
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-      <div className="flex items-center justify-between">
-        <div className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-          {heading}
-        </div>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-lg px-2 py-1 text-xs text-zinc-500 hover:text-zinc-300"
-        >
-          Close
-        </button>
-      </div>
-
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        autoComplete="off"
-        autoFocus
-        placeholder="What are you counting down to?"
-        className="mt-3 w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
-      />
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <label className="flex flex-1 flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Date</span>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
-          />
-        </label>
-        <label className="flex flex-1 flex-col gap-1">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Time (optional)</span>
-          <input
-            type="time"
-            value={time}
-            onChange={(e) => setTime(e.target.value)}
-            className="rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
-          />
-        </label>
-      </div>
-
-      <div className="mt-3">
-        <div className="text-[10px] uppercase tracking-wider text-zinc-500">Category</div>
-        <div className="mt-1.5 flex flex-wrap gap-2">
-          {recentCategories.map((c, i) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => {
-                setCategory(c);
-                setCustomCategory(false);
-              }}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-                !customCategory && category === c
-                  ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-200"
-                  : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-zinc-700"
-              }`}
-            >
-              <span className={`inline-block h-2 w-2 rounded-full ${colorFor(c, i)}`} />
-              {c}
-            </button>
-          ))}
-          <button
-            type="button"
-            onClick={() => {
-              setCustomCategory(true);
-              setCategory("");
-            }}
-            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
-              customCategory
-                ? "border-cyan-500/50 bg-cyan-500/10 text-cyan-200"
-                : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-zinc-700"
-            }`}
-          >
-            + New
+    <div className="fixed inset-0 z-40 flex items-end justify-center" role="dialog" aria-modal="true">
+      <button type="button" aria-label="Close" onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="relative max-h-[88%] w-full max-w-3xl overflow-y-auto rounded-t-3xl border border-zinc-800 bg-zinc-950 p-5 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-zinc-700" />
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-bold text-zinc-100">{initial ? "Edit countdown" : "New countdown"}</h3>
+          <button type="button" onClick={onClose} className="text-sm text-zinc-400 hover:text-zinc-200">
+            Cancel
           </button>
         </div>
-        {customCategory && (
+
+        <Label>What are you counting down to?</Label>
+        <div className="flex items-center gap-2">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-xl" aria-hidden>
+            {token.emoji}
+          </div>
           <input
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            autoFocus
             autoComplete="off"
-            placeholder="New category name"
-            className="mt-2 w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+            placeholder="e.g. Trip to Tokyo"
+            className="flex-1 rounded-xl bg-zinc-900 px-3 py-2.5 text-base text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
           />
+        </div>
+
+        <div className="mt-4 flex gap-3">
+          <div className="flex-1">
+            <Label>Date</Label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full rounded-xl bg-zinc-900 px-3 py-2.5 text-sm text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+            />
+          </div>
+          <div className="flex-1">
+            <div className="mb-1.5 flex items-center justify-between">
+              <Label className="mb-0">Time</Label>
+              <button
+                type="button"
+                onClick={() => {
+                  setWithTime((v) => !v);
+                  if (withTime) setTime("");
+                }}
+                className="text-xs font-semibold text-cyan-400"
+              >
+                {withTime ? "Clear" : "+ Add"}
+              </button>
+            </div>
+            {withTime ? (
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="w-full rounded-xl bg-zinc-900 px-3 py-2.5 text-sm text-zinc-100 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+              />
+            ) : (
+              <div className="rounded-xl bg-zinc-900 px-3 py-2.5 text-sm text-zinc-500 ring-1 ring-zinc-800">
+                All day
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <Label>Category</Label>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORY_NAMES.map((name) => {
+              const tk = categoryToken(name);
+              const on = category === name;
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => setCategory(name)}
+                  aria-pressed={on}
+                  className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold transition"
+                  style={
+                    on
+                      ? { background: hexAlpha(tk.color, 0.18), border: `1.5px solid ${tk.color}`, color: tk.color }
+                      : { border: "1.5px solid transparent", background: "#18181b", color: "#a1a1aa" }
+                  }
+                >
+                  <span className="h-2 w-2 rounded-full" style={{ background: tk.color }} />
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <label className="mt-4 flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
+          <input
+            type="checkbox"
+            checked={recurring}
+            onChange={(e) => setRecurring(e.target.checked)}
+            className="h-4 w-4 accent-cyan-500"
+          />
+          Repeats every year
+        </label>
+
+        <div className="mt-4">
+          <Label>Note (optional)</Label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            rows={2}
+            placeholder="Add a detail…"
+            className="w-full resize-none rounded-xl bg-zinc-900 px-3 py-2.5 text-base text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={submit}
+          disabled={pending || !valid}
+          className="mt-5 h-12 w-full rounded-xl text-sm font-bold text-zinc-950 transition disabled:opacity-40"
+          style={{ background: valid ? token.color : "#3f3f46" }}
+        >
+          {pending ? "Saving…" : initial ? "Save changes" : "Add countdown"}
+        </button>
+        {initial && (
+          <button
+            type="button"
+            onClick={del}
+            disabled={pending}
+            className="mt-1 h-11 w-full text-sm font-semibold text-rose-400 hover:text-rose-300"
+          >
+            Delete countdown
+          </button>
         )}
       </div>
-
-      <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
-        <input
-          type="checkbox"
-          checked={recurring}
-          onChange={(e) => setRecurring(e.target.checked)}
-          className="h-4 w-4 accent-cyan-500"
-        />
-        Repeats every year (birthday, anniversary, holiday…)
-      </label>
-
-      <input
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="Note (optional)"
-        className="mt-3 w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50"
-      />
-
-      <button
-        type="button"
-        onClick={submit}
-        disabled={pending || !title.trim() || !date}
-        className="mt-4 h-11 w-full rounded-xl bg-cyan-500 text-sm font-semibold text-zinc-950 hover:bg-cyan-400 disabled:opacity-40"
-      >
-        {pending ? "Saving…" : submitLabel}
-      </button>
     </div>
   );
 }
 
-function AddForm({ recentCategories }: { recentCategories: string[] }) {
-  const [open, setOpen] = useState(false);
-  const [pending, start] = useTransition();
+// ───────────────────────────── helpers ─────────────────────────────
 
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-zinc-800 bg-zinc-900/30 text-sm font-semibold text-zinc-400 hover:border-cyan-500/40 hover:text-cyan-300"
-      >
-        <span aria-hidden>+</span> Add a countdown
-      </button>
-    );
-  }
-
-  return (
-    <CountdownFields
-      heading="New countdown"
-      submitLabel="Add countdown"
-      recentCategories={recentCategories}
-      initial={{ title: "", date: todayInput(), time: "", category: "", recurring: false, note: "" }}
-      pending={pending}
-      onCancel={() => setOpen(false)}
-      onSubmit={(v) =>
-        start(async () => {
-          await addCountdownAction(v.title, v.date, v.time, v.category, v.recurring, v.note);
-          setOpen(false);
-        })
-      }
-    />
-  );
+function useNow(): Date {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
 }
 
-function CountdownCard({
-  item,
-  now,
-  fallbackIndex,
-  recentCategories,
-}: {
-  item: ResolvedCountdown;
-  now: Date;
-  fallbackIndex: number;
-  recentCategories: string[];
-}) {
-  const [pending, start] = useTransition();
-  const [editing, setEditing] = useState(false);
-
-  if (editing) {
-    return (
-      <li>
-        <CountdownFields
-          heading="Edit countdown"
-          submitLabel="Save"
-          recentCategories={recentCategories}
-          initial={{
-            title: item.title,
-            date: item.target_date,
-            time: item.target_time ?? "",
-            category: item.category ?? "",
-            recurring: item.recurring_yearly,
-            note: item.note ?? "",
-          }}
-          pending={pending}
-          onCancel={() => setEditing(false)}
-          onSubmit={(v) =>
-            start(async () => {
-              await updateCountdownAction(item.id, v.title, v.date, v.time, v.category, v.recurring, v.note);
-              setEditing(false);
-            })
-          }
-        />
-      </li>
-    );
+function deriveInitial(initial: ResolvedCountdown | null) {
+  if (!initial) {
+    return { title: "", date: todayInput(), time: "", category: "Personal", recurring: false, note: "" };
   }
+  return {
+    title: initial.title,
+    date: initial.target_date,
+    time: (initial.target_time ?? "").slice(0, 5),
+    category: initial.category ?? "Personal",
+    recurring: initial.recurring_yearly,
+    note: initial.note ?? "",
+  };
+}
 
-  const b = breakdown(now, item.nextAt);
-  const granularity = pickGranularity(b.totalMs);
-  const formatted = formatBreakdown(b, granularity);
-  const isImminent = granularity === "imminent" && !item.isPast;
-  const cat = item.category;
-  const dot = colorFor(cat, fallbackIndex);
-
-  const dateLabel = item.nextAt.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: yearMattersForLabel(item.nextAt, now) ? "numeric" : undefined,
-  });
-  const timeLabel = item.target_time
-    ? item.nextAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
-    : null;
-
-  function remove() {
-    if (!confirm(`Delete "${item.title}"?`)) return;
-    start(() => deleteCountdownAction(item.id));
+function dateTimeLabel(item: ResolvedCountdown): string {
+  const d = item.nextAt;
+  const yr = d.getFullYear() !== new Date().getFullYear() ? ` ${d.getFullYear()}` : "";
+  let label = `${DOW[d.getDay()]}, ${MON[d.getMonth()]} ${d.getDate()}${yr}`;
+  if (item.target_time) {
+    let h = d.getHours();
+    const m = d.getMinutes();
+    const ap = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    label += ` · ${h}:${String(m).padStart(2, "0")} ${ap}`;
   }
-
-  return (
-    <li
-      className={`relative overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4 ${
-        pending ? "opacity-50" : ""
-      }`}
-    >
-      <div className="flex items-start gap-3">
-        <span className={`mt-1.5 inline-block h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2">
-            <span className="truncate text-base font-semibold text-zinc-100">{item.title}</span>
-            {item.recurring_yearly && (
-              <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
-                Yearly
-              </span>
-            )}
-          </div>
-          <div className="mt-0.5 text-xs text-zinc-500">
-            {dateLabel}
-            {timeLabel && <> · {timeLabel}</>}
-            {cat && <> · {cat}</>}
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-cyan-400"
-            aria-label="Edit"
-          >
-            ✎
-          </button>
-          <button
-            type="button"
-            onClick={remove}
-            className="rounded-lg p-1 text-zinc-600 hover:bg-zinc-800 hover:text-red-400"
-            aria-label="Delete"
-          >
-            ×
-          </button>
-        </div>
-      </div>
-
-      <div className="mt-3 flex items-baseline gap-2">
-        <span
-          className={`tabular-nums tracking-tight ${
-            isImminent ? "text-3xl font-bold text-emerald-400" : item.isPast ? "text-xl font-semibold text-zinc-400" : "text-2xl font-bold text-cyan-400"
-          }`}
-        >
-          {formatted}
-        </span>
-        <span className="text-xs text-zinc-500">
-          {item.isPast ? "ago" : isImminent ? "left" : "to go"}
-        </span>
-      </div>
-
-      {item.note && <div className="mt-2 truncate text-xs text-zinc-400">{item.note}</div>}
-    </li>
-  );
+  if (item.recurring_yearly) label += " · Yearly";
+  return label;
 }
 
 function todayInput(): string {
@@ -427,8 +522,4 @@ function todayInput(): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
-}
-
-function yearMattersForLabel(target: Date, now: Date): boolean {
-  return target.getFullYear() !== now.getFullYear();
 }

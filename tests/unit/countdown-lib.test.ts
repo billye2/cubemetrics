@@ -4,6 +4,11 @@ import {
   breakdown,
   pickGranularity,
   formatBreakdown,
+  fuzzyParts,
+  bucketOf,
+  progressFraction,
+  categoryToken,
+  CATEGORY_TOKENS,
   type Countdown,
 } from "@/app/app/countdown/lib";
 
@@ -118,5 +123,75 @@ describe("formatBreakdown", () => {
   it("shows seconds when imminent", () => {
     const b = breakdown(new Date(2026, 0, 1, 11, 59, 30), new Date(2026, 0, 1, 12, 0, 0));
     expect(formatBreakdown(b, "imminent")).toBe("30s");
+  });
+});
+
+const DAY = 86400000;
+
+describe("fuzzyParts", () => {
+  it("returns Today for a past/now target", () => {
+    expect(fuzzyParts(0)).toEqual({ big: "Today", small: "", today: true });
+    expect(fuzzyParts(-5000).today).toBe(true);
+  });
+  it("uses hours + minutes under a day", () => {
+    expect(fuzzyParts(3 * 3600000 + 20 * 60000)).toEqual({ big: "3h", small: "20m" });
+  });
+  it("uses days + hours under a week", () => {
+    expect(fuzzyParts(3 * DAY + 5 * 3600000)).toEqual({ big: "3 days", small: "5h" });
+  });
+  it("uses weeks + days under a month", () => {
+    expect(fuzzyParts(16 * DAY)).toEqual({ big: "2 weeks", small: "2 days" });
+  });
+  it("uses months for far targets", () => {
+    expect(fuzzyParts(70 * DAY).big).toMatch(/months?/);
+  });
+});
+
+describe("bucketOf", () => {
+  const now = new Date(2026, 5, 1, 12, 0, 0);
+  const ahead = (ms: number) => new Date(now.getTime() + ms);
+  it("classifies by distance, past last", () => {
+    expect(bucketOf(ahead(-DAY), now)).toBe("Past");
+    expect(bucketOf(ahead(3 * DAY), now)).toBe("This week");
+    expect(bucketOf(ahead(20 * DAY), now)).toBe("This month");
+    expect(bucketOf(ahead(90 * DAY), now)).toBe("Later");
+  });
+});
+
+describe("progressFraction", () => {
+  function mk(over: Partial<Countdown>): Countdown {
+    return {
+      id: 1, title: "x", target_date: "2026-06-15", target_time: null,
+      category: null, recurring_yearly: false, note: null, ...over,
+    };
+  }
+  it("is the elapsed fraction between created_at and the target", () => {
+    const now = new Date(2026, 0, 11); // 10 of 20 days elapsed
+    const nextAt = new Date(2026, 0, 21);
+    const c = mk({ created_at: "2026-01-01T00:00:00Z" });
+    expect(progressFraction(c, nextAt, now)).toBeCloseTo(0.5, 1);
+  });
+  it("clamps to 0..1 and returns 0 when no anchor exists", () => {
+    const now = new Date(2026, 0, 11);
+    const nextAt = new Date(2026, 0, 21);
+    expect(progressFraction(mk({ created_at: null }), nextAt, now)).toBe(0);
+  });
+  it("anchors a yearly recurrence one year before the next occurrence", () => {
+    const nextAt = new Date(2027, 0, 1);
+    const now = new Date(2026, 6, 2); // ~half a year in
+    const c = mk({ recurring_yearly: true, created_at: "2010-01-01" });
+    expect(progressFraction(c, nextAt, now)).toBeGreaterThan(0.45);
+    expect(progressFraction(c, nextAt, now)).toBeLessThan(0.55);
+  });
+});
+
+describe("categoryToken", () => {
+  it("resolves a known category", () => {
+    expect(categoryToken("Travel")).toBe(CATEGORY_TOKENS.Travel);
+  });
+  it("falls back for unknown/null categories", () => {
+    const fb = categoryToken("Birthday");
+    expect(fb.color).toBeTruthy();
+    expect(categoryToken(null).emoji).toBeTruthy();
   });
 });
