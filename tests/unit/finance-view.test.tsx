@@ -45,6 +45,11 @@ describe("FinanceView — bills bucketing", () => {
     expect(screen.getByText("Later")).toBeTruthy();
   });
 
+  it("shows a paid-progress ring hero (0 of 3 paid)", () => {
+    render(<FinanceView appId={APP} config={billConfig} items={bills} />);
+    expect(screen.getByText("0/3")).toBeTruthy();
+  });
+
   it("adds a bill from the form", async () => {
     render(<FinanceView appId={APP} config={billConfig} items={bills} />);
     fireEvent.click(screen.getByRole("button", { name: "+ Add item" }));
