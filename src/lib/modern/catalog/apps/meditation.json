@@ -4,19 +4,10 @@
   "name": "Meditation",
   "category": "time",
   "icon": "⊚",
-  "description": "Log minutes meditated toward a daily goal",
-  "ui": "tracker",
+  "description": "Guided sessions, a breathing player, and your daily minutes",
+  "ui": "modern",
   "config": {
     "trackerType": "meditation",
-    "unit": "minutes",
-    "min": 0,
-    "max": 240,
-    "aggregate": "sum",
-    "dailyGoal": 20,
-    "quickAdd": [
-      5,
-      10,
-      20
-    ]
+    "dailyGoal": 20
   }
 }

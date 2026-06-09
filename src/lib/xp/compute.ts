@@ -121,9 +121,10 @@ export async function ensureXp(
     // entry_date is a local DATE; fall back to projecting created_at into the zone.
     const day = (r.entry_date as string)?.slice(0, 10) ?? bucketDay(r.created_at as string, "ts", tz);
     if (!day) continue;
-    // "timebudget" rows are the Time Tracker's per-category weekly targets (config),
-    // not logged activity — never let them count toward XP, streaks, or quests.
-    if (r.tracker_type === "timebudget") continue;
+    // "timebudget" (Time Tracker weekly targets) and "meditation_goal" (the
+    // Meditation app's daily goal) are config rows, not logged activity — never
+    // let them count toward XP, streaks, or quests.
+    if (r.tracker_type === "timebudget" || r.tracker_type === "meditation_goal") continue;
     const a = get(day);
     const type = r.tracker_type as string;
     const value = Number(r.value) || 0;
