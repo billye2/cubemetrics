@@ -8,7 +8,7 @@ import {
   goalDeleteAction,
 } from "./actions";
 import type { FactoryConfig } from "@/lib/modern/catalog";
-import { dueInfo } from "./factoryLib";
+import { dueInfo, timeProgress, goalPace, PACE_LABEL, type Pace } from "./factoryLib";
 
 interface Goal {
   id: number;
@@ -213,6 +213,16 @@ export function GoalView({
   );
 }
 
+function PacePill({ pace }: { pace: Pace }) {
+  const cls =
+    pace === "behind"
+      ? "bg-amber-500/15 text-amber-300"
+      : pace === "ahead"
+        ? "bg-emerald-500/15 text-emerald-300"
+        : "bg-cyan-500/15 text-cyan-200";
+  return <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${cls}`}>{PACE_LABEL[pace]}</span>;
+}
+
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "amber" }) {
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-3 text-center">
@@ -245,6 +255,10 @@ function GoalCard({
   const pct = hasTarget ? Math.min(100, Math.round((current / target) * 100)) : null;
   const unit = goal.unit || "";
   const due = !isCompleted && goal.due_date ? dueInfo(goal.due_date) : null;
+  // Time elapsed vs. remaining (only when active + has a deadline); pace compares
+  // value progress against the clock so you can see if you're keeping up.
+  const tp = !isCompleted && goal.due_date ? timeProgress(goal.created_at, goal.due_date) : null;
+  const pace: Pace | null = tp && hasTarget && pct !== null ? goalPace(pct, tp.elapsedPct) : null;
 
   function setProgress(value: number) {
     if (Number.isNaN(value)) return;
@@ -300,6 +314,28 @@ function GoalCard({
             />
           </div>
           {history && history.length >= 2 && <Sparkline values={history} target={target} />}
+        </div>
+      )}
+
+      {tp && (
+        <div className="mt-3">
+          <div className="mb-1 flex items-center justify-between text-[11px]">
+            <span className="text-zinc-500">
+              Time · {tp.daysElapsed} of {tp.daysTotal} {tp.daysTotal === 1 ? "day" : "days"}
+              {!tp.overdue && (
+                <span className="text-zinc-600"> · {tp.daysLeft} left</span>
+              )}
+            </span>
+            {pace && <PacePill pace={pace} />}
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className={`h-full rounded-full transition-all motion-reduce:transition-none ${
+                tp.overdue ? "bg-red-500/70" : "bg-zinc-500"
+              }`}
+              style={{ width: `${Math.round(tp.elapsedPct * 100)}%` }}
+            />
+          </div>
         </div>
       )}
 
