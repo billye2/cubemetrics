@@ -6,6 +6,7 @@
   "icon": "✎",
   "description": "Log feedback you've given and received",
   "ui": "logbook",
+  "hidden": true,
   "config": {
     "logType": "feedbacklog",
     "entryLabel": "Entry",

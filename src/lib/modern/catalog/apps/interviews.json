@@ -6,6 +6,7 @@
   "icon": "☷",
   "description": "Record interview debriefs and verdicts",
   "ui": "logbook",
+  "hidden": true,
   "config": {
     "logType": "interview",
     "entryLabel": "Interview",

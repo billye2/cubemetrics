@@ -6,6 +6,7 @@
   "icon": "⟲",
   "description": "Capture team retro takeaways",
   "ui": "logbook",
+  "hidden": true,
   "config": {
     "logType": "retro",
     "entryLabel": "Retro",
