@@ -1,4 +1,8 @@
-@import "tailwindcss";
+/* Scope automatic content detection to src/ only. Tailwind v4 otherwise scans
+ * the whole repo, and prose in docs/ (e.g. a handoff note quoting a broken
+ * `bottom-[calc(64px+env(...)+1rem)]` class) gets extracted as a utility
+ * candidate and emitted as invalid CSS, 500-ing every route. */
+@import "tailwindcss" source("../");
 
 /*
  * Theme. The whole app is painted with Tailwind's neutral `zinc` ramp (≈1700
