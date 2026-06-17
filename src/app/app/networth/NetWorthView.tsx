@@ -2,13 +2,17 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import type { Account, Snapshot } from "./page";
-import { currency, currencyCompact } from "../_factories/factoryLib";
+import { currency, currencyCompact, hexAlpha } from "../_factories/factoryLib";
+import { Ring, StatStrip, StatTile } from "../_factories/FactoryUI";
 import {
   addAccount,
   deleteAccount,
   recordSnapshot,
   updateAccountValue,
 } from "./actions";
+
+const EMERALD = "#34d399";
+const ROSE = "#fb7185";
 
 export function NetWorthView({
   accounts,
@@ -24,19 +28,22 @@ export function NetWorthView({
   const lastSnap = snapshots.length ? snapshots[snapshots.length - 1].net : null;
   const change = lastSnap === null ? null : net - lastSnap;
 
+  // Equity ring: what share of total assets you actually own (assets − liabilities).
+  const equity = assets > 0 ? Math.max(0, Math.min(1, net / assets)) : net >= 0 ? 1 : 0;
+
   return (
     <div className="space-y-6">
-      <Hero net={net} snapshots={snapshots} />
+      <Hero net={net} equity={equity} assets={assets} liabilities={liabilities} snapshots={snapshots} />
 
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="Assets" value={currencyCompact(assets)} tone="text-emerald-400" />
-        <Stat label="Liabilities" value={currencyCompact(liabilities)} tone="text-rose-400" />
-        <Stat
+      <StatStrip cols={3}>
+        <StatTile label="Assets" value={currencyCompact(assets)} tone="emerald" />
+        <StatTile label="Liabilities" value={currencyCompact(liabilities)} tone="rose" />
+        <StatTile
           label="Change"
           value={change === null ? "—" : `${change >= 0 ? "+" : ""}${currencyCompact(change)}`}
-          tone={change === null ? "text-zinc-300" : change >= 0 ? "text-emerald-400" : "text-rose-400"}
+          tone={change === null ? "zinc" : change >= 0 ? "emerald" : "rose"}
         />
-      </div>
+      </StatStrip>
 
       <SnapshotButton hasAccounts={accounts.length > 0} />
 
@@ -60,18 +67,49 @@ function sum(accounts: Account[]): number {
   return accounts.reduce((acc, a) => acc + (a.value || 0), 0);
 }
 
-function Hero({ net, snapshots }: { net: number; snapshots: Snapshot[] }) {
+function Hero({
+  net,
+  equity,
+  assets,
+  liabilities,
+  snapshots,
+}: {
+  net: number;
+  equity: number;
+  assets: number;
+  liabilities: number;
+  snapshots: Snapshot[];
+}) {
+  const tone = net >= 0 ? "emerald" : "rose";
+  const caption =
+    assets === 0 && liabilities === 0
+      ? "Add accounts to begin"
+      : liabilities === 0
+        ? "Debt-free 🎉"
+        : net < 0
+          ? "underwater"
+          : `${Math.round(equity * 100)}% equity`;
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-      <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-        Net worth
-      </div>
-      <div
-        className={`mt-1 text-4xl font-bold tabular-nums ${
-          net >= 0 ? "text-cyan-400" : "text-rose-400"
-        }`}
-      >
-        {currencyCompact(net)}
+      <div className="flex items-center gap-4">
+        <Ring pct={equity} size={72} stroke={8} tone={tone}>
+          <span className="text-sm font-bold tabular-nums text-zinc-200">
+            {Math.round(equity * 100)}%
+          </span>
+        </Ring>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+            Net worth
+          </div>
+          <div
+            className={`mt-0.5 text-4xl font-bold tabular-nums ${
+              net >= 0 ? "text-cyan-400" : "text-rose-400"
+            }`}
+          >
+            {currencyCompact(net)}
+          </div>
+          <div className="mt-0.5 text-[11px] text-zinc-500">{caption}</div>
+        </div>
       </div>
       <TrendLine snapshots={snapshots} />
     </div>
@@ -123,19 +161,6 @@ function TrendLine({ snapshots }: { snapshots: Snapshot[] }) {
       <div className="mt-1 flex justify-between text-[10px] text-zinc-600">
         <span>{snapshots[0].captured_on}</span>
         <span>{snapshots[snapshots.length - 1].captured_on}</span>
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value, tone }: { label: string; value: string; tone: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 text-center">
-      <div className={`truncate text-base font-semibold tabular-nums ${tone}`} title={value}>
-        {value}
-      </div>
-      <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-        {label}
       </div>
     </div>
   );
@@ -233,8 +258,12 @@ function Section({
   accounts: Account[];
 }) {
   const total = sum(accounts);
+  const hue = kind === "asset" ? EMERALD : ROSE;
   return (
-    <div>
+    <div
+      className="rounded-2xl border p-4"
+      style={{ background: hexAlpha(hue, 0.04), borderColor: hexAlpha(hue, 0.2) }}
+    >
       <div className="mb-2 flex items-baseline justify-between">
         <h3 className="text-sm font-semibold text-zinc-100">{title}</h3>
         <span
