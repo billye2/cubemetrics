@@ -3,7 +3,29 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import type { Warranty, WarrantyStatus } from "./lib";
 import { SOON_DAYS, statsFor } from "./lib";
+import { Ring, StatStrip, StatTile, StatusPill, BucketSection } from "../_factories/FactoryUI";
 import { addWarranty, deleteWarranty, setArchived, updateWarranty } from "./actions";
+
+type Tone = "cyan" | "amber" | "emerald" | "rose" | "zinc";
+
+const STATUS_TONE: Record<WarrantyStatus, Tone> = {
+  expired: "rose",
+  soon: "amber",
+  active: "emerald",
+};
+
+const STATUS_LABEL: Record<WarrantyStatus, string> = {
+  expired: "Expired",
+  soon: "Expiring soon",
+  active: "Active",
+};
+
+// Body buckets, most-urgent first. Soonest-to-expire gets the danger (rose) header.
+const BUCKETS: { status: WarrantyStatus; danger?: boolean }[] = [
+  { status: "soon", danger: true },
+  { status: "active" },
+  { status: "expired" },
+];
 
 const MONTH_OPTIONS = [
   { v: 3, label: "3 months" },
@@ -37,30 +59,35 @@ export function WarrantyView({
 }) {
   const [showArchived, setShowArchived] = useState(false);
   const stats = useMemo(() => statsFor(warranties), [warranties]);
-  // Hero: count expiring within the next 60 days (soon, not yet expired).
-  const expiringSoon = warranties.filter((w) => w.status === "soon").length;
 
   return (
     <div className="space-y-6">
-      <Hero soon={expiringSoon} />
+      <Hero stats={stats} />
 
-      <div className="grid grid-cols-4 gap-2">
-        <Stat label="Tracked" value={String(stats.total)} />
-        <Stat label="Active" value={String(stats.active)} tone="text-emerald-400" />
-        <Stat label="Soon" value={String(stats.soon)} tone={stats.soon > 0 ? "text-amber-400" : undefined} />
-        <Stat label="Expired" value={String(stats.expired)} tone={stats.expired > 0 ? "text-rose-400" : undefined} />
-      </div>
+      <StatStrip cols={3}>
+        <StatTile label="Active" value={String(stats.active)} tone="emerald" />
+        <StatTile label="Soon" value={String(stats.soon)} tone={stats.soon > 0 ? "amber" : "zinc"} />
+        <StatTile label="Expired" value={String(stats.expired)} tone={stats.expired > 0 ? "rose" : "zinc"} />
+      </StatStrip>
 
       <AddWarrantyForm />
 
       {warranties.length === 0 ? (
         <EmptyState />
       ) : (
-        <ul className="space-y-2">
-          {warranties.map((w) => (
-            <WarrantyRow key={w.id} w={w} />
-          ))}
-        </ul>
+        <div>
+          {BUCKETS.map(({ status, danger }) => {
+            const items = warranties.filter((w) => w.status === status);
+            if (items.length === 0) return null;
+            return (
+              <BucketSection key={status} label={STATUS_LABEL[status]} count={items.length} danger={danger}>
+                {items.map((w) => (
+                  <WarrantyRow key={w.id} w={w} />
+                ))}
+              </BucketSection>
+            );
+          })}
+        </div>
       )}
 
       {archived.length > 0 && (
@@ -85,32 +112,34 @@ export function WarrantyView({
   );
 }
 
-function Hero({ soon }: { soon: number }) {
+function Hero({ stats }: { stats: ReturnType<typeof statsFor> }) {
+  // Time-to-expiry ring: share of tracked items still in coverage (active + soon).
+  const covered = stats.active + stats.soon;
+  const pct = stats.total > 0 ? covered / stats.total : 1;
+  const tone: Tone = stats.soon > 0 ? "amber" : "emerald";
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-center">
-      {soon === 0 ? (
-        <>
-          <div className="text-3xl text-emerald-400">✓</div>
-          <p className="mt-2 text-sm font-semibold text-zinc-100">Nothing expiring soon</p>
-          <p className="text-xs text-zinc-500">No warranties close within the next {SOON_DAYS} days.</p>
-        </>
-      ) : (
-        <>
-          <div className="text-4xl font-bold tabular-nums text-amber-400">{soon}</div>
-          <p className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-500">
-            expiring in the next {SOON_DAYS} days
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <div className="flex items-center gap-4">
+        <Ring pct={pct} size={72} stroke={8} tone={tone}>
+          {stats.soon > 0 ? (
+            <span className="text-lg font-bold tabular-nums text-amber-300">{stats.soon}</span>
+          ) : (
+            <span className="text-xl text-emerald-400">✓</span>
+          )}
+        </Ring>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+            {stats.soon > 0 ? `Expiring in the next ${SOON_DAYS} days` : "Coverage healthy"}
+          </div>
+          <p className="mt-0.5 text-sm text-zinc-300">
+            {stats.total === 0
+              ? "No warranties tracked yet."
+              : stats.soon > 0
+                ? `${stats.soon} need${stats.soon === 1 ? "s" : ""} attention soon.`
+                : `Nothing expiring within ${SOON_DAYS} days.`}
           </p>
-        </>
-      )}
-    </div>
-  );
-}
-
-function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-2 py-3 text-center">
-      <div className={`text-base font-semibold tabular-nums ${tone ?? "text-zinc-100"}`}>{value}</div>
-      <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">{label}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -227,9 +256,7 @@ function WarrantyRow({ w }: { w: Warranty }) {
             {w.store && <span className="text-xs text-zinc-500">{w.store}</span>}
           </div>
           <div className="mt-0.5 flex items-center gap-2">
-            <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${style.badge}`}>
-              {w.status === "expired" ? "Expired" : w.status === "soon" ? "Expiring soon" : "Active"}
-            </span>
+            <StatusPill label={STATUS_LABEL[w.status]} tone={STATUS_TONE[w.status]} />
             <span className={`text-xs ${style.text}`}>{w.label}</span>
           </div>
         </button>
