@@ -6,6 +6,8 @@ export default defineConfig({
     environment: 'node',
     // Component tests opt into a DOM via a per-file `// @vitest-environment happy-dom`.
     include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    // Re-point Node 26's stub `localStorage` global at the DOM window's (see file).
+    setupFiles: ['tests/setup/dom-localstorage.ts'],
   },
   resolve: {
     alias: {
