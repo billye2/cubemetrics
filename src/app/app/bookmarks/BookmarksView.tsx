@@ -9,7 +9,18 @@ import {
   setUnreadAction,
   updateBookmarkAction,
 } from "./actions";
-import { type Bookmark, allTags, applyFilters, toExportText } from "./lib";
+import {
+  type AddedBucket,
+  ADDED_BUCKET_ORDER,
+  addedBucket,
+  allTags,
+  applyFilters,
+  folderHue,
+  toExportText,
+  type Bookmark,
+} from "./lib";
+import { BucketSection, Ring, StatStrip, StatTile } from "../_factories/FactoryUI";
+import { hexAlpha } from "../_factories/factoryLib";
 
 const INPUT =
   "w-full rounded-lg bg-zinc-900 px-3 py-2 text-base text-zinc-100 placeholder:text-zinc-500 outline-none ring-1 ring-zinc-800 focus:ring-cyan-500/50";
@@ -26,10 +37,27 @@ export function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) {
 
   const tags = useMemo(() => allTags(bookmarks), [bookmarks]);
   const unreadCount = useMemo(() => bookmarks.filter((b) => b.unread).length, [bookmarks]);
+  const folderCount = useMemo(
+    () => new Set(bookmarks.map((b) => b.folder).filter(Boolean)).size,
+    [bookmarks],
+  );
   const matches = useMemo(
     () => applyFilters(bookmarks, { query, tag, unreadOnly }),
     [bookmarks, query, tag, unreadOnly],
   );
+
+  // Group the visible matches by how recently they were added — a Countdown-style
+  // set of time buckets instead of one flat scroll.
+  const buckets = useMemo(() => {
+    const map = new Map<AddedBucket, Bookmark[]>();
+    for (const b of matches) {
+      const key = addedBucket(b.createdAt);
+      (map.get(key) ?? map.set(key, []).get(key)!).push(b);
+    }
+    return ADDED_BUCKET_ORDER.map((label) => ({ label, items: map.get(label) ?? [] })).filter(
+      (g) => g.items.length > 0,
+    );
+  }, [matches]);
 
   async function openForm() {
     let seed = "";
@@ -56,8 +84,43 @@ export function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) {
     });
   }
 
+  const total = bookmarks.length;
+  const readPct = total > 0 ? (total - unreadCount) / total : 1;
+
   return (
     <div>
+      {total > 0 && (
+        <>
+          <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+            <div className="flex items-center gap-4">
+              <Ring pct={readPct} size={72} stroke={8} tone={unreadCount > 0 ? "cyan" : "emerald"}>
+                {unreadCount > 0 ? (
+                  <span className="text-lg font-bold tabular-nums text-cyan-400">{unreadCount}</span>
+                ) : (
+                  <span className="text-xl text-emerald-400">✓</span>
+                )}
+              </Ring>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+                  {unreadCount > 0 ? "Read it later" : "Reading list clear"}
+                </div>
+                <p className="mt-0.5 text-sm text-zinc-300">
+                  {unreadCount > 0
+                    ? `${unreadCount} link${unreadCount === 1 ? "" : "s"} waiting to be read.`
+                    : "Nothing in your read-it-later queue."}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <StatStrip cols={3}>
+            <StatTile label="Saved" value={String(total)} tone="cyan" />
+            <StatTile label="Unread" value={String(unreadCount)} tone={unreadCount > 0 ? "cyan" : "zinc"} />
+            <StatTile label="Folders" value={String(folderCount)} tone={folderCount > 0 ? "emerald" : "zinc"} />
+          </StatStrip>
+        </>
+      )}
+
       {!showForm ? (
         <div className="flex gap-2">
           <button
@@ -158,11 +221,15 @@ export function BookmarksView({ bookmarks }: { bookmarks: Bookmark[] }) {
       ) : matches.length === 0 ? (
         <p className="mt-6 text-center text-sm text-zinc-500">No bookmarks match your filters.</p>
       ) : (
-        <ul className="mt-4 space-y-2">
-          {matches.map((b) => (
-            <BookmarkCard key={b.id} bookmark={b} onPickTag={setTag} />
+        <div>
+          {buckets.map((g) => (
+            <BucketSection key={g.label} label={g.label} count={g.items.length}>
+              {g.items.map((b) => (
+                <BookmarkCard key={b.id} bookmark={b} onPickTag={setTag} />
+              ))}
+            </BucketSection>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
@@ -331,8 +398,15 @@ function BookmarkCard({
     );
   }
 
+  // Folder-hue tint: each folder colors its card a consistent hue. An unread
+  // bookmark keeps its cyan border to stay the eye-catch.
+  const hue = folderHue(bookmark.folder);
+  const tinted = hue && !bookmark.unread;
   return (
-    <li className={`rounded-2xl border bg-zinc-900/40 ${bookmark.unread ? "border-cyan-500/40" : "border-zinc-800"} ${pending ? "opacity-50" : ""}`}>
+    <li
+      className={`rounded-2xl border bg-zinc-900/40 ${bookmark.unread ? "border-cyan-500/40" : "border-zinc-800"} ${pending ? "opacity-50" : ""}`}
+      style={tinted ? { background: hexAlpha(hue, 0.05), borderColor: hexAlpha(hue, 0.25) } : undefined}
+    >
       <div className="flex items-stretch">
         <button
           type="button"
@@ -362,7 +436,14 @@ function BookmarkCard({
             {(bookmark.tags.length > 0 || bookmark.folder) && (
               <span className="mt-1 flex flex-wrap items-center gap-1">
                 {bookmark.folder && (
-                  <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+                  <span
+                    className="rounded px-1.5 py-0.5 text-[10px] font-medium"
+                    style={
+                      hue
+                        ? { background: hexAlpha(hue, 0.15), color: hue }
+                        : undefined
+                    }
+                  >
                     {bookmark.folder}
                   </span>
                 )}

@@ -166,6 +166,36 @@ export function allTags(list: Bookmark[]): string[] {
   });
 }
 
+/**
+ * Bucket a bookmark by how recently it was added, so the locker reads as
+ * "what's fresh vs. what's been sitting" instead of one flat list.
+ */
+export type AddedBucket = "Today" | "This week" | "This month" | "Earlier";
+export const ADDED_BUCKET_ORDER: AddedBucket[] = ["Today", "This week", "This month", "Earlier"];
+
+export function addedBucket(createdAt: string, now: Date = new Date()): AddedBucket {
+  const created = new Date(createdAt);
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const ms = startToday.getTime() - created.getTime();
+  if (created.getTime() >= startToday.getTime()) return "Today";
+  if (ms < 7 * 86_400_000) return "This week";
+  if (ms < 30 * 86_400_000) return "This month";
+  return "Earlier";
+}
+
+/**
+ * A stable hex hue for a folder name, so each folder tints its cards a
+ * consistent color. Folder-less bookmarks return null (no tint). Hashes the
+ * name into a fixed palette that reads well on the dark zinc surface.
+ */
+const FOLDER_HUES = ["#34d399", "#fb7185", "#fbbf24", "#22d3ee", "#a78bfa", "#f472b6", "#4ade80", "#fb923c"];
+export function folderHue(folder: string | null | undefined): string | null {
+  if (!folder) return null;
+  let h = 0;
+  for (let i = 0; i < folder.length; i++) h = (h * 31 + folder.charCodeAt(i)) >>> 0;
+  return FOLDER_HUES[h % FOLDER_HUES.length];
+}
+
 export interface ImportEntry {
   url: string;
   title: string;

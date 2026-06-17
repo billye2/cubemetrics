@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import type { BookRow, BookStatus } from "./page";
+import { Ring, StatStrip, StatTile, StatusPill } from "../_factories/FactoryUI";
 import {
   addBookAction,
   deleteBookAction,
@@ -12,12 +13,18 @@ import {
   updateStatusAction,
 } from "./actions";
 
-const TABS: { id: BookStatus; label: string }[] = [
-  { id: "reading", label: "Reading" },
-  { id: "to_read", label: "To Read" },
-  { id: "completed", label: "Completed" },
-  { id: "dropped", label: "Dropped" },
+type Tone = "cyan" | "amber" | "emerald" | "rose" | "zinc";
+
+const TABS: { id: BookStatus; label: string; tone: Tone }[] = [
+  { id: "reading", label: "Reading", tone: "cyan" },
+  { id: "to_read", label: "To Read", tone: "amber" },
+  { id: "completed", label: "Completed", tone: "emerald" },
+  { id: "dropped", label: "Dropped", tone: "rose" },
 ];
+
+function statusTone(status: BookStatus): Tone {
+  return TABS.find((t) => t.id === status)?.tone ?? "zinc";
+}
 
 function fmtDate(d: string | null): string | null {
   if (!d) return null;
@@ -49,6 +56,12 @@ export function ReadingView({ books }: { books: BookRow[] }) {
 
   return (
     <div className="space-y-4">
+      <StatStrip cols={3}>
+        <StatTile label="Reading" value={String(counts.reading)} tone="cyan" />
+        <StatTile label="Completed" value={String(counts.completed)} tone="emerald" />
+        <StatTile label="To Read" value={String(counts.to_read)} tone="amber" />
+      </StatStrip>
+
       <AddBookForm />
 
       <div className="flex gap-1.5 overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-900/40 p-1.5">
@@ -257,9 +270,11 @@ function BookCard({ book }: { book: BookRow }) {
           <button
             type="button"
             onClick={() => setStatusOpen((v) => !v)}
-            className="min-h-[36px] rounded-lg bg-zinc-800 px-2.5 py-1 text-xs font-semibold text-zinc-200 hover:bg-zinc-700"
+            aria-label="Change status"
+            className="flex min-h-[36px] items-center gap-1 rounded-lg bg-zinc-800/60 px-1.5 py-1 hover:bg-zinc-700"
           >
-            {statusLabel} ▾
+            <StatusPill label={statusLabel} tone={statusTone(book.status)} />
+            <span className="text-xs text-zinc-400">▾</span>
           </button>
           {statusOpen && (
             <div className="absolute right-0 z-20 mt-1 w-36 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 shadow-lg">
@@ -347,19 +362,18 @@ function BookCard({ book }: { book: BookRow }) {
             <button
               type="button"
               onClick={() => setEditingProgress(true)}
-              className="block w-full text-left"
+              className="flex w-full items-center gap-3 rounded-xl text-left"
             >
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-zinc-400">
+              <Ring pct={pct / 100} size={56} stroke={6} tone="cyan">
+                <span className="text-xs font-bold text-cyan-300">{pct}%</span>
+              </Ring>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-zinc-200">
                   p.{book.current_page} / {book.total_pages}
-                </span>
-                <span className="font-semibold text-cyan-300">{pct}%</span>
-              </div>
-              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
-                <div
-                  className="h-full rounded-full bg-cyan-500 transition-all"
-                  style={{ width: `${pct}%` }}
-                />
+                </div>
+                <div className="mt-0.5 text-[11px] uppercase tracking-wider text-zinc-500">
+                  Pages read
+                </div>
               </div>
             </button>
           ) : (

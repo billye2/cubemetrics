@@ -4,6 +4,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import type { InventoryItem } from "./lib";
 import { formatMoney, searchItems, statsFor } from "./lib";
 import { addItem, deleteItem, updateItem } from "./actions";
+import { Ring, StatStrip, StatTile, BucketSection } from "../_factories/FactoryUI";
 
 const UNGROUPED = "Unassigned";
 
@@ -51,6 +52,9 @@ export function InventoryView({ items }: { items: InventoryItem[] }) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const stats = useMemo(() => statsFor(items), [items]);
+
+  // Share of line items that carry a value — the "capture" the insurance total relies on.
+  const valued = useMemo(() => items.filter((it) => it.value !== null).length, [items]);
 
   // Category chips, recent-first (items already arrive created_at desc).
   const categories = useMemo(() => {
@@ -119,7 +123,13 @@ export function InventoryView({ items }: { items: InventoryItem[] }) {
 
   return (
     <div className="space-y-6">
-      <Hero worth={stats.worth} count={stats.count} units={stats.units} locations={stats.locations} />
+      <Hero worth={stats.worth} count={stats.count} valued={valued} />
+
+      <StatStrip cols={3}>
+        <StatTile label="Items" value={String(stats.count)} tone="cyan" />
+        <StatTile label="Units" value={String(stats.units)} tone="zinc" />
+        <StatTile label="Locations" value={String(stats.locations)} tone="zinc" />
+      </StatStrip>
 
       <AddItemForm />
 
@@ -210,21 +220,13 @@ export function InventoryView({ items }: { items: InventoryItem[] }) {
       ) : viewMode === "grid" ? (
         <PhotoGrid items={sorted} />
       ) : (
-        <div className="space-y-5">
+        <div>
           {groups.map((g) => (
-            <div key={g.room} className="space-y-2">
-              <div className="flex items-baseline justify-between border-b border-zinc-800 pb-1">
-                <h2 className="text-sm font-semibold text-zinc-200">{g.room}</h2>
-                <div className="text-xs text-zinc-500">
-                  {g.count} {g.count === 1 ? "item" : "items"} · {formatMoney(g.subtotal)}
-                </div>
-              </div>
-              <ul className="space-y-2">
-                {g.list.map((it) => (
-                  <ItemRow key={it.id} it={it} />
-                ))}
-              </ul>
-            </div>
+            <BucketSection key={g.room} label={`${g.room} · ${formatMoney(g.subtotal)}`} count={g.count}>
+              {g.list.map((it) => (
+                <ItemRow key={it.id} it={it} />
+              ))}
+            </BucketSection>
           ))}
         </div>
       )}
@@ -232,35 +234,28 @@ export function InventoryView({ items }: { items: InventoryItem[] }) {
   );
 }
 
-function Hero({
-  worth,
-  count,
-  units,
-  locations,
-}: {
-  worth: number;
-  count: number;
-  units: number;
-  locations: number;
-}) {
+function Hero({ worth, count, valued }: { worth: number; count: number; valued: number }) {
+  // Ring tracks how much of the inventory is actually valued — the more captured,
+  // the more the headline total can be trusted for an insurance claim.
+  const pct = count > 0 ? valued / count : 0;
+  const caption =
+    count === 0
+      ? "Add what you own to begin"
+      : valued === count
+        ? "Every item valued 🎉"
+        : `${valued} of ${count} valued`;
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-center">
-      <div className="text-4xl font-bold tabular-nums text-cyan-400">{formatMoney(worth)}</div>
-      <p className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-500">total worth</p>
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <Stat label="Items" value={String(count)} />
-        <Stat label="Units" value={String(units)} />
-        <Stat label="Locations" value={String(locations)} />
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <div className="flex items-center gap-4">
+        <Ring pct={pct} size={72} stroke={8} tone="cyan">
+          <span className="text-sm font-bold tabular-nums text-zinc-200">{Math.round(pct * 100)}%</span>
+        </Ring>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">Total worth</div>
+          <div className="mt-0.5 text-4xl font-bold tabular-nums text-cyan-400">{formatMoney(worth)}</div>
+          <div className="mt-0.5 text-[11px] text-zinc-500">{caption}</div>
+        </div>
       </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 px-2 py-2 text-center">
-      <div className="text-base font-semibold tabular-nums text-zinc-100">{value}</div>
-      <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">{label}</div>
     </div>
   );
 }

@@ -2,6 +2,8 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import type { Client } from "./page";
+import { Ring, StatStrip, StatTile, StatusPill } from "../_factories/FactoryUI";
+import { currency, currencyCompact, hexAlpha } from "../_factories/factoryLib";
 import {
   addClient,
   deleteClient,
@@ -12,24 +14,16 @@ import {
   type ClientEvent,
 } from "./actions";
 
+type Tone = "cyan" | "amber" | "emerald" | "rose" | "zinc";
+
 const STATUS_META: Record<
   string,
-  { label: string; order: number; badge: string; bar: string }
+  { label: string; order: number; tone: Tone; hex: string; bar: string }
 > = {
-  lead: { label: "Lead", order: 0, badge: "bg-sky-500/20 text-sky-300", bar: "bg-sky-500" },
-  active: {
-    label: "Active",
-    order: 1,
-    badge: "bg-amber-500/20 text-amber-300",
-    bar: "bg-amber-500",
-  },
-  done: {
-    label: "Done",
-    order: 2,
-    badge: "bg-emerald-500/20 text-emerald-300",
-    bar: "bg-emerald-500",
-  },
-  lost: { label: "Lost", order: 3, badge: "bg-rose-500/15 text-rose-300", bar: "bg-rose-500/60" },
+  lead: { label: "Lead", order: 0, tone: "cyan", hex: "var(--color-cyan-500)", bar: "bg-sky-500" },
+  active: { label: "Active", order: 1, tone: "amber", hex: "#fbbf24", bar: "bg-amber-500" },
+  done: { label: "Done", order: 2, tone: "emerald", hex: "#34d399", bar: "bg-emerald-500" },
+  lost: { label: "Lost", order: 3, tone: "rose", hex: "#fb7185", bar: "bg-rose-500/60" },
 };
 
 const STATUS_OPTIONS = ["lead", "active", "done", "lost"];
@@ -39,11 +33,7 @@ function todayStr(): string {
 }
 
 function fmtMoney(n: number): string {
-  return n.toLocaleString(undefined, {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: n % 1 === 0 ? 0 : 2,
-  });
+  return currency(n);
 }
 
 // Returns -1 overdue, 0 due today, 1 future, null none.
@@ -95,24 +85,32 @@ export function ClientView({ clients }: { clients: Client[] }) {
 
   return (
     <div className="space-y-6">
-      <Hero overdue={overdueCount} />
+      <Hero
+        overdue={overdueCount}
+        pipeline={totalValue}
+        conversion={conversion}
+      />
 
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="Pipeline" value={fmtMoney(totalValue)} />
-        <Stat label="Active" value={String(activeCount)} />
-        <Stat label="Overdue" value={String(overdueCount)} highlight={overdueCount > 0} />
-      </div>
+      <StatStrip cols={3}>
+        <StatTile label="Pipeline" value={currencyCompact(totalValue)} tone="cyan" />
+        <StatTile label="Active" value={String(activeCount)} tone="amber" />
+        <StatTile
+          label="Overdue"
+          value={String(overdueCount)}
+          tone={overdueCount > 0 ? "rose" : "zinc"}
+        />
+      </StatStrip>
 
       {closedCount > 0 && (
-        <div className="grid grid-cols-3 gap-2">
-          <Stat
+        <StatStrip cols={3}>
+          <StatTile
             label="Won rate"
             value={conversion === null ? "—" : `${conversion}%`}
-            highlight={false}
+            tone="emerald"
           />
-          <Stat label="Won" value={String(wonCount)} />
-          <Stat label="Lost" value={String(lostCount)} />
-        </div>
+          <StatTile label="Won" value={String(wonCount)} tone="emerald" />
+          <StatTile label="Lost" value={String(lostCount)} tone="rose" />
+        </StatStrip>
       )}
 
       <AddForm />
@@ -137,43 +135,46 @@ export function ClientView({ clients }: { clients: Client[] }) {
   );
 }
 
-function Hero({ overdue }: { overdue: number }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5 text-center">
-      <div
-        className={`text-4xl font-bold tabular-nums ${
-          overdue > 0 ? "text-rose-300" : "text-zinc-100"
-        }`}
-      >
-        {overdue}
-      </div>
-      <div className="mt-1 text-xs font-medium uppercase tracking-wider text-zinc-500">
-        {overdue === 0
-          ? "No follow-ups due"
-          : `Follow-up${overdue === 1 ? "" : "s"} due or overdue`}
-      </div>
-    </div>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  highlight,
+function Hero({
+  overdue,
+  pipeline,
+  conversion,
 }: {
-  label: string;
-  value: string;
-  highlight?: boolean;
+  overdue: number;
+  pipeline: number;
+  conversion: number | null;
 }) {
+  // The dial reads conversion (won rate) once any client has closed; until then
+  // it falls back to a follow-up-health gauge (full ring = nothing overdue).
+  const hasRate = conversion !== null;
+  const tone: Tone = hasRate ? "emerald" : overdue > 0 ? "rose" : "cyan";
+  const pct = hasRate ? conversion / 100 : overdue > 0 ? 0 : 1;
+  const dialValue = hasRate ? `${conversion}%` : String(overdue);
+  const dialClass = hasRate
+    ? "text-emerald-300"
+    : overdue > 0
+      ? "text-rose-300"
+      : "text-zinc-100";
+
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 text-center">
-      <div
-        className={`text-base font-semibold ${highlight ? "text-rose-300" : "text-zinc-100"}`}
-      >
-        {value}
-      </div>
-      <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-        {label}
+    <div className="flex items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <Ring pct={pct} size={84} stroke={8} tone={tone}>
+        <span className={`text-xl font-bold tabular-nums ${dialClass}`}>{dialValue}</span>
+      </Ring>
+      <div className="min-w-0 flex-1">
+        <div className="text-2xl font-bold tracking-tight text-zinc-100 tabular-nums">
+          {currencyCompact(pipeline)}
+        </div>
+        <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Pipeline value
+        </div>
+        <div className="mt-1.5 text-xs text-zinc-400">
+          {hasRate
+            ? "Won rate of closed deals"
+            : overdue === 0
+              ? "No follow-ups due"
+              : `${overdue} follow-up${overdue === 1 ? "" : "s"} due or overdue`}
+        </div>
       </div>
     </div>
   );
@@ -192,14 +193,16 @@ function StatusSection({
   const [open, setOpen] = useState(status === "lead" || status === "active");
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40">
+    <div
+      className="overflow-hidden rounded-2xl border"
+      style={{ background: hexAlpha(meta.hex, 0.05), borderColor: hexAlpha(meta.hex, 0.25) }}
+    >
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex min-h-[44px] w-full items-center gap-3 px-4 py-3 text-left"
+        className="flex min-h-[44px] w-full items-center gap-2 px-4 py-3 text-left"
       >
-        <span className={`h-5 w-1 shrink-0 rounded-full ${meta.bar}`} aria-hidden />
-        <span className="text-sm font-semibold text-zinc-100">{meta.label}</span>
+        <StatusPill label={meta.label} tone={meta.tone} />
         <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold text-zinc-300">
           {items.length}
         </span>
@@ -286,6 +289,7 @@ function ClientRow({ client }: { client: Client }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="break-words text-sm font-medium text-zinc-100">{client.name}</span>
+          <StatusPill label={meta.label} tone={meta.tone} />
           {client.value > 0 && (
             <span className="text-xs font-medium text-zinc-400 tabular-nums">
               {fmtMoney(client.value)}

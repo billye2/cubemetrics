@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import { currency, currencyCompact, shortDate } from "../_factories/factoryLib";
+import { currency, currencyCompact, shortDate, hexAlpha } from "../_factories/factoryLib";
+import {
+  BucketSection,
+  Ring,
+  StatStrip,
+  StatTile,
+  StatusPill,
+} from "../_factories/FactoryUI";
 import {
   addPayment,
   createDebt,
@@ -25,6 +32,17 @@ import {
   type PaymentRow,
   type Strategy,
 } from "./lib";
+
+const ROSE = "#fb7185";
+const AMBER = "#fbbf24";
+const CYAN = "#22d3ee"; // cyan-400 as a concrete hex for hexAlpha
+
+/** Tint a debt card by APR severity: higher APR runs hotter (cyan→amber→rose). */
+function aprHue(apr: number): string {
+  if (apr >= 20) return ROSE;
+  if (apr >= 10) return AMBER;
+  return CYAN;
+}
 
 export function DebtView({
   debts,
@@ -85,6 +103,19 @@ export function DebtView({
     [debts, byDebt, accrue]
   );
 
+  // Status buckets for active debts: "at risk" (payment too low / no minimum set
+  // so payoff can't be projected) surface first, the rest stay in strategy order.
+  const buckets = useMemo(() => {
+    const atRisk: DebtRow[] = [];
+    const onTrack: DebtRow[] = [];
+    for (const d of ordered) {
+      const proj = statsFor(d, byDebt.get(d.id) ?? []).projection;
+      if (proj.neverPaysOff || d.min_payment <= 0) atRisk.push(d);
+      else onTrack.push(d);
+    }
+    return { atRisk, onTrack };
+  }, [ordered, byDebt]);
+
   // Celebration: every debt is cleared (and there's at least one).
   const allClear = debts.length > 0 && totals.activeCount === 0;
 
@@ -117,18 +148,35 @@ export function DebtView({
         <p className="rounded-2xl border border-dashed border-zinc-800 px-4 py-6 text-center text-sm text-zinc-500">
           No debts yet. Add one above to start tracking payoff.
         </p>
-      ) : (
-        <ul className="space-y-4">
-          {ordered.map((d) => (
-            <DebtCard
-              key={d.id}
-              debt={d}
-              payments={byDebt.get(d.id) ?? []}
-              isFocus={d.id === focusId && totals.activeCount > 1}
-              accrue={accrue}
-            />
-          ))}
-        </ul>
+      ) : ordered.length === 0 ? null : (
+        <div>
+          {buckets.atRisk.length > 0 && (
+            <BucketSection label="Needs attention" count={buckets.atRisk.length} danger>
+              {buckets.atRisk.map((d) => (
+                <DebtCard
+                  key={d.id}
+                  debt={d}
+                  payments={byDebt.get(d.id) ?? []}
+                  isFocus={d.id === focusId && totals.activeCount > 1}
+                  accrue={accrue}
+                />
+              ))}
+            </BucketSection>
+          )}
+          {buckets.onTrack.length > 0 && (
+            <BucketSection label="Paying down" count={buckets.onTrack.length}>
+              {buckets.onTrack.map((d) => (
+                <DebtCard
+                  key={d.id}
+                  debt={d}
+                  payments={byDebt.get(d.id) ?? []}
+                  isFocus={d.id === focusId && totals.activeCount > 1}
+                  accrue={accrue}
+                />
+              ))}
+            </BucketSection>
+          )}
+        </div>
       )}
 
       {paidDebts.length > 0 && (
@@ -307,19 +355,11 @@ function PaidOffArchive({
   byDebt: Map<number, PaymentRow[]>;
 }) {
   return (
-    <div className="space-y-3">
-      <h2 className="flex items-center gap-2 text-sm font-semibold text-emerald-300">
-        <span aria-hidden>🎉</span> Paid off
-        <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-          {debts.length}
-        </span>
-      </h2>
-      <ul className="space-y-3">
-        {debts.map((d) => (
-          <ArchiveCard key={d.id} debt={d} payments={byDebt.get(d.id) ?? []} />
-        ))}
-      </ul>
-    </div>
+    <BucketSection label="🎉 Paid off" count={debts.length}>
+      {debts.map((d) => (
+        <ArchiveCard key={d.id} debt={d} payments={byDebt.get(d.id) ?? []} />
+      ))}
+    </BucketSection>
   );
 }
 
@@ -382,56 +422,68 @@ function PortfolioHero({
 }: {
   totals: ReturnType<typeof portfolioTotals>;
 }) {
+  // Share of the original debt load already cleared — the payoff ring.
+  const paidFraction =
+    totals.totalOriginal > 0
+      ? Math.max(0, Math.min(1, totals.totalPaid / totals.totalOriginal))
+      : totals.activeCount === 0 && totals.paidCount > 0
+        ? 1
+        : 0;
+  const pct = Math.round(paidFraction * 100);
+  const ringTone = paidFraction >= 1 ? "emerald" : "cyan";
+
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
-      <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-        Total owed
+      <div className="flex items-center gap-4">
+        <Ring pct={paidFraction} size={72} stroke={8} tone={ringTone}>
+          <span className="text-sm font-bold tabular-nums text-zinc-200">
+            {pct}%
+          </span>
+        </Ring>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">
+            Total owed
+          </div>
+          <div className="mt-0.5 text-4xl font-bold tabular-nums text-cyan-400">
+            {currencyCompact(totals.totalBalance)}
+          </div>
+          <div className="mt-0.5 text-[11px] text-zinc-500">
+            {pct}% of {currencyCompact(totals.totalOriginal)} paid off
+          </div>
+        </div>
       </div>
-      <div className="mt-1 text-4xl font-bold tabular-nums text-cyan-400">
-        {currencyCompact(totals.totalBalance)}
-      </div>
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
-        {totals.activeCount > 0 && (
-          <span>
-            <span className="font-semibold text-zinc-300">
-              {totals.activeCount}
-            </span>{" "}
-            active
+
+      <StatStrip cols={3}>
+        <StatTile
+          label="Active"
+          value={String(totals.activeCount)}
+          sub={totals.paidCount > 0 ? `${totals.paidCount} cleared` : undefined}
+          tone={totals.activeCount === 0 ? "emerald" : "cyan"}
+        />
+        <StatTile
+          label="Paid"
+          value={currencyCompact(totals.totalPaid)}
+          tone="emerald"
+        />
+        <StatTile
+          label="Minimums"
+          value={
+            totals.combinedMinimums > 0
+              ? `${currencyCompact(totals.combinedMinimums)}/mo`
+              : "—"
+          }
+          tone={totals.combinedMinimums > 0 ? "amber" : "zinc"}
+        />
+      </StatStrip>
+
+      {totals.debtFreeMonth && (
+        <div className="text-center text-[11px] text-zinc-500">
+          On track to be debt-free{" "}
+          <span className="font-semibold text-emerald-300">
+            {monthLabel(totals.debtFreeMonth)}
           </span>
-        )}
-        {totals.paidCount > 0 && (
-          <span>
-            <span className="font-semibold text-emerald-300">
-              {totals.paidCount}
-            </span>{" "}
-            paid off
-          </span>
-        )}
-        {totals.totalPaid > 0 && (
-          <span>
-            <span className="font-semibold text-zinc-300">
-              {currency(totals.totalPaid)}
-            </span>{" "}
-            paid to date
-          </span>
-        )}
-        {totals.combinedMinimums > 0 && (
-          <span>
-            <span className="font-semibold text-zinc-300">
-              {currency(totals.combinedMinimums)}
-            </span>
-            /mo minimums
-          </span>
-        )}
-        {totals.debtFreeMonth && (
-          <span>
-            debt-free{" "}
-            <span className="font-semibold text-emerald-300">
-              {monthLabel(totals.debtFreeMonth)}
-            </span>
-          </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -515,66 +567,74 @@ function DebtCard({
     [stats.complete, stats.balance, debt.apr, debt.min_payment, accrue]
   );
 
+  // APR-tinted card surface; the focus debt keeps a cyan ring on top of the hue.
+  const hue = aprHue(debt.apr);
+  const ringTone = stats.complete ? "emerald" : "cyan";
+
   return (
     <li
-      className={`rounded-2xl border bg-zinc-900/40 p-4 ${
-        isFocus ? "border-cyan-500/50 ring-1 ring-cyan-500/20" : "border-zinc-800"
+      className={`rounded-2xl border p-4 ${
+        isFocus ? "ring-1 ring-cyan-500/30" : ""
       }`}
+      style={{
+        background: hexAlpha(hue, 0.05),
+        borderColor: hexAlpha(hue, 0.25),
+      }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="break-words text-base font-semibold text-zinc-100">
-              {debt.name}
-            </h3>
-            {isFocus && (
-              <span className="shrink-0 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-semibold text-cyan-300">
-                focus
-              </span>
-            )}
+      <div className="flex items-start gap-4">
+        <Ring pct={stats.fraction} size={64} stroke={7} tone={ringTone}>
+          <span className="text-[12px] font-bold tabular-nums text-zinc-200">
+            {pct}%
+          </span>
+        </Ring>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <h3 className="break-words text-base font-semibold text-zinc-100">
+                  {debt.name}
+                </h3>
+                {isFocus && <StatusPill label="focus" tone="cyan" />}
+                {stats.complete && <StatusPill label="paid off" tone="emerald" />}
+              </div>
+              <div className="mt-0.5 text-sm tabular-nums text-zinc-400">
+                <span className="font-semibold text-cyan-300">
+                  {currency(stats.balance)}
+                </span>{" "}
+                left of {currency(debt.original_balance)}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditing((v) => !v)}
+              aria-label="Edit debt"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
+            >
+              <span className="text-sm">{editing ? "×" : "⋯"}</span>
+            </button>
           </div>
-          <div className="mt-0.5 text-sm tabular-nums text-zinc-400">
-            <span className="font-semibold text-cyan-300">
-              {currency(stats.balance)}
-            </span>{" "}
-            left of {currency(debt.original_balance)}
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {stats.complete && (
-            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
-              paid off
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => setEditing((v) => !v)}
-            aria-label="Edit debt"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
-          >
-            <span className="text-sm">{editing ? "×" : "⋯"}</span>
-          </button>
         </div>
       </div>
 
-      {/* Paid-down bar: fills toward zero balance. */}
-      <div className="mt-3">
-        <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
-          <div
-            className={`h-full rounded-full ${
-              stats.complete ? "bg-emerald-500" : "bg-cyan-500"
-            }`}
-            style={{ width: `${Math.min(100, pct)}%` }}
-          />
-        </div>
-        <div className="mt-1 flex justify-between text-[11px] text-zinc-500">
-          <span>{pct}% paid down</span>
-          <span>
-            {debt.apr > 0 ? `${debt.apr}% APR` : "0% APR"}
-            {debt.min_payment > 0 && ` · ${currency(debt.min_payment)}/mo min`}
-          </span>
-        </div>
-      </div>
+      <StatStrip cols={3}>
+        <StatTile
+          label="Paid down"
+          value={`${pct}%`}
+          tone={stats.complete ? "emerald" : "cyan"}
+        />
+        <StatTile
+          label="APR"
+          value={debt.apr > 0 ? `${debt.apr}%` : "0%"}
+          tone={debt.apr >= 20 ? "rose" : debt.apr >= 10 ? "amber" : "zinc"}
+        />
+        <StatTile
+          label="Min"
+          value={
+            debt.min_payment > 0 ? `${currencyCompact(debt.min_payment)}/mo` : "—"
+          }
+          tone={debt.min_payment > 0 ? "cyan" : "zinc"}
+        />
+      </StatStrip>
 
       {!stats.complete && (
         <ProjectionRow projection={proj} minPayment={debt.min_payment} />

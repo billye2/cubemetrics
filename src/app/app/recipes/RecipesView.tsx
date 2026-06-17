@@ -21,6 +21,12 @@ import {
   type RecipeInput,
   type IngredientInput,
 } from "./actions";
+import { StatStrip, StatTile, BucketSection } from "../_factories/FactoryUI";
+import { hexAlpha } from "../_factories/factoryLib";
+
+// Cyan accent hex for hue-tinting the photo hero (hexAlpha needs a literal #rrggbb,
+// not the CSS var). Matches Tailwind cyan-500.
+const CYAN_HEX = "#06b6d4";
 
 type Mode =
   | { kind: "list" }
@@ -100,7 +106,48 @@ function List({
   onAdd: () => void;
 }) {
   const [query, setQuery] = useState("");
+  const [groupByTag, setGroupByTag] = useState(false);
   const filtered = recipes.filter((r) => matchesQuery(r, query));
+
+  // Collection stats: how big is the cookbook, how much active time it holds,
+  // and how many distinct tags organize it.
+  const stats = useMemo(() => {
+    let timed = 0;
+    let totalMin = 0;
+    const tags = new Set<string>();
+    for (const r of recipes) {
+      const t = totalTime(r.prepMin, r.cookMin);
+      if (t) {
+        timed += 1;
+        totalMin += t;
+      }
+      for (const tag of r.tags) tags.add(tag);
+    }
+    return {
+      count: recipes.length,
+      tags: tags.size,
+      avgTime: timed > 0 ? formatTime(Math.round(totalMin / timed)) : null,
+    };
+  }, [recipes]);
+
+  // Bucket the filtered list by tag (each recipe appears under each of its tags;
+  // untagged recipes fall into "Untagged"). Buckets are alphabetical, Untagged last.
+  const tagBuckets = useMemo(() => {
+    const map = new Map<string, Recipe[]>();
+    for (const r of filtered) {
+      const keys = r.tags.length > 0 ? r.tags : ["Untagged"];
+      for (const k of keys) {
+        const list = map.get(k);
+        if (list) list.push(r);
+        else map.set(k, [r]);
+      }
+    }
+    return [...map.entries()].sort(([a], [b]) => {
+      if (a === "Untagged") return 1;
+      if (b === "Untagged") return -1;
+      return a.localeCompare(b);
+    });
+  }, [filtered]);
 
   return (
     <div className="space-y-4">
@@ -120,63 +167,103 @@ function List({
         </button>
       </div>
 
+      {recipes.length > 0 && (
+        <StatStrip cols={3}>
+          <StatTile label="Recipes" value={String(stats.count)} tone="cyan" />
+          <StatTile label="Tags" value={String(stats.tags)} tone={stats.tags > 0 ? "amber" : "zinc"} />
+          <StatTile label="Avg time" value={stats.avgTime ?? "—"} tone="emerald" />
+        </StatStrip>
+      )}
+
+      {recipes.length > 0 && stats.tags > 0 && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setGroupByTag((v) => !v)}
+            className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
+              groupByTag
+                ? "border-cyan-500/60 text-cyan-300"
+                : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
+            }`}
+          >
+            {groupByTag ? "✓ Grouped by tag" : "Group by tag"}
+          </button>
+        </div>
+      )}
+
       {recipes.length === 0 ? (
         <Empty onAdd={onAdd} />
       ) : filtered.length === 0 ? (
         <p className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 text-center text-sm text-zinc-400">
           No recipes match “{query}”.
         </p>
+      ) : groupByTag ? (
+        <div>
+          {tagBuckets.map(([tag, items]) => (
+            <BucketSection key={tag} label={tag} count={items.length}>
+              {items.map((r) => (
+                <RecipeRow key={r.id} r={r} onOpen={onOpen} />
+              ))}
+            </BucketSection>
+          ))}
+        </div>
       ) : (
         <ul className="space-y-2">
-          {filtered.map((r) => {
-            const t = totalTime(r.prepMin, r.cookMin);
-            return (
-              <li key={r.id}>
-                <button
-                  type="button"
-                  onClick={() => onOpen(r.id)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-left hover:border-cyan-500/40"
-                >
-                  {r.photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={r.photoUrl}
-                      alt=""
-                      className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-zinc-700"
-                    />
-                  ) : (
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-xl text-cyan-400 ring-1 ring-cyan-500/20">
-                      ◍
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-zinc-100">{r.name}</div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-zinc-500">
-                      {r.servings ? <span>{formatQty(r.servings)} servings</span> : null}
-                      {t ? <span>{formatTime(t)}</span> : null}
-                      <span>{r.ingredients.length} ingredients</span>
-                    </div>
-                    {r.tags.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {r.tags.slice(0, 4).map((tag) => (
-                          <span
-                            key={tag}
-                            className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-300"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <span className="shrink-0 text-zinc-600">›</span>
-                </button>
-              </li>
-            );
-          })}
+          {filtered.map((r) => (
+            <RecipeRow key={r.id} r={r} onOpen={onOpen} />
+          ))}
         </ul>
       )}
     </div>
+  );
+}
+
+// One recipe row — a tappable card with thumbnail, meta, and tag chips. Shared by
+// the flat list and the per-tag BucketSection (which wraps it in its own <ul>).
+function RecipeRow({ r, onOpen }: { r: Recipe; onOpen: (id: number) => void }) {
+  const t = totalTime(r.prepMin, r.cookMin);
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onOpen(r.id)}
+        className="flex w-full items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900/40 p-3 text-left hover:border-cyan-500/40"
+      >
+        {r.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={r.photoUrl}
+            alt=""
+            className="h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-zinc-700"
+          />
+        ) : (
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-xl text-cyan-400 ring-1 ring-cyan-500/20">
+            ◍
+          </span>
+        )}
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium text-zinc-100">{r.name}</div>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-zinc-500">
+            {r.servings ? <span>{formatQty(r.servings)} servings</span> : null}
+            {t ? <span>{formatTime(t)}</span> : null}
+            <span>{r.ingredients.length} ingredients</span>
+          </div>
+          {r.tags.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {r.tags.slice(0, 4).map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-300"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+        <span className="shrink-0 text-zinc-600">›</span>
+      </button>
+    </li>
   );
 }
 
@@ -267,12 +354,17 @@ function Detail({
       </div>
 
       {recipe.photoUrl && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={recipe.photoUrl}
-          alt={`${recipe.name} photo`}
-          className="aspect-video w-full rounded-2xl object-cover ring-1 ring-zinc-800"
-        />
+        <div
+          className="overflow-hidden rounded-2xl border p-1"
+          style={{ background: hexAlpha(CYAN_HEX, 0.05), borderColor: hexAlpha(CYAN_HEX, 0.25) }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={recipe.photoUrl}
+            alt={`${recipe.name} photo`}
+            className="aspect-video w-full rounded-xl object-cover"
+          />
+        </div>
       )}
 
       <button

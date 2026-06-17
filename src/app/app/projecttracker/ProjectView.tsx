@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import type { Project, ProjectTask } from "./page";
 import { pct, dueLabel, blockedSince, sortFilter, type SortKey } from "./lib";
+import { StatStrip, StatTile, StatusPill, BucketSection } from "../_factories/FactoryUI";
 import {
   addProject,
   addTask,
@@ -15,14 +16,16 @@ import {
   toggleTask,
 } from "./actions";
 
+type Tone = "cyan" | "amber" | "emerald" | "rose" | "zinc";
+
 const STATUS_META: Record<
   string,
-  { label: string; order: number; badge: string; bar: string }
+  { label: string; order: number; tone: Tone; bar: string }
 > = {
-  planning: { label: "Planning", order: 0, badge: "bg-zinc-700 text-zinc-200", bar: "bg-zinc-500" },
-  active: { label: "Active", order: 1, badge: "bg-cyan-500/20 text-cyan-300", bar: "bg-cyan-500" },
-  blocked: { label: "Blocked", order: 2, badge: "bg-rose-500/20 text-rose-300", bar: "bg-rose-500" },
-  done: { label: "Done", order: 3, badge: "bg-emerald-500/20 text-emerald-300", bar: "bg-emerald-500" },
+  planning: { label: "Planning", order: 0, tone: "zinc", bar: "bg-zinc-500" },
+  active: { label: "Active", order: 1, tone: "cyan", bar: "bg-cyan-500" },
+  blocked: { label: "Blocked", order: 2, tone: "rose", bar: "bg-rose-500" },
+  done: { label: "Done", order: 3, tone: "emerald", bar: "bg-emerald-500" },
 };
 
 const STATUS_OPTIONS = ["planning", "active", "blocked", "done"];
@@ -54,11 +57,11 @@ export function ProjectView({ projects }: { projects: Project[] }) {
 
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-4 gap-2">
-        {STATUS_OPTIONS.map((s) => (
-          <Stat key={s} label={STATUS_META[s].label} value={counts[s] || 0} bar={STATUS_META[s].bar} />
-        ))}
-      </div>
+      <StatStrip cols={3}>
+        <StatTile label="Active" value={String(counts.active || 0)} tone="cyan" />
+        <StatTile label="Blocked" value={String(counts.blocked || 0)} tone="rose" />
+        <StatTile label="Done" value={String(counts.done || 0)} tone="emerald" />
+      </StatStrip>
 
       <AddForm />
 
@@ -78,11 +81,24 @@ export function ProjectView({ projects }: { projects: Project[] }) {
           {view === "board" ? (
             <Board projects={filter === "all" ? projects : visible} />
           ) : (
-            <ul className="space-y-3">
-              {visible.map((p) => (
-                <ProjectCard key={p.id} project={p} />
-              ))}
-            </ul>
+            <div>
+              {STATUS_OPTIONS.map((s) => {
+                const inStatus = visible.filter((p) => p.status === s);
+                if (inStatus.length === 0) return null;
+                return (
+                  <BucketSection
+                    key={s}
+                    label={STATUS_META[s].label}
+                    count={inStatus.length}
+                    danger={s === "blocked"}
+                  >
+                    {inStatus.map((p) => (
+                      <ProjectCard key={p.id} project={p} />
+                    ))}
+                  </BucketSection>
+                );
+              })}
+            </div>
           )}
         </>
       )}
@@ -233,18 +249,6 @@ function BoardCard({ project }: { project: Project }) {
   );
 }
 
-function Stat({ label, value, bar }: { label: string; value: number; bar: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-2 py-3 text-center">
-      <div className="text-lg font-bold tabular-nums text-zinc-100">{value}</div>
-      <div className="mt-1 flex justify-center">
-        <span className={`inline-block h-1 w-7 rounded-full ${bar}`} />
-      </div>
-      <div className="mt-1 text-[10px] font-medium uppercase tracking-wider text-zinc-500">{label}</div>
-    </div>
-  );
-}
-
 function AddForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, start] = useTransition();
@@ -305,9 +309,7 @@ function ProjectCard({ project }: { project: Project }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="break-words text-sm font-medium text-zinc-100">{project.title}</span>
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${meta.badge}`}>
-              {meta.label}
-            </span>
+            <StatusPill label={meta.label} tone={meta.tone} />
             {due && (
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${

@@ -22,6 +22,27 @@ import {
   setCriterionWeight,
   setScore,
 } from "./actions";
+import { Ring, StatusPill } from "../_factories/FactoryUI";
+import { hexAlpha } from "../_factories/factoryLib";
+
+type Tone = "cyan" | "amber" | "emerald" | "rose" | "zinc";
+
+const EMERALD = "#34d399";
+const AMBER = "#fbbf24";
+const ROSE = "#fb7185";
+
+/** Hue for a 0–100 weighted score: emerald (strong) → amber (middling) → rose (weak). */
+function scoreHue(pct: number): string {
+  if (pct >= 67) return EMERALD;
+  if (pct >= 40) return AMBER;
+  return ROSE;
+}
+
+function scoreTone(pct: number): Tone {
+  if (pct >= 67) return "emerald";
+  if (pct >= 40) return "amber";
+  return "rose";
+}
 
 export function DecisionsView({ decisions }: { decisions: DecisionData[] }) {
   const [openId, setOpenId] = useState<number | null>(decisions[0]?.id ?? null);
@@ -101,8 +122,11 @@ function DecisionCard({
   );
   const winnerId = useMemo(() => recommendedOptionId(results), [results]);
   const winner = decision.options.find((o) => o.id === winnerId) ?? null;
+  const winnerPct = winner ? results.find((r) => r.optionId === winner.id)?.pct ?? 0 : 0;
   const chosen = decision.options.find((o) => o.id === decision.chosenOptionId) ?? null;
   const due = revisitDue(decision.revisitAt) && decision.status !== "revisit";
+
+  const ringTone: Tone = winner ? scoreTone(winnerPct) : "zinc";
 
   const [pending, start] = useTransition();
   function remove() {
@@ -115,18 +139,25 @@ function DecisionCard({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-start gap-3 px-4 py-3 text-left"
+        className="flex w-full items-center gap-3 px-4 py-3 text-left"
       >
+        <Ring pct={winner ? winnerPct / 100 : 0} size={48} stroke={5} tone={ringTone}>
+          <span className="text-[11px] font-bold tabular-nums text-zinc-200">
+            {winner ? `${winnerPct}%` : "—"}
+          </span>
+        </Ring>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="break-words text-sm font-semibold text-zinc-100">
               {decision.question}
             </span>
-            {due && (
-              <span className="shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
-                Revisit
-              </span>
-            )}
+            {chosen ? (
+              <StatusPill label="Decided" tone="emerald" />
+            ) : due ? (
+              <StatusPill label="Revisit" tone="amber" />
+            ) : winner ? (
+              <StatusPill label="Open" tone="cyan" />
+            ) : null}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-zinc-500">
             <span>
@@ -143,7 +174,7 @@ function DecisionCard({
             {chosen && <span className="text-emerald-300">Chose: {chosen.label}</span>}
           </div>
         </div>
-        <span className="shrink-0 pt-0.5 text-zinc-500">{isOpen ? "▾" : "▸"}</span>
+        <span className="shrink-0 text-zinc-500">{isOpen ? "▾" : "▸"}</span>
       </button>
 
       {isOpen && (
@@ -254,26 +285,28 @@ function Matrix({
             .sort((a, b) => (resultById.get(b.id)?.weighted ?? 0) - (resultById.get(a.id)?.weighted ?? 0))
             .map((o) => {
               const r = resultById.get(o.id);
+              const pct = r?.pct ?? 0;
               const isWinner = o.id === winnerId;
+              const hue = scoreHue(pct);
               return (
-                <div key={o.id} className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+                <div
+                  key={o.id}
+                  className="rounded-xl border p-3"
+                  style={{ background: hexAlpha(hue, 0.05), borderColor: hexAlpha(hue, 0.25) }}
+                >
                   <div className="mb-1.5 flex items-center justify-between gap-2">
                     <span className="flex min-w-0 items-center gap-2">
-                      {isWinner && (
-                        <span className="shrink-0 rounded-full bg-cyan-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-300">
-                          Pick
-                        </span>
-                      )}
+                      {isWinner && <StatusPill label="Pick" tone="cyan" />}
                       <span className="truncate text-sm font-medium text-zinc-100">{o.label}</span>
                     </span>
                     <span className="shrink-0 text-sm font-semibold tabular-nums text-zinc-300">
-                      {r?.pct ?? 0}%
+                      {pct}%
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-zinc-800">
                     <div
-                      className={`h-full rounded-full ${isWinner ? "bg-cyan-500" : "bg-zinc-600"}`}
-                      style={{ width: `${r?.pct ?? 0}%` }}
+                      className="h-full rounded-full"
+                      style={{ width: `${pct}%`, background: hue }}
                     />
                   </div>
                 </div>

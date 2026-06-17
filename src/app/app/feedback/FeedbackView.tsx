@@ -8,6 +8,20 @@ import {
   type ReviewResult,
 } from "./actions";
 import { getApp } from "@/lib/modern/catalog";
+import { StatStrip, StatTile, StatusPill, BucketSection } from "../_factories/FactoryUI";
+import { shortDate } from "../_factories/factoryLib";
+
+type Tone = "cyan" | "amber" | "emerald" | "rose" | "zinc";
+
+const STATUS_META: Record<string, { label: string; tone: Tone; order: number }> = {
+  pending: { label: "Pending", tone: "amber", order: 0 },
+  approved: { label: "Approved", tone: "emerald", order: 1 },
+  rejected: { label: "Not planned", tone: "zinc", order: 2 },
+};
+
+function statusMeta(status: string) {
+  return STATUS_META[status] ?? { label: status, tone: "zinc" as Tone, order: 3 };
+}
 
 export interface Feedback {
   id: number;
@@ -170,22 +184,67 @@ function FeedbackList({ items, empty }: { items: Feedback[]; empty: string }) {
       </div>
     );
   }
+
+  const counts: Record<string, number> = {};
+  for (const f of items) counts[f.status] = (counts[f.status] || 0) + 1;
+  const pendingCount = counts["pending"] || 0;
+  const approvedCount = counts["approved"] || 0;
+
+  const statuses = Object.keys(counts).sort(
+    (a, b) => statusMeta(a).order - statusMeta(b).order,
+  );
+
   return (
-    <ul className="space-y-3">
-      {items.map((f) => (
-        <li key={f.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-          <div className="mb-1 flex items-center justify-between text-xs text-zinc-500">
-            <div className="flex items-center gap-2">
-              <CategoryTag category={f.category} />
-              <AppTag appId={f.app_id} />
-            </div>
-            <span>{new Date(f.created_at).toLocaleDateString()}</span>
-          </div>
-          <p className="whitespace-pre-wrap break-words text-sm text-zinc-200">{f.body}</p>
-          <StatusLine status={f.status} url={f.github_issue_url} />
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-6">
+      <StatStrip cols={3}>
+        <StatTile label="Total" value={String(items.length)} tone="cyan" />
+        <StatTile label="Pending" value={String(pendingCount)} tone="amber" />
+        <StatTile label="Approved" value={String(approvedCount)} tone="emerald" />
+      </StatStrip>
+
+      <div>
+        {statuses.map((status) => {
+          const inStatus = items.filter((f) => f.status === status);
+          if (inStatus.length === 0) return null;
+          return (
+            <BucketSection key={status} label={statusMeta(status).label} count={inStatus.length}>
+              {inStatus.map((f) => (
+                <FeedbackRow key={f.id} f={f} />
+              ))}
+            </BucketSection>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function FeedbackRow({ f }: { f: Feedback }) {
+  const meta = statusMeta(f.status);
+  return (
+    <li className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+      <div className="mb-1 flex items-center justify-between text-xs text-zinc-500">
+        <div className="flex flex-wrap items-center gap-2">
+          <CategoryTag category={f.category} />
+          <AppTag appId={f.app_id} />
+          <StatusPill label={meta.label} tone={meta.tone} />
+        </div>
+        <span>{shortDate(f.created_at)}</span>
+      </div>
+      <p className="whitespace-pre-wrap break-words text-sm text-zinc-200">{f.body}</p>
+      {f.status === "approved" && f.github_issue_url && (
+        <div className="mt-2 text-xs font-medium">
+          <a
+            href={f.github_issue_url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-cyan-400 hover:underline"
+          >
+            View issue ↗
+          </a>
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -222,23 +281,33 @@ function FeedbackReview({ items }: { items: PendingFeedback[] }) {
     );
   }
 
+  const approvedThisSession = Object.values(resolved).filter((r) => r === "approved").length;
+  const rejectedThisSession = Object.values(resolved).filter((r) => r === "rejected").length;
+
   return (
-    <div>
+    <div className="space-y-6">
+      <StatStrip cols={3}>
+        <StatTile label="Waiting" value={String(visible.length)} tone="amber" />
+        <StatTile label="Approved" value={String(approvedThisSession)} tone="emerald" />
+        <StatTile label="Rejected" value={String(rejectedThisSession)} tone="zinc" />
+      </StatStrip>
+
       {error && (
         <div className="mb-3 rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-300">
           {error}
         </div>
       )}
-      <ul className="space-y-3">
+      <BucketSection label="Pending review" count={visible.length} danger={visible.length > 0}>
         {visible.map((f) => (
-          <li key={f.id} className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
+          <li key={f.id} className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
             <div className="mb-1 flex items-center justify-between text-xs text-zinc-500">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <CategoryTag category={f.category} />
                 <AppTag appId={f.app_id} />
+                <StatusPill label="Pending" tone="amber" />
                 {f.handle && <span className="text-zinc-400">{f.handle}</span>}
               </div>
-              <span>{new Date(f.created_at).toLocaleDateString()}</span>
+              <span>{shortDate(f.created_at)}</span>
             </div>
             <p className="whitespace-pre-wrap break-words text-sm text-zinc-200">{f.body}</p>
             <div className="mt-3 flex gap-2">
@@ -261,7 +330,7 @@ function FeedbackReview({ items }: { items: PendingFeedback[] }) {
             </div>
           </li>
         ))}
-      </ul>
+      </BucketSection>
       {visible.length === 0 && (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-8 text-center">
           <p className="text-sm text-zinc-400">All caught up — nothing left to review.</p>
@@ -269,28 +338,6 @@ function FeedbackReview({ items }: { items: PendingFeedback[] }) {
       )}
     </div>
   );
-}
-
-function StatusLine({ status, url }: { status: string; url: string | null }) {
-  if (status === "approved") {
-    return (
-      <div className="mt-2 text-xs font-medium text-emerald-400">
-        ✓ Approved
-        {url && (
-          <>
-            {" · "}
-            <a href={url} target="_blank" rel="noreferrer" className="text-cyan-400 hover:underline">
-              View issue ↗
-            </a>
-          </>
-        )}
-      </div>
-    );
-  }
-  if (status === "rejected") {
-    return <div className="mt-2 text-xs font-medium text-zinc-500">Not planned</div>;
-  }
-  return <div className="mt-2 text-xs font-medium text-amber-400">Pending review</div>;
 }
 
 function AppTag({ appId }: { appId: string | null }) {
