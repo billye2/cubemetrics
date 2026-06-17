@@ -2,20 +2,22 @@
 
 import { useRef, useTransition } from "react";
 import type { Application } from "./page";
+import { StatStrip, StatTile, StatusPill, BucketSection } from "../_factories/FactoryUI";
 import { addApplication, deleteApplication, setStage } from "./actions";
+
+type Tone = "cyan" | "amber" | "emerald" | "rose" | "zinc";
 
 const STAGE_META: Record<
   string,
-  { label: string; order: number; badge: string; bar: string }
+  { label: string; order: number; tone: Tone; bar: string }
 > = {
-  saved: { label: "Saved", order: 0, badge: "bg-zinc-700 text-zinc-200", bar: "bg-zinc-500" },
-  applied: { label: "Applied", order: 1, badge: "bg-sky-500/20 text-sky-300", bar: "bg-sky-500" },
-  interview: { label: "Interview", order: 2, badge: "bg-amber-500/20 text-amber-300", bar: "bg-amber-500" },
-  offer: { label: "Offer", order: 3, badge: "bg-emerald-500/20 text-emerald-300", bar: "bg-emerald-500" },
-  rejected: { label: "Rejected", order: 4, badge: "bg-rose-500/15 text-rose-300", bar: "bg-rose-500/60" },
+  saved: { label: "Saved", order: 0, tone: "zinc", bar: "bg-zinc-500" },
+  applied: { label: "Applied", order: 1, tone: "cyan", bar: "bg-sky-500" },
+  interview: { label: "Interview", order: 2, tone: "amber", bar: "bg-amber-500" },
+  offer: { label: "Offer", order: 3, tone: "emerald", bar: "bg-emerald-500" },
+  rejected: { label: "Rejected", order: 4, tone: "rose", bar: "bg-rose-500/60" },
 };
 
-const FUNNEL = ["saved", "applied", "interview", "offer"];
 const STAGE_OPTIONS = ["saved", "applied", "interview", "offer", "rejected"];
 
 export function JobTrackerView({ applications }: { applications: Application[] }) {
@@ -26,66 +28,37 @@ export function JobTrackerView({ applications }: { applications: Application[] }
   const active = applications.length - rejected;
   const offers = counts["offer"] || 0;
 
-  const sorted = [...applications].sort(
-    (a, b) => (STAGE_META[a.stage]?.order ?? 0) - (STAGE_META[b.stage]?.order ?? 0),
-  );
-
   return (
     <div className="space-y-6">
-      <Funnel counts={counts} />
-      <div className="grid grid-cols-3 gap-2">
-        <Stat label="Active" value={String(active)} />
-        <Stat label="Offers" value={String(offers)} />
-        <Stat label="Rejected" value={String(rejected)} />
-      </div>
+      <StatStrip cols={3}>
+        <StatTile label="Active" value={String(active)} tone="cyan" />
+        <StatTile label="Offers" value={String(offers)} tone="emerald" />
+        <StatTile label="Rejected" value={String(rejected)} tone="rose" />
+      </StatStrip>
 
       <AddForm />
 
       {applications.length === 0 ? (
         <EmptyState />
       ) : (
-        <ul className="space-y-2">
-          {sorted.map((a) => (
-            <AppRow key={a.id} app={a} />
-          ))}
-        </ul>
+        <div>
+          {STAGE_OPTIONS.map((stage) => {
+            const inStage = applications.filter((a) => a.stage === stage);
+            if (inStage.length === 0) return null;
+            return (
+              <BucketSection
+                key={stage}
+                label={STAGE_META[stage].label}
+                count={inStage.length}
+              >
+                {inStage.map((a) => (
+                  <AppRow key={a.id} app={a} />
+                ))}
+              </BucketSection>
+            );
+          })}
+        </div>
       )}
-    </div>
-  );
-}
-
-function Funnel({ counts }: { counts: Record<string, number> }) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
-      <div className="grid grid-cols-4 gap-1.5">
-        {FUNNEL.map((s) => {
-          const meta = STAGE_META[s];
-          return (
-            <div key={s} className="text-center">
-              <div className="text-2xl font-bold tabular-nums text-zinc-100">
-                {counts[s] || 0}
-              </div>
-              <div className="mt-1 flex justify-center">
-                <span className={`inline-block h-1 w-8 rounded-full ${meta.bar}`} />
-              </div>
-              <div className="mt-1 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-                {meta.label}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 text-center">
-      <div className="text-base font-semibold text-zinc-100">{value}</div>
-      <div className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-        {label}
-      </div>
     </div>
   );
 }
@@ -154,9 +127,7 @@ function AppRow({ app }: { app: Application }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="break-words text-sm font-medium text-zinc-100">{app.company}</span>
-          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${meta.badge}`}>
-            {meta.label}
-          </span>
+          <StatusPill label={meta.label} tone={meta.tone} />
         </div>
         <div className="mt-0.5 flex flex-wrap gap-x-3 text-xs text-zinc-400">
           {app.role && <span className="break-words">{app.role}</span>}
