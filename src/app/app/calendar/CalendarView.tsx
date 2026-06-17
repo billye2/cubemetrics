@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, useTransition } from "react";
 import { addEventAction, updateEventAction, deleteEventAction } from "./actions";
 import { expandEvents, RECURRENCE_LABEL, type Event, type Occurrence } from "./lib";
+import { Ring, StatStrip, StatTile } from "../_factories/FactoryUI";
 
 export type { Event } from "./lib";
 
@@ -34,6 +35,90 @@ function timeRange(start: string | null, end: string | null): string {
   if (!start) return "All day";
   if (end && end > start) return `${fmtTime(start)} – ${fmtTime(end)}`;
   return fmtTime(start);
+}
+
+interface MonthStats {
+  monthLabel: string;
+  /** 0..1 — how far through the visible month "today" is (clamped, 1 if month is fully past). */
+  progress: number;
+  /** true when the visible month is the one that contains `today`. */
+  isCurrentMonth: boolean;
+  dayOfMonth: number;
+  daysInMonth: number;
+  /** distinct events (by series id) with an occurrence in the visible month. */
+  thisMonth: number;
+  /** events happening today. */
+  today: number;
+  /** events on or after today, across the loaded window. */
+  upcoming: number;
+}
+
+function monthStats(
+  occurrences: Occurrence[],
+  byDay: Map<string, Occurrence[]>,
+  cursor: { y: number; m: number },
+  todayStr: string,
+): MonthStats {
+  const { y, m } = cursor;
+  const monthLabel = new Date(y, m, 1).toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const monthPrefix = `${y}-${String(m + 1).padStart(2, "0")}-`;
+
+  const t = new Date(todayStr + "T00:00:00");
+  const isCurrentMonth = t.getFullYear() === y && t.getMonth() === m;
+  const isPastMonth = y < t.getFullYear() || (y === t.getFullYear() && m < t.getMonth());
+  const dayOfMonth = isCurrentMonth ? t.getDate() : daysInMonth;
+  const progress = isCurrentMonth ? dayOfMonth / daysInMonth : isPastMonth ? 1 : 0;
+
+  // Distinct events with at least one occurrence whose start lands in the visible month.
+  const monthIds = new Set<number>();
+  for (const e of occurrences) {
+    if (e.start_date.startsWith(monthPrefix)) monthIds.add(e.id);
+  }
+
+  const todayCount = (byDay.get(todayStr) ?? []).length;
+  const upcoming = occurrences.filter((e) => (e.end_date || e.start_date) >= todayStr).length;
+
+  return {
+    monthLabel,
+    progress,
+    isCurrentMonth,
+    dayOfMonth,
+    daysInMonth,
+    thisMonth: monthIds.size,
+    today: todayCount,
+    upcoming,
+  };
+}
+
+function Hero({ stats }: { stats: MonthStats }) {
+  const pctLabel = Math.round(stats.progress * 100);
+  return (
+    <div className="mb-4 rounded-2xl border border-zinc-800 bg-zinc-900/40 p-5">
+      <div className="flex items-center gap-4">
+        <Ring pct={stats.progress} size={72} stroke={8} tone="cyan">
+          <span className="text-lg font-bold tabular-nums text-cyan-300">{stats.dayOfMonth}</span>
+          <span className="text-[10px] uppercase tracking-wider text-zinc-500">
+            of {stats.daysInMonth}
+          </span>
+        </Ring>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs font-medium uppercase tracking-wider text-zinc-500">{stats.monthLabel}</div>
+          <p className="mt-0.5 text-sm text-zinc-300">
+            {stats.isCurrentMonth
+              ? `${pctLabel}% through the month · ${stats.thisMonth} event${stats.thisMonth === 1 ? "" : "s"} scheduled`
+              : `${stats.thisMonth} event${stats.thisMonth === 1 ? "" : "s"} this month`}
+          </p>
+        </div>
+      </div>
+
+      <StatStrip cols={3}>
+        <StatTile label="This month" value={String(stats.thisMonth)} tone="cyan" />
+        <StatTile label="Today" value={String(stats.today)} tone={stats.today > 0 ? "amber" : "zinc"} />
+        <StatTile label="Upcoming" value={String(stats.upcoming)} tone={stats.upcoming > 0 ? "emerald" : "zinc"} />
+      </StatStrip>
+    </div>
+  );
 }
 
 export function CalendarView({
@@ -78,6 +163,9 @@ export function CalendarView({
     return map;
   }, [occurrences]);
 
+  // Month-progress + event-count stats for the hero, derived from already-computed data.
+  const stats = useMemo(() => monthStats(occurrences, byDay, cursor, today), [occurrences, byDay, cursor, today]);
+
   function submit(formData: FormData) {
     start(async () => {
       await addEventAction(formData);
@@ -88,6 +176,8 @@ export function CalendarView({
 
   return (
     <div>
+      <Hero stats={stats} />
+
       <div className="mb-4 flex gap-1.5">
         <ModeButton active={mode === "month"} onClick={() => setMode("month")}>Month</ModeButton>
         <ModeButton active={mode === "agenda"} onClick={() => setMode("agenda")}>Agenda</ModeButton>
